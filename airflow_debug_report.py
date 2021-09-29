@@ -97,6 +97,7 @@ class ConfigurationReport(AirflowReport):
         # Additional list because these are currently not hidden by the SecretsMasker but might contain passwords
         additional_hide_list = {
             "AIRFLOW__CELERY__BROKER_URL",
+            "AIRFLOW__CELERY__FLOWER_BASIC_AUTH",
             "AIRFLOW__CELERY__RESULT_BACKEND",
             "AIRFLOW__CORE__SQL_ALCHEMY_CONN",
         }
