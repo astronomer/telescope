@@ -13,8 +13,10 @@ import sys
 
 import airflow.jobs.base_job
 from airflow import DAG
-from airflow.models import DagModel
+from airflow.models import DagModel, TaskInstance
 from airflow.operators.python import PythonOperator
+from airflow.utils import timezone
+from airflow.utils.log.secrets_masker import should_hide_value_for_key
 from airflow.utils.session import provide_session
 from sqlalchemy import func
 
@@ -91,14 +93,51 @@ class ConfigurationReport(AirflowReport):
         from airflow.configuration import conf
 
         running_configuration = []
+
+        # Additional list because these are currently not hidden by the SecretsMasker but might contain passwords
+        additional_hide_list = {
+            "AIRFLOW__CELERY__BROKER_URL",
+            "AIRFLOW__CELERY__RESULT_BACKEND",
+            "AIRFLOW__CORE__SQL_ALCHEMY_CONN",
+        }
         for section, options in conf.as_dict(display_source=True, display_sensitive=True).items():
             for option, (value, config_source) in options.items():
-                running_configuration.append((section, option, value, config_source))
+                airflow_env_var_key = f"AIRFLOW__{section.upper()}__{option.upper()}"
+                if should_hide_value_for_key(airflow_env_var_key) or airflow_env_var_key in additional_hide_list:
+                    running_configuration.append((section, option, "***", config_source))
+                else:
+                    running_configuration.append((section, option, value, config_source))
 
         result = f"# {cls.name}\n"
         for config_option in sorted(running_configuration):
             result += f"- {config_option}\n"
 
+        result += "\n"
+        return result
+
+
+class AirflowEnvVarsReport(AirflowReport):
+    name = "ENVIRONMENT VARIABLES"
+
+    @classmethod
+    def report_markdown(cls) -> str:
+        import os
+
+        config_options = 0
+        connections = 0
+        variables = 0
+        for env_var in os.environ.keys():
+            if env_var.startswith("AIRFLOW__"):
+                config_options += 1
+            elif env_var.startswith("AIRFLOW_CONN_"):
+                connections += 1
+            elif env_var.startswith("AIRFLOW_VAR_"):
+                variables += 1
+
+        result = f"# {cls.name}\n"
+        result += f"- {config_options} configuration options set via environment variables\n"
+        result += f"- {connections} connections set via environment variables\n"
+        result += f"- {variables} variables set via environment variables\n"
         result += "\n"
         return result
 
@@ -152,10 +191,45 @@ class UsageStatsReport(AirflowReport):
     def report_markdown(cls, session=None) -> str:
         result = f"# {cls.name}\n"
 
-        paused_dag_count = session.query(func.count()).filter(DagModel.is_paused, DagModel.is_active).all()[0][0]
-        unpaused_dag_count = session.query(func.count()).filter(~DagModel.is_paused, DagModel.is_active).all()[0][0]
-        total_dag_count = paused_dag_count + unpaused_dag_count
-        result += f"- DAG stats: {total_dag_count} DAGs of which {unpaused_dag_count} unpaused and {paused_dag_count} paused\n"
+        # DAG stats
+        result += "## DAG stats:\n"
+        paused_dag_count = session.query(func.count()).filter(DagModel.is_paused, DagModel.is_active).scalar()
+        unpaused_dag_count = session.query(func.count()).filter(~DagModel.is_paused, DagModel.is_active).scalar()
+        dagfile_count = session.query(func.count(func.distinct(DagModel.fileloc))).filter(DagModel.is_active).scalar()
+        result += f"""- {paused_dag_count + unpaused_dag_count} active DAGs, of which:
+  - {unpaused_dag_count} unpaused DAGs
+  - {paused_dag_count} paused DAGs
+  - {dagfile_count} DAG files (more DAGs than DAG files could indicate dynamic DAGs)\n\n"""
+
+        # Task instance stats
+        result += "## Task instance stats:\n"
+        total_task_instances = session.query(TaskInstance).count()
+        task_instances_1_day = (
+            session.query(TaskInstance)
+            .filter(TaskInstance.start_date > timezone.utcnow() - datetime.timedelta(days=1))
+            .count()
+        )
+        task_instances_7_days = (
+            session.query(TaskInstance)
+            .filter(TaskInstance.start_date > timezone.utcnow() - datetime.timedelta(days=7))
+            .count()
+        )
+        task_instances_30_days = (
+            session.query(TaskInstance)
+            .filter(TaskInstance.start_date > timezone.utcnow() - datetime.timedelta(days=30))
+            .count()
+        )
+        task_instances_365_days = (
+            session.query(TaskInstance)
+            .filter(TaskInstance.start_date > timezone.utcnow() - datetime.timedelta(days=365))
+            .count()
+        )
+        # total_task_instances = sum(count for _, count in task_instance_state_count)
+        result += f"- {total_task_instances} total task instances\n"
+        result += f"- {task_instances_1_day} task instances in last 1 day\n"
+        result += f"- {task_instances_7_days} task instances in last 7 days\n"
+        result += f"- {task_instances_30_days} task instances in last 30 days\n"
+        result += f"- {task_instances_365_days} task instances in last 365 days\n"
 
         result += "\n"
         return result
@@ -171,6 +245,7 @@ def report(filename: str = "airflow_debug_report.md"):
         ConfigurationReport,
         SchedulerReport,
         PoolsReport,
+        AirflowEnvVarsReport,
         UsageStatsReport,
     ]
     with open(filename, "w", encoding="utf-8") as f:
