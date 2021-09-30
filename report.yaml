@@ -39,8 +39,10 @@ airflow:
 #  db:
 #    task_instances: select distinct operator from task_instance;
 ##    dags_info: select dag_id, fileloc, schedule_interval, concurrency from DAG limit 10;
-  report: curl
-
+  report:
+  - /bin/sh
+  - -c
+  - curl -ssl https://raw.githubusercontent.com/fritz-astronomer/telescope/main/airflow_debug_report.py | python && cat airflow_debug_report.md
 preinstall:
 #  database: rf"""kubectl run psql --rm -it --restart=Never -n {namespace} --image {image} --command -- psql {conn.out} -qtc "select 'healthy';" """
 #  certificate: ""
