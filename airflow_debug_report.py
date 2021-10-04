@@ -5,11 +5,12 @@ This script should be run in a live Airflow environment (i.e. the same settings 
 by exec-ing into your scheduler pod and running `python airflow_debug_report.py`.
 """
 
+import argparse
 import datetime
 import json
 import logging
-import socket
-import sys
+import os
+from typing import Any, Dict, List, Callable
 
 import airflow.jobs.base_job
 from airflow import DAG
@@ -25,31 +26,59 @@ class AirflowReport:
     name = "Airflow Report base class"
 
     @classmethod
-    def report_markdown(cls) -> str:
+    def get_data(cls) -> Any:
         raise NotImplementedError
+
+    @classmethod
+    def report_markdown(cls) -> str:
+        """
+        Should return a Markdown string formatted as:
+
+        # [REPORT NAME]
+        ... data ...
+        [finish with newline]
+
+        Default should work unless get_data() returns a collection e.g. list which has to be formatted properly
+        """
+        return f"# {cls.name}\n{cls.get_data()}\n"
+
+    @classmethod
+    def report_json(cls) -> Dict[str, Any]:
+        """
+        Should return report name + data e.g. {"Airflow Version": "v2.1.3"}
+        Default should work unless get_data() returns something not JSON serializable
+        """
+        return {cls.name: cls.get_data()}
 
 
 class AirflowVersionReport(AirflowReport):
     name = "AIRFLOW VERSION"
 
     @classmethod
-    def report_markdown(cls) -> str:
-        return f"# {cls.name}\n{airflow.version.version}\n\n"
+    def get_data(cls) -> Any:
+        return airflow.version.version
 
 
 class ProvidersReport(AirflowReport):
     name = "PROVIDERS"
 
     @classmethod
-    def report_markdown(cls) -> str:
+    def get_data(cls) -> Any:
+        """Return dict of providers packages {package name: version}"""
         from airflow.providers_manager import ProvidersManager
 
         providers_manager = ProvidersManager()
-        result = f"# {cls.name}\n"
+        result = {}
         for provider_version, provider_info in providers_manager.providers.values():
-            result += f"- {provider_info['package-name']}=={provider_version}\n"
+            result[provider_info["package-name"]] = provider_version
 
-        result += "\n"
+        return result
+
+    @classmethod
+    def report_markdown(cls) -> str:
+        result = f"# {cls.name}\n"
+        for package_name, package_version in cls.get_data().items():
+            result += f"- {package_name}=={package_version}\n"
         return result
 
 
@@ -57,31 +86,39 @@ class DateTimeReport(AirflowReport):
     name = "DATE & TIME (UTC)"
 
     @classmethod
-    def report_markdown(cls) -> str:
-        return f"# {cls.name}\n{datetime.datetime.utcnow()}\n\n"
+    def get_data(cls) -> Any:
+        return datetime.datetime.utcnow()
+
+    @classmethod
+    def report_json(cls) -> Dict[str, Any]:
+        return {cls.name: cls.get_data().isoformat()}
 
 
 class HostnameReport(AirflowReport):
     name = "HOSTNAME"
 
     @classmethod
-    def report_markdown(cls) -> str:
-        return f"# {cls.name}\n{socket.gethostname()}\n\n"
+    def get_data(cls) -> Any:
+        import socket
+
+        return socket.gethostname()
 
 
 class InstalledPackagesReport(AirflowReport):
     name = "INSTALLED PACKAGES"
 
     @classmethod
-    def report_markdown(cls) -> str:
+    def get_data(cls) -> Any:
         import pkg_resources
 
-        result = f"# {cls.name}\n"
         sorted_packages = sorted([f"{pkg.key}=={pkg.version}" for pkg in pkg_resources.working_set])
-        for pkg in sorted_packages:
-            result += f"- {pkg}\n"
+        return sorted_packages
 
-        result += "\n"
+    @classmethod
+    def report_markdown(cls) -> str:
+        result = f"# {cls.name}\n"
+        for pkg in cls.get_data():
+            result += f"- {pkg}\n"
         return result
 
 
@@ -89,7 +126,7 @@ class ConfigurationReport(AirflowReport):
     name = "CONFIGURATION"
 
     @classmethod
-    def report_markdown(cls) -> str:
+    def get_data(cls) -> Any:
         from airflow.configuration import conf
 
         running_configuration = []
@@ -109,11 +146,13 @@ class ConfigurationReport(AirflowReport):
                 else:
                     running_configuration.append((section, option, value, config_source))
 
-        result = f"# {cls.name}\n"
-        for config_option in sorted(running_configuration):
-            result += f"- {config_option}\n"
+        return sorted(running_configuration)
 
-        result += "\n"
+    @classmethod
+    def report_markdown(cls) -> str:
+        result = f"# {cls.name}\n"
+        for config_option in cls.get_data():
+            result += f"- {config_option}\n"
         return result
 
 
@@ -121,7 +160,7 @@ class AirflowEnvVarsReport(AirflowReport):
     name = "ENVIRONMENT VARIABLES"
 
     @classmethod
-    def report_markdown(cls) -> str:
+    def get_data(cls) -> Any:
         import os
 
         config_options = 0
@@ -135,11 +174,15 @@ class AirflowEnvVarsReport(AirflowReport):
             elif env_var.startswith("AIRFLOW_VAR_"):
                 variables += 1
 
+        return {"config_options": config_options, "connections": connections, "variables": variables}
+
+    @classmethod
+    def report_markdown(cls) -> str:
         result = f"# {cls.name}\n"
-        result += f"- {config_options} configuration options set via environment variables\n"
-        result += f"- {connections} connections set via environment variables\n"
-        result += f"- {variables} variables set via environment variables\n"
-        result += "\n"
+        data = cls.get_data()
+        result += f"- {data['config_options']} configuration options set via environment variables\n"
+        result += f"- {data['connections']} connections set via environment variables\n"
+        result += f"- {data['variables']} variables set via environment variables\n"
         return result
 
 
@@ -148,7 +191,7 @@ class SchedulerReport(AirflowReport):
 
     @classmethod
     @provide_session
-    def report_markdown(cls, session=None) -> str:
+    def get_data(cls, session=None) -> Any:
         scheduler_jobs = session.query(airflow.jobs.scheduler_job.SchedulerJob).all()
         schedulers = []
         for scheduler_job in scheduler_jobs:
@@ -163,11 +206,13 @@ class SchedulerReport(AirflowReport):
                 }
             )
         schedulers_new_to_old = sorted(schedulers, key=lambda k: k["start_date"], reverse=True)
+        return schedulers_new_to_old
 
+    @classmethod
+    def report_markdown(cls) -> str:
         result = f"# {cls.name}\n"
-        for scheduler in schedulers_new_to_old:
+        for scheduler in cls.get_data():
             result += f"- {json.dumps(scheduler)}\n"
-        result += "\n"
         return result
 
 
@@ -175,12 +220,16 @@ class PoolsReport(AirflowReport):
     name = "POOLS"
 
     @classmethod
-    def report_markdown(cls, session=None) -> str:
+    @provide_session
+    def get_data(cls, session=None) -> Any:
         pool_stats = airflow.models.Pool.slots_stats()
+        return [*pool_stats.values()]  # Unpacking to avoid non-serializable dict_values type
+
+    @classmethod
+    def report_markdown(cls) -> str:
         result = f"# {cls.name}\n"
-        for pool_stat in pool_stats.values():
+        for pool_stat in cls.get_data():
             result += f"1. \<pool name obfuscated\>: {pool_stat}\n"
-        result += "\n"
         return result
 
 
@@ -189,21 +238,21 @@ class UsageStatsReport(AirflowReport):
 
     @classmethod
     @provide_session
-    def report_markdown(cls, session=None) -> str:
-        result = f"# {cls.name}\n"
+    def get_data(cls, session=None) -> Any:
+        result = {}
 
         # DAG stats
-        result += "## DAG stats:\n"
         paused_dag_count = session.query(func.count()).filter(DagModel.is_paused, DagModel.is_active).scalar()
         unpaused_dag_count = session.query(func.count()).filter(~DagModel.is_paused, DagModel.is_active).scalar()
         dagfile_count = session.query(func.count(func.distinct(DagModel.fileloc))).filter(DagModel.is_active).scalar()
-        result += f"""- {paused_dag_count + unpaused_dag_count} active DAGs, of which:
-  - {unpaused_dag_count} unpaused DAGs
-  - {paused_dag_count} paused DAGs
-  - {dagfile_count} DAG files (more DAGs than DAG files could indicate dynamic DAGs)\n\n"""
+        result["dag_stats"] = {
+            "active": paused_dag_count + unpaused_dag_count,
+            "unpaused": unpaused_dag_count,
+            "paused": paused_dag_count,
+            "dag_files": dagfile_count,
+        }
 
         # Task instance stats
-        result += "## Task instance stats:\n"
         total_task_instances = session.query(TaskInstance).count()
         task_instances_1_day = (
             session.query(TaskInstance)
@@ -225,51 +274,124 @@ class UsageStatsReport(AirflowReport):
             .filter(TaskInstance.start_date > timezone.utcnow() - datetime.timedelta(days=365))
             .count()
         )
-        # total_task_instances = sum(count for _, count in task_instance_state_count)
-        result += f"- {total_task_instances} total task instances\n"
-        result += f"- {task_instances_1_day} task instances in last 1 day\n"
-        result += f"- {task_instances_7_days} task instances in last 7 days\n"
-        result += f"- {task_instances_30_days} task instances in last 30 days\n"
-        result += f"- {task_instances_365_days} task instances in last 365 days\n"
+        result["task_instance_stats"] = {
+            "total": total_task_instances,
+            "1_day": task_instances_1_day,
+            "7_days": task_instances_7_days,
+            "30_days": task_instances_30_days,
+            "365_days": task_instances_365_days,
+        }
 
-        result += "\n"
+        return result
+
+    @classmethod
+    def report_markdown(cls) -> str:
+        result = f"# {cls.name}\n"
+        data = cls.get_data()
+
+        result += "## DAG stats:\n"
+        result += f"- {data['dag_stats']['active']} active DAGs, of which:\n"
+        result += f"- {data['dag_stats']['unpaused']} unpaused DAGs\n"
+        result += f"- {data['dag_stats']['paused']} paused DAGs\n"
+        result += (
+            f"- {data['dag_stats']['dag_files']} DAG files (more DAGs than DAG files could indicate dynamic DAGs)\n\n"
+        )
+
+        result += "## Task instance stats:\n"
+        result += f"- {data['task_instance_stats']['total']} total task instances\n"
+        result += f"- {data['task_instance_stats']['1_day']} task instances in last 1 day\n"
+        result += f"- {data['task_instance_stats']['7_days']} task instances in last 7 days\n"
+        result += f"- {data['task_instance_stats']['30_days']} task instances in last 30 days\n"
+        result += f"- {data['task_instance_stats']['365_days']} task instances in last 365 days\n"
+
         return result
 
 
-def report(filename: str = "airflow_debug_report.md"):
-    reporters = [
-        AirflowVersionReport,
-        DateTimeReport,
-        HostnameReport,
-        ProvidersReport,
-        InstalledPackagesReport,
-        ConfigurationReport,
-        SchedulerReport,
-        PoolsReport,
-        AirflowEnvVarsReport,
-        UsageStatsReport,
-    ]
-    with open(filename, "w", encoding="utf-8") as f:
+def report_json(reporting_classes: List[AirflowReport], output_dir: str = "") -> str:
+    result = {}
+    for reporter in reporting_classes:
+        json_report = reporter.report_json()
+
+        # Try JSON serialization here because serialization errors are hard to trace if only serializing at the end,
+        # once the full result has been collected
+        try:
+            json.dumps(json_report)
+        except Exception as e:
+            logging.exception("Failed reporting %s (skipped)", reporter.name)
+            logging.exception(e)
+
+        result.update(json_report)
+        logging.info("Reported %s", reporter.name)
+
+    output_path = os.path.join(output_dir, "airflow_debug_report.json")
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=4)
+
+    return output_path
+
+
+def report_markdown(reporting_classes: List[AirflowReport], output_dir: str = "") -> str:
+    output_path = os.path.join(output_dir, "airflow_debug_report.md")
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write("<!-- This report was automatically generated -->\n")
-        for reporter in reporters:
+        for reporter in reporting_classes:
             try:
                 f.write(reporter.report_markdown())
+                f.write("\n")
                 logging.info("Reported %s", reporter.name)
             except Exception as e:
-                logging.exception("Failed reporting %s", reporter.name)
+                logging.exception("Failed reporting %s (skipped)", reporter.name)
                 logging.exception(e)
 
-    logging.info("Your Airflow system dump was written to %s", filename)
+    return output_path
+
+
+def report(reporting_classes: List[AirflowReport], reporting_function: Callable, output_dir: str = ""):
+    logging.info("Starting reporting...")
+    output_path = reporting_function(reporting_classes=reporting_classes, output_dir=output_dir)
+    logging.info("Your Airflow system dump was written to %s", output_path)
 
 
 # You can run this script as an Airflow DAG...
 with DAG(dag_id="airflow_debug_report", start_date=datetime.datetime(2021, 1, 1), schedule_interval=None) as dag:
     PythonOperator(task_id="report", python_callable=report)
 
-# Or by executing "python airflow_debug_report.py [filename]"
+# Or by executing "python airflow_debug_report.py"
 if __name__ == "__main__":
-    try:
-        output_filename = sys.argv[1]
-        report(filename=output_filename)
-    except:
-        report()
+    parser = argparse.ArgumentParser()
+
+    reporting_formatters = {"json": report_json, "markdown": report_markdown}
+
+    # Mapping of name pass-able via CLI to Python class
+    reporting_class_mapping = {
+        "airflow_version": AirflowVersionReport,
+        "datetime": DateTimeReport,
+        "hostname": HostnameReport,
+        "providers": ProvidersReport,
+        "installed_packages": InstalledPackagesReport,
+        "configuration": ConfigurationReport,
+        "scheduler": SchedulerReport,
+        "pools": PoolsReport,
+        "airflow_env_vars": AirflowEnvVarsReport,
+        "usage_stats": UsageStatsReport,
+    }
+
+    parser.add_argument(
+        "-o", "--output", help="Output format (default JSON)", choices=reporting_formatters.keys(), default="json"
+    )
+    parser.add_argument(
+        "-r",
+        "--reporters",
+        help="Reporting sections (comma separated)",
+        choices=reporting_class_mapping.keys(),
+        default=reporting_class_mapping.keys(),
+        nargs="*",
+    )
+    parser.add_argument("output_dir", help="Output directory, defaults to current directory", nargs="?", default="")
+    args = parser.parse_args()
+
+    # Map reporters to Python classes
+    reporting_classes = [reporting_class_mapping[key] for key in args.reporters]
+
+    reporting_function = reporting_formatters[args.output]
+    report(reporting_classes=reporting_classes, reporting_function=reporting_function, output_dir=args.output_dir)
