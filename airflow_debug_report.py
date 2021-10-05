@@ -1,8 +1,12 @@
 """
-Airflow system reporting script. Goal was to produce an easily runnable script & transferable output.
+Airflow system reporting script. Goal was to produce an easily runnable script & transferable output. This script should
+be run in a live Airflow environment (i.e. the same settings as your running Airflow). For example, by exec-ing into
+your scheduler pod and running `python airflow_debug_report.py`.
 
-This script should be run in a live Airflow environment (i.e. the same settings as your running Airflow). For example,
-by exec-ing into your scheduler pod and running `python airflow_debug_report.py`.
+The output can be configured via flags/arguments and/or environment variables (flags take precedence over env vars):
+
+airflow_debug_report.py [-o/--output {json,markdown}] [-r/--reporters [{airflow_version,datetime,...}]] [output_dir]
+AIRFLOW_REPORT_OUTPUT_FORMAT=markdown AIRFLOW_REPORT_REPORTERS=airflow_version,providers AIRFLOW_REPORT_OUTPUT_DIR=/tmp python airflow_debug_report.py
 """
 
 import argparse
@@ -377,17 +381,34 @@ if __name__ == "__main__":
     }
 
     parser.add_argument(
-        "-o", "--output", help="Output format (default JSON)", choices=reporting_formatters.keys(), default="json"
+        "-o",
+        "--output",
+        help="Output format (default JSON)",
+        choices=reporting_formatters.keys(),
+        default=os.environ.get("AIRFLOW_REPORT_OUTPUT_FORMAT", "json"),
     )
+
+    def get_reporters_default():
+        """Function to support handling errors if AIRFLOW_REPORT_REPORTERS is not set correctly"""
+        try:
+            return os.environ.get("AIRFLOW_REPORT_REPORTERS").split(",")
+        except Exception:
+            reporting_class_mapping.keys()
+
     parser.add_argument(
         "-r",
         "--reporters",
         help="Reporting sections (comma separated)",
         choices=reporting_class_mapping.keys(),
-        default=reporting_class_mapping.keys(),
+        default=get_reporters_default(),
         nargs="*",
     )
-    parser.add_argument("output_dir", help="Output directory, defaults to current directory", nargs="?", default="")
+    parser.add_argument(
+        "output_dir",
+        help="Output directory, defaults to current directory",
+        nargs="?",
+        default=os.environ.get("AIRFLOW_REPORT_OUTPUT_DIR", ""),
+    )
     args = parser.parse_args()
 
     # Map reporters to Python classes
