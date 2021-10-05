@@ -393,7 +393,7 @@ if __name__ == "__main__":
         try:
             return os.environ.get("AIRFLOW_REPORT_REPORTERS").split(",")
         except Exception:
-            reporting_class_mapping.keys()
+            return reporting_class_mapping.keys()
 
     parser.add_argument(
         "-r",
