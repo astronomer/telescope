@@ -371,7 +371,7 @@ if __name__ == "__main__":
         "--reporters",
         help="Reporting sections (comma separated)",
         choices=REPORTING_CLASS_MAPPING.keys(),
-        default=get_reporters_default,
+        default=get_reporters_default(),
         nargs="*",
     )
     parser.add_argument(
