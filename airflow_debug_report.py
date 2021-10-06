@@ -15,6 +15,7 @@ import json
 import logging
 import os
 import sys
+from functools import reduce
 from typing import Any, Dict, List
 
 import airflow.jobs.base_job
@@ -348,8 +349,13 @@ def report(output='-', _reporting_classes: List[AirflowReport] = None):
             except Exception as e:
                 logging.exception("Failed reporting %s", r.name)
                 logging.exception(e)
-                return r.name, str(e)
-        sys.stdout.write(json.dumps(dict([try_reporter(reporter) for reporter in _reporting_classes]), default=str))
+                return {r.name: str(e)}
+        sys.stdout.write(json.dumps(
+            reduce(
+                lambda x, y: {**x, **y},
+                [try_reporter(reporter) for reporter in _reporting_classes]
+            ), default=str
+        ))
 
 
 # You can run this script as an Airflow DAG...
