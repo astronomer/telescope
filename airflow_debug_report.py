@@ -27,6 +27,8 @@ from airflow.utils.log.secrets_masker import should_hide_value_for_key
 from airflow.utils.session import provide_session
 from sqlalchemy import func
 
+logging.getLogger('google.cloud.bigquery.opentelemetry_tracing').setLevel(logging.ERROR)
+
 
 class AirflowReport:
     name = "Airflow Report base class"
