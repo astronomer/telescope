@@ -5,3 +5,4 @@ docker==5.0.2
 invoke
 pyyaml
 jmespath==0.10.0
+jsonschema==4.0.1
