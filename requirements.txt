@@ -1,7 +1,6 @@
 kubernetes==18.20.0
 fabric==2.6.0
-python-dotenv==0.19.0
 docker==5.0.2
 invoke
 pyyaml
-jmespath==0.10.0
+click==8.0.1

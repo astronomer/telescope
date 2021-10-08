@@ -1,0 +1,23 @@
+local:
+  python: python --version
+  helm: helm version --short
+  kubectl: kubectl version --client=true --short
+  docker: docker version --format json
+  astro: astro version
+  docker-compose: docker-compose --version
+  os: uname -a
+  aws: aws --version
+  gcp: gcloud version --format=json
+  az: az version
+
+docker:
+  airflow_report: &airflow_report
+    - /bin/sh
+    - -c
+    - curl -ssl https://raw.githubusercontent.com/fritz-astronomer/telescope/json2/telescope/airflow_report.py | PYTHONWARNINGS=ignore AIRFLOW_REPORT_OUTPUT=- python
+
+kubernetes:
+  airflow_report: *airflow_report
+
+ssh:
+  airflow_report: *airflow_report

@@ -1,25 +1,47 @@
+# Telescope
 
-# Example `hosts.yaml`
+
+# Installation
+```shell
+pip install git+https://github.com/astronomer/telescope.git#egg=telescope
 ```
-ssh:
-  hosts:
-    - bla.com
-    - 1.2.3.4:22
+
+
+# Input
+## Example `hosts.yaml` input 
+use `-f hosts.yaml`
+```
+local:
 
 docker:
-  containers:
-    - demo9b25c0_scheduler_1
+  - container_id: demo9b25c0_scheduler_1
 
 kubernetes:
-  contexts:
-    - fritz@polaris.us-east-1.eksctl.io
+  - namespace: astronomer-amateur-cosmos-2865
+    name: amateur-cosmos-2865-scheduler-bfcfbd7b5-dvqqr
+    container: scheduler
+
+ssh:
+  - 1.2.3.4
+  - foo.com
 ```
 
-# Example Kubernetes Command
-```python
-cmd = [
-  '/bin/sh',
-  '-c',
-  'echo This message goes to stdout; ls / -alh'
-]
+## Docker autodiscovery
+Either use `--docker` or an empty `docker` in your hosts file to enable autodiscovery.
+Autodiscovery searches for containers running locally that contain "scheduler" in the name and returns
+the container_id
+
+- `hosts.yaml`
+```
+docker: 
+```
+
+## Kubernetes autodiscovery
+Either use `--kubernetes` or an empty `kubernets` in your hosts file to enable autodiscovery.
+Autodiscovery searches for pods running in the Kubernetes cluster defined by `KUBEPROFILE` 
+in any namespace, that contain the label `component=scheduler`, and returns the namespace, name, and container (`scheduler`)
+
+- `hosts.yaml`
+```
+kubernetes: 
 ```

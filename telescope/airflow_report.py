@@ -5,8 +5,8 @@ your scheduler pod and running `python airflow_debug_report.py`.
 
 The output can be configured via flags/arguments and/or environment variables (flags take precedence over env vars):
 
-airflow_debug_report.py [-o/--output {json,markdown}] [-r/--reporters [{airflow_version,datetime,...}]] [output_dir]
-AIRFLOW_REPORT_OUTPUT_FORMAT=markdown AIRFLOW_REPORT_REPORTERS=airflow_version,providers AIRFLOW_REPORT_OUTPUT_DIR=/tmp python airflow_debug_report.py
+airflow_debug_report.py [-r/--reporters [{airflow_version,datetime,...}]] [output]
+AIRFLOW_REPORT_REPORTERS=airflow_version,providers AIRFLOW_REPORT_OUTPUT=/tmp/report.md python airflow_debug_report.py
 """
 
 import argparse
@@ -14,7 +14,9 @@ import datetime
 import json
 import logging
 import os
-from typing import Any, Dict, List, Callable
+import sys
+from functools import reduce
+from typing import Any, Dict, List
 
 import airflow.jobs.base_job
 from airflow import DAG
@@ -24,6 +26,8 @@ from airflow.utils import timezone
 from airflow.utils.log.secrets_masker import should_hide_value_for_key
 from airflow.utils.session import provide_session
 from sqlalchemy import func
+
+logging.getLogger('google.cloud.bigquery.opentelemetry_tracing').setLevel(logging.ERROR)
 
 
 class AirflowReport:
@@ -114,15 +118,13 @@ class InstalledPackagesReport(AirflowReport):
     @classmethod
     def get_data(cls) -> Any:
         import pkg_resources
-
-        sorted_packages = sorted([f"{pkg.key}=={pkg.version}" for pkg in pkg_resources.working_set])
-        return sorted_packages
+        return {pkg.key: pkg.version for pkg in pkg_resources.working_set}
 
     @classmethod
     def report_markdown(cls) -> str:
         result = f"# {cls.name}\n"
-        for pkg in cls.get_data():
-            result += f"- {pkg}\n"
+        for k, v in cls.get_data().items():
+            result += f"- {k}=={v}\n"
         return result
 
 
@@ -226,13 +228,12 @@ class PoolsReport(AirflowReport):
     @classmethod
     @provide_session
     def get_data(cls, session=None) -> Any:
-        pool_stats = airflow.models.Pool.slots_stats()
-        return [*pool_stats.values()]  # Unpacking to avoid non-serializable dict_values type
+        return airflow.models.Pool.slots_stats()
 
     @classmethod
     def report_markdown(cls) -> str:
         result = f"# {cls.name}\n"
-        for pool_stat in cls.get_data():
+        for pool_stat in cls.get_data().values():
             result += f"1. \<pool name obfuscated\>: {pool_stat}\n"
         return result
 
@@ -311,49 +312,52 @@ class UsageStatsReport(AirflowReport):
         return result
 
 
-def report_json(reporting_classes: List[AirflowReport], output_dir: str = "") -> str:
-    result = {}
-    for reporter in reporting_classes:
-        json_report = reporter.report_json()
-
-        # Try JSON serialization here because serialization errors are hard to trace if only serializing at the end,
-        # once the full result has been collected
-        try:
-            json.dumps(json_report)
-        except Exception as e:
-            logging.exception("Failed reporting %s (skipped)", reporter.name)
-            logging.exception(e)
-
-        result.update(json_report)
-        logging.info("Reported %s", reporter.name)
-
-    output_path = os.path.join(output_dir, "airflow_debug_report.json")
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(result, f, indent=4)
-
-    return output_path
+# Mapping of name pass-able via CLI to Python class
+REPORTING_CLASS_MAPPING = {
+    "airflow_version": AirflowVersionReport,
+    "datetime": DateTimeReport,
+    "hostname": HostnameReport,
+    "providers": ProvidersReport,
+    "installed_packages": InstalledPackagesReport,
+    "configuration": ConfigurationReport,
+    "scheduler": SchedulerReport,
+    "pools": PoolsReport,
+    "airflow_env_vars": AirflowEnvVarsReport,
+    "usage_stats": UsageStatsReport,
+}
 
 
-def report_markdown(reporting_classes: List[AirflowReport], output_dir: str = "") -> str:
-    output_path = os.path.join(output_dir, "airflow_debug_report.md")
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write("<!-- This report was automatically generated -->\n")
-        for reporter in reporting_classes:
+def report(output='-', _reporting_classes: List[AirflowReport] = None):
+    if _reporting_classes is None:
+        _reporting_classes = REPORTING_CLASS_MAPPING.values()
+
+    if output != '-':
+        with open(output, "w", encoding="utf-8") as f:
+            f.write("<!-- This report was automatically generated -->\n")
+            for reporter in _reporting_classes:
+                try:
+                    f.write(reporter.report_markdown())
+                    f.write("\n")
+                    logging.info("Reported %s", reporter.name)
+                except Exception as e:
+                    logging.exception("Failed reporting %s", reporter.name)
+                    logging.exception(e)
+
+        logging.info("Your Airflow system dump was written to %s", output)
+    else:
+        def try_reporter(r):
             try:
-                f.write(reporter.report_markdown())
-                f.write("\n")
-                logging.info("Reported %s", reporter.name)
+                return r.report_json()
             except Exception as e:
-                logging.exception("Failed reporting %s (skipped)", reporter.name)
+                logging.exception("Failed reporting %s", r.name)
                 logging.exception(e)
-
-    return output_path
-
-
-def report(reporting_classes: List[AirflowReport], reporting_function: Callable, output_dir: str = ""):
-    logging.info("Starting reporting...")
-    output_path = reporting_function(reporting_classes=reporting_classes, output_dir=output_dir)
-    logging.info("Your Airflow system dump was written to %s", output_path)
+                return {r.name: str(e)}
+        sys.stdout.write(json.dumps(
+            reduce(
+                lambda x, y: {**x, **y},
+                [try_reporter(reporter) for reporter in _reporting_classes]
+            ), default=str
+        ))
 
 
 # You can run this script as an Airflow DAG...
@@ -362,57 +366,30 @@ with DAG(dag_id="airflow_debug_report", start_date=datetime.datetime(2021, 1, 1)
 
 # Or by executing "python airflow_debug_report.py"
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-
-    reporting_formatters = {"json": report_json, "markdown": report_markdown}
-
-    # Mapping of name pass-able via CLI to Python class
-    reporting_class_mapping = {
-        "airflow_version": AirflowVersionReport,
-        "datetime": DateTimeReport,
-        "hostname": HostnameReport,
-        "providers": ProvidersReport,
-        "installed_packages": InstalledPackagesReport,
-        "configuration": ConfigurationReport,
-        "scheduler": SchedulerReport,
-        "pools": PoolsReport,
-        "airflow_env_vars": AirflowEnvVarsReport,
-        "usage_stats": UsageStatsReport,
-    }
-
-    parser.add_argument(
-        "-o",
-        "--output",
-        help="Output format (default JSON)",
-        choices=reporting_formatters.keys(),
-        default=os.environ.get("AIRFLOW_REPORT_OUTPUT_FORMAT", "json"),
-    )
-
     def get_reporters_default():
         """Function to support handling errors if AIRFLOW_REPORT_REPORTERS is not set correctly"""
         try:
             return os.environ.get("AIRFLOW_REPORT_REPORTERS").split(",")
         except Exception:
-            return reporting_class_mapping.keys()
+            return REPORTING_CLASS_MAPPING.keys()
 
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "-r",
         "--reporters",
         help="Reporting sections (comma separated)",
-        choices=reporting_class_mapping.keys(),
+        choices=REPORTING_CLASS_MAPPING.keys(),
         default=get_reporters_default(),
         nargs="*",
     )
     parser.add_argument(
-        "output_dir",
-        help="Output directory, defaults to current directory",
+        "output",
+        help="Output directory and file, default to current",
         nargs="?",
-        default=os.environ.get("AIRFLOW_REPORT_OUTPUT_DIR", ""),
+        default=os.environ.get("AIRFLOW_REPORT_OUTPUT", ""),
     )
     args = parser.parse_args()
 
     # Map reporters to Python classes
-    reporting_classes = [reporting_class_mapping[key] for key in args.reporters]
-
-    reporting_function = reporting_formatters[args.output]
-    report(reporting_classes=reporting_classes, reporting_function=reporting_function, output_dir=args.output_dir)
+    reporting_classes = [REPORTING_CLASS_MAPPING[key] for key in args.reporters]
+    report(_reporting_classes=reporting_classes, output=args.output)
