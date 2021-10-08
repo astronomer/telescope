@@ -2,6 +2,9 @@
 
 
 # Installation
+```shell
+pip install git+https://github.com/astronomer/telescope.git#egg=telescope
+```
 
 
 # Input
@@ -11,7 +14,7 @@ use `-f hosts.yaml`
 local:
 
 docker:
-  - container: demo9b25c0_scheduler_1
+  - container_id: demo9b25c0_scheduler_1
 
 kubernetes:
   - namespace: astronomer-amateur-cosmos-2865

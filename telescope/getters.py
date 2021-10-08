@@ -1,9 +1,21 @@
 import ast
+import json
+import logging
 from abc import abstractmethod
 from copy import deepcopy
-from typing import Type, Union, List, Dict, Tuple
+from json import JSONDecodeError
+from typing import Type, Union, List, Dict
 
-from telescope.util import get_json_or_clean_str
+log = logging.getLogger(__name__)
+
+
+def get_json_or_clean_str(o: str) -> Union[List, Dict]:
+    try:
+        return json.loads(o)
+    except (JSONDecodeError, TypeError) as e:
+        log.debug(e)
+        log.debug(o)
+        return o.strip().split('\n')
 
 
 class Getter:
@@ -27,6 +39,11 @@ class Getter:
             return SSHGetter
         else:
             raise RuntimeError(f"Unknown host type: {host_type}")
+
+    @classmethod
+    @abstractmethod
+    def get_type(cls):
+        pass
 
 
 class KubernetesGetter(Getter):
@@ -69,31 +86,14 @@ class KubernetesGetter(Getter):
             stderr=True, stdin=False, stdout=True, tty=False
         )
         # filter out any log lines
+        log.debug(exec_res)
         return ast.literal_eval(exec_res)
 
     def get_report_key(self):
         return f"{self.namespace}|{self.name}"
 
     @classmethod
-    def get_cluster_capacity(cls) -> Tuple[int, int]:
-        """:return Tuple of vCPU capacity and GB Memory capacity across the cluster"""
-        res = KubernetesGetter.kube_client.list_node()
-        return (
-            sum([int(r.status.capacity['cpu']) for r in res.items]),  # vcpu
-            int(sum([int(r.status.capacity['memory'][:-2]) for r in res.items]) / 1024 ** 2)  # gb
-        )
-
-    @classmethod
-    def get_cluster_allocated(cls) -> Tuple[int, int]:
-        """:return Tuple of vCPU capacity and GB Memory capacity across the cluster"""
-        res = KubernetesGetter.kube_client.list_node()
-        return (
-            sum([int(r.status.allocated['cpu']) for r in res.items]),  # vcpu
-            int(sum([int(r.status.allocated['memory'][:-2]) for r in res.items]) / 1024 ** 2)  # gb
-        )
-
-    @classmethod
-    def get_version_and_provider(cls):
+    def cluster_info(cls):
         from kubernetes import client
         from kubernetes.client import VersionApi
 
@@ -107,15 +107,38 @@ class KubernetesGetter(Getter):
             else:
                 return None
 
+        def parse_cpu(cpu):
+            if 'm' in cpu:
+                return int(cpu[:-1])/1000
+            else:
+                return int(cpu)
+
+        def parse_mem(mem):
+            # if 'Ki' in mem:
+            return int(mem[:-2])
+
         new_conf = deepcopy(KubernetesGetter.kube_client.api_client.configuration)
         new_conf.api_key = {}  # was getting "unauthorized" otherwise, weird.
         res = VersionApi(client.ApiClient(new_conf)).get_code()
-        return res.git_version, cloud_provider(res.git_version)
+        nodes_res = KubernetesGetter.kube_client.list_node()
+        return {
+            "version": res.git_version,
+            "provider": cloud_provider(res.git_version),
+            "allocated_cpu": sum([parse_cpu(r.status.allocatable['cpu']) for r in nodes_res.items]),
+            "allocated_gb": int(sum([parse_mem(r.status.allocatable['memory']) for r in nodes_res.items]) / 1024 ** 2),
+            "capacity_cpu": sum([parse_cpu(r.status.capacity['cpu']) for r in nodes_res.items]),
+            "capacity_gb": int(sum([parse_mem(r.status.capacity['memory']) for r in nodes_res.items]) / 1024 ** 2)
+        }
 
-    def preinstall(self):
+    @classmethod
+    def precheck(cls):
         raise NotImplementedError
         #  database: rf"""kubectl run psql --rm -it --restart=Never -n {namespace} --image {image} --command -- psql {conn.out} -qtc "select 'healthy';" """
         #  certificate: ""
+
+    @classmethod
+    def get_type(cls):
+        return 'kubernetes'
 
 
 class SSHGetter(Getter):
@@ -132,6 +155,10 @@ class SSHGetter(Getter):
 
     def get_report_key(self):
         return self.host
+
+    @classmethod
+    def get_type(cls):
+        return 'ssh'
 
 
 class LocalDockerGetter(Getter):
@@ -155,22 +182,35 @@ class LocalDockerGetter(Getter):
         exec_res = _container.exec_run(cmd)
         return get_json_or_clean_str(exec_res.output.decode('utf-8'))
 
+    @classmethod
+    def get_type(cls):
+        return 'docker'
+
     def get_report_key(self):
         return self.container_id
 
 
 class LocalGetter(Getter):
-    def get(self, cmd: str, **kwargs):
+    @classmethod
+    def get(cls, cmd: str, **kwargs):
         from invoke import run
         """Utilize invoke to run locally
         http://docs.pyinvoke.org/en/stable/api/runners.html#invoke.runners.Runner.run
         """
-        out = run(cmd, **kwargs).stdout
+        out = run(cmd, echo=True, hide=True, **kwargs).stdout   # other options: timeout, warn
         return get_json_or_clean_str(out)
 
     def get_report_key(self):
         import socket
         return socket.gethostname()
 
-    def verify(self):
-        return NotImplementedError
+    @classmethod
+    def get_type(cls):
+        return 'local'
+
+    @classmethod
+    def verify(cls):
+        return {
+            "helm": LocalGetter.get('helm ls -aA -o json'),
+            # "astro_config": LocalGetter.get("cat config.yaml") if os.path.exists('config.yaml') else "'config.yaml' not found"
+        }

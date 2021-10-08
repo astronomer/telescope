@@ -9,21 +9,15 @@ local:
   aws: aws --version
   gcp: gcloud version --format=json
   az: az version
-  verify:
-    helm: helm ls -aA -o json
-    astro_config: cat config.yaml
-
-
-airflow_report: &airflow_report
-  - /bin/sh
-  - -c
-  - curl -ssl https://raw.githubusercontent.com/fritz-astronomer/telescope/json2/airflow_debug_report.py | PYTHONWARNINGS=ignore AIRFLOW_REPORT_OUTPUT=- python
 
 docker:
-  <<: *airflow_report
+  airflow_report: &airflow_report
+    - /bin/sh
+    - -c
+    - curl -ssl https://raw.githubusercontent.com/fritz-astronomer/telescope/json2/telescope/airflow_report.py | PYTHONWARNINGS=ignore AIRFLOW_REPORT_OUTPUT=- python
 
 kubernetes:
-  <<: *airflow_report
+  airflow_report: *airflow_report
 
 ssh:
-  <<: *airflow_report
+  airflow_report: *airflow_report

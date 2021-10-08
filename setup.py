@@ -7,8 +7,8 @@ from setuptools import setup, find_packages
 with pathlib.Path('requirements.txt').open() as requirements_txt:
     install_requires = [str(requirement) for requirement in parse_requirements(requirements_txt)]
 
-VERSION = '0.0.1'
-repo = 'fritz-astronomer/telescope'
+VERSION = '1.0.0'
+repo = 'astronomer/telescope'
 
 setup(
     name='telescope',

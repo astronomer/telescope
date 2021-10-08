@@ -1,0 +1,9 @@
+local:
+
+docker:
+  - container_id: demo9b25c0_scheduler_1
+
+kubernetes:
+  - namespace: astronomer-amateur-cosmos-2865
+    name: amateur-cosmos-2865-scheduler-bfcfbd7b5-dvqqr
+    container: scheduler
