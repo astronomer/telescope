@@ -6,6 +6,7 @@ from typing import Dict
 
 import click as click
 import yaml
+from click import Path
 
 from telescope.getters import LocalDockerGetter, KubernetesGetter, LocalGetter, Getter
 
@@ -85,21 +86,33 @@ def get_from_getter(getter: Getter, config_inputs: dict):
 # @click.option('--precheck', is_flag=True)
 
 
+d = {"show_default": True, "show_envvar": True}
+fd = {"show_default": True, "show_envvar": True, "is_flag": True}
+
+
 @click.command()
-@click.option('--local', 'use_local', is_flag=True)
-@click.option('--docker', 'use_docker', is_flag=True)
-@click.option('--kubernetes', 'use_kubernetes', is_flag=True)
-@click.option('--cluster-info', is_flag=True)
-@click.option('--verify', is_flag=True)
-@click.option('-f', '--hosts-file', default=None, help="Hosts file to pass in various types of hosts (ssh, kubernetes, docker)")
-@click.option('-o', '--output-file', default='report.json', help="Output file to write json to, can be '-' for stdout")
-@click.option('-p', '--parallelism', type=int, default=None, help="How many threads to use for multiprocessing, default None (uses all CPUs available). Turn multiprocessing off with 1")
+@click.option('--local', 'use_local', default=True, **fd,
+              help="checks versions of locally installed tools")
+@click.option('--docker', 'use_docker', **fd,
+              help="autodiscovery and airflow reporting for local docker")
+@click.option('--kubernetes', 'use_kubernetes', **fd,
+              help="autodiscovery and airflow reporting for kubernetes")
+@click.option('--cluster-info', **fd,
+              help="get cluster size and allocation in kubernetes")
+@click.option('--verify', **fd,
+              help="adds helm installations to report")
+@click.option('-f', '--hosts-file', **d, default=None, type=Path(exists=True),
+              help="Hosts file to pass in various types of hosts (ssh, kubernetes, docker) - See README.md for sample")
+@click.option('-o', '--output-file', **d, type=Path(exists=True), default='report.json',
+              help="Output file to write report json, can be '-' for stdout")
+@click.option('-p', '--parallelism', show_default='Number CPU', type=int, default=None,
+              help="How many cores to use for multiprocessing")
 def cli(use_local: bool, use_docker: bool, use_kubernetes: bool,
         verify: bool, cluster_info: bool,
         hosts_file: str, output_file: str, parallelism: int):
-
-    report = {}
+    """Telescope - A tool to observe distant (or local!) Airflow installations, and gather metadata or other required data,"""
     with open(CONFIG_FILE) as input_f, click.open_file(output_file, 'w') as output:
+        report = {}
         logging.info(f"Generating report to {output_file} ...")
         config_inputs = yaml.safe_load(input_f)
 

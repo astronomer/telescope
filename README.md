@@ -1,11 +1,12 @@
 # Telescope
+![astronomer logo](astro.png)
 
+A tool to observe distant (or local!) Airflow installations, and gather metadata or other required data.
 
 # Installation
 ```shell
 pip install git+https://github.com/astronomer/telescope.git#egg=telescope
 ```
-
 
 # Input
 ## Example `hosts.yaml` input 
@@ -45,3 +46,16 @@ in any namespace, that contain the label `component=scheduler`, and returns the 
 ```
 kubernetes: 
 ```
+
+# Extra Functionality
+## Local
+`--local` - checks installed versions of various tools, see [config.yaml](config.yaml) for more details.
+
+## Precheck
+`--precheck` - ensures the environment, useful before installing the Astronomer Enterprise chart
+
+## Verify
+`--verify` - includes the details of installed helm charts in the cluster (airflow / astronomer)
+
+## Cluster Info
+`--cluster-info` gathers information about the provider and size of the kubernetes cluster
