@@ -7,10 +7,11 @@ from typing import Dict
 import click as click
 import yaml
 from click import Path
+from tqdm.contrib.concurrent import process_map
 
 from telescope.getters import LocalDockerGetter, KubernetesGetter, LocalGetter, Getter
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 HOSTS_JSON_SCHEMA = "../hosts.schema.json"  # Schema for the 'hosts.yaml' file
 CONFIG_FILE = 'config.yaml'  # Configuration file that specifies which things to run when
@@ -73,7 +74,7 @@ def get_from_getter(getter: Getter, config_inputs: dict):
     host_type = getter.get_type()
     for key in config_inputs[host_type]:
         full_key = (host_type, getter_key, key)
-        logging.info(f"Fetching 'report[{full_key}]'...")
+        logging.debug(f"Fetching 'report[{full_key}]'...")
         try:
             return full_key, getter.get(config_inputs[host_type][key])
         except Exception as e:
@@ -135,7 +136,7 @@ def cli(use_local: bool, use_docker: bool, use_kubernetes: bool,
             ]
 
             # get evverrryttthinngggg all at once
-            results = p.map(partial(get_from_getter, config_inputs=config_inputs), all_getters)
+            results = process_map(partial(get_from_getter, config_inputs=config_inputs), all_getters)
 
             # unflatten and assemble into report
             for (host_type, getter_key, key), value in results:

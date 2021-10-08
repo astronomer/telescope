@@ -124,8 +124,8 @@ class KubernetesGetter(Getter):
         return {
             "version": res.git_version,
             "provider": cloud_provider(res.git_version),
-            "allocated_cpu": sum([parse_cpu(r.status.allocatable['cpu']) for r in nodes_res.items]),
-            "allocated_gb": int(sum([parse_mem(r.status.allocatable['memory']) for r in nodes_res.items]) / 1024 ** 2),
+            "allocatable_cpu": sum([parse_cpu(r.status.allocatable['cpu']) for r in nodes_res.items]),
+            "allocatable_gb": int(sum([parse_mem(r.status.allocatable['memory']) for r in nodes_res.items]) / 1024 ** 2),
             "capacity_cpu": sum([parse_cpu(r.status.capacity['cpu']) for r in nodes_res.items]),
             "capacity_gb": int(sum([parse_mem(r.status.capacity['memory']) for r in nodes_res.items]) / 1024 ** 2)
         }
