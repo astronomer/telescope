@@ -18,16 +18,74 @@ import sys
 from functools import reduce
 from typing import Any, Dict, List
 
+logging.getLogger('airflow.settings').setLevel(logging.ERROR)
+logging.getLogger('google.cloud.bigquery.opentelemetry_tracing').setLevel(logging.ERROR)
+
 import airflow.jobs.base_job
-from airflow import DAG
 from airflow.models import DagModel, TaskInstance
-from airflow.operators.python import PythonOperator
 from airflow.utils import timezone
-from airflow.utils.log.secrets_masker import should_hide_value_for_key
-from airflow.utils.session import provide_session
 from sqlalchemy import func
 
-logging.getLogger('google.cloud.bigquery.opentelemetry_tracing').setLevel(logging.ERROR)
+try:
+    from airflow.utils.session import provide_session
+except:
+    from functools import wraps
+    from inspect import signature
+    from typing import Callable, Iterator, TypeVar
+    import contextlib
+    from airflow import settings
+
+    RT = TypeVar("RT")
+
+    def find_session_idx(func: Callable[..., RT]) -> int:
+        """Find session index in function call parameter."""
+        func_params = signature(func).parameters
+        try:
+            # func_params is an ordered dict -- this is the "recommended" way of getting the position
+            session_args_idx = tuple(func_params).index("session")
+        except ValueError:
+            raise ValueError(f"Function {func.__qualname__} has no `session` argument") from None
+
+        return session_args_idx
+
+
+    @contextlib.contextmanager
+    def create_session():
+        """Contextmanager that will create and teardown a session."""
+        session = settings.Session
+        try:
+            yield session
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    def provide_session(func: Callable[..., RT]) -> Callable[..., RT]:
+        """
+        Function decorator that provides a session if it isn't provided.
+        If you want to reuse a session or run the function as part of a
+        database transaction, you pass it to the function, if not this wrapper
+        will create one and close it for you.
+        """
+        session_args_idx = find_session_idx(func)
+
+        @wraps(func)
+        def wrapper(*args, **kwargs) -> RT:
+            if "session" in kwargs or session_args_idx < len(args):
+                return func(*args, **kwargs)
+            else:
+                with create_session() as session:
+                    return func(*args, session=session, **kwargs)
+
+        return wrapper
+
+
+try:
+    from airflow.utils.log.secrets_masker import should_hide_value_for_key
+except ModuleNotFoundError:
+    should_hide_value_for_key = lambda x: False  # too old version
 
 
 class AirflowReport:
@@ -73,14 +131,18 @@ class ProvidersReport(AirflowReport):
     @classmethod
     def get_data(cls) -> Any:
         """Return dict of providers packages {package name: version}"""
-        from airflow.providers_manager import ProvidersManager
+        try:
+            from airflow.providers_manager import ProvidersManager
 
-        providers_manager = ProvidersManager()
-        result = {}
-        for provider_version, provider_info in providers_manager.providers.values():
-            result[provider_info["package-name"]] = provider_version
+            providers_manager = ProvidersManager()
+            result = {}
+            for provider_version, provider_info in providers_manager.providers.values():
+                result[provider_info["package-name"]] = provider_version
 
-        return result
+            return result
+        except ModuleNotFoundError:
+            # Older version of airflow
+            return f"Airflow Version Too Old for Providers: {airflow.version.version}"
 
     @classmethod
     def report_markdown(cls) -> str:
@@ -228,7 +290,78 @@ class PoolsReport(AirflowReport):
     @classmethod
     @provide_session
     def get_data(cls, session=None) -> Any:
-        return airflow.models.Pool.slots_stats()
+        try:
+            return airflow.models.Pool.slots_stats()
+        except AttributeError:
+            from typing import Dict, Iterable, Optional, Tuple
+            from airflow.exceptions import AirflowException
+            from sqlalchemy.orm.session import Session
+
+            from airflow.models import Pool
+            from airflow.utils.state import State
+
+            EXECUTION_STATES = {
+                State.RUNNING,
+                State.QUEUED,
+            }
+
+            @provide_session
+            def slots_stats(
+                    *,
+                    lock_rows: bool = False,
+                    session: Session = None,
+            ) -> Dict[str, dict]:
+                """
+                Get Pool stats (Number of Running, Queued, Open & Total tasks)
+                If ``lock_rows`` is True, and the database engine in use supports the ``NOWAIT`` syntax, then a
+                non-blocking lock will be attempted -- if the lock is not available then SQLAlchemy will throw an
+                OperationalError.
+                :param lock_rows: Should we attempt to obtain a row-level lock on all the Pool rows returns
+                :param session: SQLAlchemy ORM Session
+                """
+                from airflow.models.taskinstance import TaskInstance  # Avoid circular import
+
+                pools: Dict[str, dict] = {}
+
+                query = session.query(Pool.pool, Pool.slots)
+
+                pool_rows: Iterable[Tuple[str, int]] = query.all()
+                for (pool_name, total_slots) in pool_rows:
+                    if total_slots == -1:
+                        total_slots = float('inf')  # type: ignore
+                    pools[pool_name] = dict(total=total_slots, running=0, queued=0, open=0)
+
+                state_count_by_pool = (
+                    session.query(TaskInstance.pool, TaskInstance.state)
+                        .filter(TaskInstance.state.in_(list(EXECUTION_STATES)))
+                ).all()
+
+                # calculate queued and running metrics
+                for (pool_name, state) in state_count_by_pool:
+                    # Some databases return decimal.Decimal here.
+                    count = 1
+
+                    stats_dict = pools.get(pool_name)
+                    if not stats_dict:
+                        continue
+                    # TypedDict key must be a string literal, so we use if-statements to set value
+                    if state == "running":
+                        stats_dict["running"] = count
+                    elif state == "queued":
+                        stats_dict["queued"] = count
+                    else:
+                        raise AirflowException(f"Unexpected state. Expected values: {EXECUTION_STATES}.")
+
+                # calculate open metric
+                for pool_name, stats_dict in pools.items():
+                    if stats_dict["total"] == -1:
+                        # -1 means infinite
+                        stats_dict["open"] = -1
+                    else:
+                        stats_dict["open"] = stats_dict["total"] - stats_dict["running"] - stats_dict["queued"]
+
+                return pools
+            return slots_stats()
 
     @classmethod
     def report_markdown(cls) -> str:
@@ -361,8 +494,8 @@ def report(output='-', _reporting_classes: List[AirflowReport] = None):
 
 
 # You can run this script as an Airflow DAG...
-with DAG(dag_id="airflow_debug_report", start_date=datetime.datetime(2021, 1, 1), schedule_interval=None) as dag:
-    PythonOperator(task_id="report", python_callable=report)
+# with DAG(dag_id="airflow_debug_report", start_date=datetime.datetime(2021, 1, 1), schedule_interval=None) as dag:
+#     PythonOperator(task_id="report", python_callable=report)
 
 # Or by executing "python airflow_debug_report.py"
 if __name__ == "__main__":
