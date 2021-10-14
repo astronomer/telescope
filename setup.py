@@ -17,6 +17,7 @@ setup(
     long_description=open("README.md").read(),
     url=f'git@github.com:{repo}.git',
     packages=find_packages(),
+    package_data={'telescope': ['data/config.yaml']},
     include_package_data=True,
     install_requires=install_requires,
     entry_points={'console_scripts': ['telescope=telescope.coordinator:cli']}
