@@ -4,6 +4,9 @@ docker:
   - container_id: demo9b25c0_scheduler_1
 
 kubernetes:
-  - namespace: astronomer-amateur-cosmos-2865
-    name: amateur-cosmos-2865-scheduler-bfcfbd7b5-dvqqr
+  - namespace: astronomer-galactic-aurora-4105
+    name: galactic-aurora-4105-scheduler-597cd8bb86-gldtm
+    container: scheduler
+  - namespace: astronomer-optical-transit-0539
+    name: optical-transit-0539-scheduler-9b8b76b66-vzlgd
     container: scheduler

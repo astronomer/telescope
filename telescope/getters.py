@@ -5,6 +5,14 @@ from abc import abstractmethod
 from copy import deepcopy
 from json import JSONDecodeError
 from typing import Type, Union, List, Dict
+import socket
+from kubernetes import client, config
+from kubernetes.client import VersionApi
+from kubernetes.client import ApiException
+from kubernetes.stream import stream
+from fabric import Connection
+from invoke import run
+import docker
 
 log = logging.getLogger(__name__)
 
@@ -40,40 +48,37 @@ class Getter:
         else:
             raise RuntimeError(f"Unknown host type: {host_type}")
 
-    @classmethod
     @abstractmethod
-    def get_type(cls):
+    def get_type(self):
         pass
 
 
 class KubernetesGetter(Getter):
-    from kubernetes import client, config
-
     config.load_kube_config()  # TODO: context=context
     kube_client = client.CoreV1Api()
+    new_conf = deepcopy(kube_client.api_client.configuration)
+    new_conf.api_key = {}  # was getting "unauthorized" otherwise, weird.
+    api_client = VersionApi(client.ApiClient(new_conf))
 
-    def __init__(self, name: str, namespace: str, container: str = 'scheduler'):
+    def __init__(self, name: str = None, namespace: str = None, container: str = 'scheduler'):
         self.name = name
         self.namespace = namespace
         self.container = container
         self.host_type = "kubernetes"
 
-    @classmethod
-    def autodiscover(cls) -> List[Dict[str, str]]:
+    def autodiscover(self) -> List[Dict[str, str]]:
         """:returns List of Tuple containing - pod name, pod namespace, container name"""
         return [
             {"name": r.metadata.name, "namespace": r.metadata.namespace, "container": 'scheduler'}
-            for r in KubernetesGetter.kube_client.list_pod_for_all_namespaces(label_selector="component=scheduler").items
+            for r in self.kube_client.list_pod_for_all_namespaces(label_selector="component=scheduler").items
         ]
 
     def get(self, cmd: List[str]):
-        from kubernetes.client import ApiException
-        from kubernetes.stream import stream
         """Utilize kubernetes python client to exec in a container
         https://github.com/kubernetes-client/python/blob/master/examples/pod_exec.py
         """
         try:
-            pod_res = KubernetesGetter.kube_client.read_namespaced_pod(name=self.name, namespace=self.namespace)
+            pod_res = self.kube_client.read_namespaced_pod(name=self.name, namespace=self.namespace)
             if not pod_res or pod_res.status.phase == 'Pending':
                 raise RuntimeError(f"Kubernetes pod {self.name} in namespace {self.namespace} does not exist or is pending...")
         except ApiException as e:
@@ -81,7 +86,7 @@ class KubernetesGetter(Getter):
                 raise RuntimeError(f"Unknown Kubernetes error: {e}")
 
         exec_res = stream(
-            KubernetesGetter.kube_client.connect_get_namespaced_pod_exec,
+            self.kube_client.connect_get_namespaced_pod_exec,
             name=self.name, namespace=self.namespace, command=cmd, container=self.container,
             stderr=True, stdin=False, stdout=True, tty=False
         )
@@ -92,11 +97,7 @@ class KubernetesGetter(Getter):
     def get_report_key(self):
         return f"{self.namespace}|{self.name}"
 
-    @classmethod
-    def cluster_info(cls):
-        from kubernetes import client
-        from kubernetes.client import VersionApi
-
+    def cluster_info(self):
         def cloud_provider(o):
             if 'gke' in o:
                 return 'gke'
@@ -117,10 +118,8 @@ class KubernetesGetter(Getter):
             # if 'Ki' in mem:
             return int(mem[:-2])
 
-        new_conf = deepcopy(KubernetesGetter.kube_client.api_client.configuration)
-        new_conf.api_key = {}  # was getting "unauthorized" otherwise, weird.
-        res = VersionApi(client.ApiClient(new_conf)).get_code()
-        nodes_res = KubernetesGetter.kube_client.list_node()
+        res = self.api_client.get_code()
+        nodes_res = self.kube_client.list_node()
         return {
             "version": res.git_version,
             "provider": cloud_provider(res.git_version),
@@ -130,14 +129,12 @@ class KubernetesGetter(Getter):
             "capacity_gb": int(sum([parse_mem(r.status.capacity['memory']) for r in nodes_res.items]) / 1024 ** 2)
         }
 
-    @classmethod
-    def precheck(cls):
+    def precheck(self):
         raise NotImplementedError
         #  database: rf"""kubectl run psql --rm -it --restart=Never -n {namespace} --image {image} --command -- psql {conn.out} -qtc "select 'healthy';" """
         #  certificate: ""
 
-    @classmethod
-    def get_type(cls):
+    def get_type(self):
         return 'kubernetes'
 
 
@@ -147,7 +144,6 @@ class SSHGetter(Getter):
         self.host_type = "ssh"
 
     def get(self, cmd: str):
-        from fabric import Connection
         """Utilize fabric to run over SSH
         https://docs.fabfile.org/en/2.6/getting-started.html#run-commands-via-connections-and-run
         """
@@ -156,20 +152,17 @@ class SSHGetter(Getter):
     def get_report_key(self):
         return self.host
 
-    @classmethod
-    def get_type(cls):
+    def get_type(self):
         return 'ssh'
 
 
 class LocalDockerGetter(Getter):
-    import docker
     docker_client = docker.from_env()
 
-    def __init__(self, container_id: str):
+    def __init__(self, container_id: str = None):
         self.container_id = container_id
 
-    @classmethod
-    def autodiscover(cls) -> List[Dict[str, str]]:
+    def autodiscover(self) -> List[Dict[str, str]]:
         return [
             {'container_id': container.short_id}
             for container in LocalDockerGetter.docker_client.containers.list(
@@ -182,8 +175,7 @@ class LocalDockerGetter(Getter):
         exec_res = _container.exec_run(cmd)
         return get_json_or_clean_str(exec_res.output.decode('utf-8'))
 
-    @classmethod
-    def get_type(cls):
+    def get_type(self):
         return 'docker'
 
     def get_report_key(self):
@@ -191,9 +183,7 @@ class LocalDockerGetter(Getter):
 
 
 class LocalGetter(Getter):
-    @classmethod
-    def get(cls, cmd: str, **kwargs):
-        from invoke import run
+    def get(self, cmd: str, **kwargs):
         """Utilize invoke to run locally
         http://docs.pyinvoke.org/en/stable/api/runners.html#invoke.runners.Runner.run
         """
@@ -201,16 +191,13 @@ class LocalGetter(Getter):
         return get_json_or_clean_str(out)
 
     def get_report_key(self):
-        import socket
         return socket.gethostname()
 
-    @classmethod
-    def get_type(cls):
+    def get_type(self):
         return 'local'
 
-    @classmethod
-    def verify(cls):
+    def verify(self):
         return {
-            "helm": LocalGetter.get('helm ls -aA -o json'),
+            "helm": self.get('helm ls -aA -o json'),
             # "astro_config": LocalGetter.get("cat config.yaml") if os.path.exists('config.yaml') else "'config.yaml' not found"
         }

@@ -8,6 +8,22 @@ A tool to observe distant (or local!) Airflow installations, and gather metadata
 pip install git+https://github.com/astronomer/telescope.git#egg=telescope
 ```
 
+# Requirements
+## Locally - Python
+- Python 3.x
+- PIP
+- KUBECONFIG _or_ SSH Access _or_ `docker.sock` Access
+
+## Locally - Docker
+- Docker (permissions to run pods)
+- KUBECONFIG _or_ SSH Access _or_ `docker.sock` Access
+
+## Remote:
+- Airflow 2.x Scheduler
+- label `component=scheduler` (docker / kubernetes)
+- Python 3.x
+- Curl
+
 # Input
 ## Example `hosts.yaml` input 
 use `-f hosts.yaml`

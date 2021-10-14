@@ -1,7 +1,7 @@
+from importlib.resources import path
 import json
 import logging
 from functools import partial
-from multiprocessing import Pool
 from typing import Dict
 
 import click as click
@@ -10,11 +10,12 @@ from click import Path
 from tqdm.contrib.concurrent import process_map
 
 from telescope.getters import LocalDockerGetter, KubernetesGetter, LocalGetter, Getter
+from telescope import data
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-HOSTS_JSON_SCHEMA = "../hosts.schema.json"  # Schema for the 'hosts.yaml' file
-CONFIG_FILE = 'config.yaml'  # Configuration file that specifies which things to run when
+with path(data, "config.yaml") as p:
+    CONFIG_FILE = p.resolve()
 
 
 def parse_getters_from_hosts_file(hosts: dict) -> Dict[str, list]:
@@ -22,10 +23,11 @@ def parse_getters_from_hosts_file(hosts: dict) -> Dict[str, list]:
     for host_type in hosts:
         hosts_of_type = [] if hosts[host_type] is None else hosts[host_type]
         logging.info(f"Discovered {len(hosts_of_type)} {host_type} hosts in hosts file...")
-        getter_type = Getter.get_for_type(host_type)
+        getter_of_type = Getter.get_for_type(host_type)
+        getter_type = getter_of_type().get_type()
 
         # If the Getter has "autodiscovery" as a method, and the list is empty, do it
-        maybe_autodiscover = getattr(getter_type, 'autodiscover', None)
+        maybe_autodiscover = getattr(getter_of_type, 'autodiscover', None)
         if type(hosts_of_type) == list or maybe_autodiscover:
             if len(hosts_of_type) == 0 and maybe_autodiscover:
                 logging.info(f"Attempting autodiscovery for {host_type} hosts...")
@@ -33,7 +35,7 @@ def parse_getters_from_hosts_file(hosts: dict) -> Dict[str, list]:
                 logging.info(f"Adding {len(hosts_of_type)} discovered scheduler pods/containers...")
             else:
                 logging.info(f"Adding {len(hosts_of_type)} defined {host_type} hosts...")
-            _getters[getter_type.get_type()] = _getters.get(getter_type.get_type(), []) + [getter_type(**host) for host in hosts_of_type]
+            _getters[getter_type] = _getters.get(getter_type, []) + [getter_of_type(**host) for host in hosts_of_type]
         else:
             logging.warning(f"Unable to understand '{host_type}'... skipping...")
     return _getters
@@ -59,7 +61,7 @@ def gather_getters(use_local, use_docker, use_kubernetes, hosts_file) -> Dict[st
         ]:
             if should:
                 logging.info(f"Attempting autodiscovery for {host_type} hosts...")
-                getters[host_type] = [getter(**discovery) for discovery in getter.autodiscover()]
+                getters[host_type] = [getter(**discovery) for discovery in getter().autodiscover()]
                 logging.info(f"Discovered {len(getters[host_type])} {host_type} scheduler pods/containers...")
 
         # Add local
@@ -119,34 +121,33 @@ def cli(use_local: bool, use_docker: bool, use_kubernetes: bool,
 
         # Add special method calls, don't know a better way to do this
         if cluster_info:
-            report['kubernetes_cluster_info'] = KubernetesGetter.cluster_info()
+            report['kubernetes_cluster_info'] = KubernetesGetter().cluster_info()
 
         # if precheck:  # TODO
-        #     report['precheck'] = KubernetesGetter.precheck()
+        #     report['precheck'] = KubernetesGetter().precheck()
 
         if verify:
-            report['verify'] = LocalGetter.verify()
+            report['verify'] = LocalGetter().verify()
 
-        with Pool(parallelism) as p:
-            # flatten getters - for multiproc
-            all_getters = [
-                getter
-                for (_, getters) in gather_getters(use_local, use_docker, use_kubernetes, hosts_file).items()
-                for getter in getters
-            ]
+        # flatten getters - for multiproc
+        all_getters = [
+            getter
+            for (_, getters) in gather_getters(use_local, use_docker, use_kubernetes, hosts_file).items()
+            for getter in getters
+        ]
 
-            # get evverrryttthinngggg all at once
-            results = process_map(partial(get_from_getter, config_inputs=config_inputs), all_getters)
+        # get evverrryttthinngggg all at once
+        results = process_map(partial(get_from_getter, config_inputs=config_inputs), all_getters)
 
-            # unflatten and assemble into report
-            for (host_type, getter_key, key), value in results:
-                if host_type not in report:
-                    report[host_type] = {}
+        # unflatten and assemble into report
+        for (host_type, getter_key, key), value in results:
+            if host_type not in report:
+                report[host_type] = {}
 
-                if getter_key not in report[host_type]:
-                    report[host_type][getter_key] = {}
+            if getter_key not in report[host_type]:
+                report[host_type][getter_key] = {}
 
-                report[host_type][getter_key][key] = value
+            report[host_type][getter_key][key] = value
 
         logging.info(f"Writing report to {output_file} ...")
         output.write(json.dumps(report, default=str))
