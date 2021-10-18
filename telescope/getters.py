@@ -14,6 +14,8 @@ from fabric import Connection
 from invoke import run
 import docker
 
+from telescope.util import deep_clean
+
 log = logging.getLogger(__name__)
 
 
@@ -54,11 +56,16 @@ class Getter:
 
 
 class KubernetesGetter(Getter):
-    config.load_kube_config()  # TODO: context=context
-    kube_client = client.CoreV1Api()
-    new_conf = deepcopy(kube_client.api_client.configuration)
-    new_conf.api_key = {}  # was getting "unauthorized" otherwise, weird.
-    api_client = VersionApi(client.ApiClient(new_conf))
+    try:
+        config.load_kube_config()  # TODO: context=context
+        kube_client = client.CoreV1Api()
+        new_conf = deepcopy(kube_client.api_client.configuration)
+        new_conf.api_key = {}  # was getting "unauthorized" otherwise, weird.
+        api_client = VersionApi(client.ApiClient(new_conf))
+    except Exception as e:
+        logging.exception(e)
+        kube_client = None
+        api_client = None
 
     def __init__(self, name: str = None, namespace: str = None, container: str = 'scheduler'):
         self.name = name
@@ -157,7 +164,11 @@ class SSHGetter(Getter):
 
 
 class LocalDockerGetter(Getter):
-    docker_client = docker.from_env()
+    try:
+        docker_client = docker.from_env()
+    except Exception as e:
+        logging.exception(e)
+        docker_client = None
 
     def __init__(self, container_id: str = None):
         self.container_id = container_id
@@ -197,7 +208,26 @@ class LocalGetter(Getter):
         return 'local'
 
     def verify(self):
+        helm_installs = self.get('helm ls -aA -o json')
+        for helm_install in helm_installs:
+            install_name = helm_install.get('name', '')
+            install_namespace = helm_install.get('namespace', '')
+            # if install_name == 'astronomer' or install_namespace == 'astronomer':
+            helm_values = self.get(f'helm get values {install_name} -n {install_namespace} -o json')
+            try:
+                for v in [
+                    ["data", "metadataConnection", "pass"],
+                    ["data", "resultBackendConnection", "pass"],
+                    ["data", "resultBackendConnection", "password"],
+                    ["elasticsearch", "connection", "pass"],
+                    ["fernetKey"],
+                    ["registry", "connection", "pass"],
+                    ["webserver", "defaultUser", "password"]
+                ]:
+                    deep_clean(v, helm_values)
+            except Exception as e:
+                logging.exception(e)
+            helm_install['values'] = helm_values
         return {
-            "helm": self.get('helm ls -aA -o json'),
-            # "astro_config": LocalGetter.get("cat config.yaml") if os.path.exists('config.yaml') else "'config.yaml' not found"
+            "helm": helm_installs
         }

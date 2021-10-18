@@ -2,7 +2,7 @@ from importlib.resources import path
 import json
 import logging
 from functools import partial
-from typing import Dict
+from typing import Dict, Any, List
 
 import click as click
 import yaml
@@ -71,17 +71,19 @@ def gather_getters(use_local, use_docker, use_kubernetes, hosts_file) -> Dict[st
     return getters
 
 
-def get_from_getter(getter: Getter, config_inputs: dict):
+def get_from_getter(getter: Getter, config_inputs: dict) -> dict:
     getter_key = getter.get_report_key()
     host_type = getter.get_type()
+    results = {}
     for key in config_inputs[host_type]:
         full_key = (host_type, getter_key, key)
         logging.debug(f"Fetching 'report[{full_key}]'...")
         try:
-            return full_key, getter.get(config_inputs[host_type][key])
+            results[full_key] = getter.get(config_inputs[host_type][key])
         except Exception as e:
             logging.exception(e)
-            return full_key, str(e)
+            results[full_key] = str(e)
+    return results
 
 # TODO
 # @click.option('-n', '--namespace', type=str, help="Only for Kubernetes - limit autodiscovery to a specific namespace")
@@ -94,7 +96,7 @@ fd = {"show_default": True, "show_envvar": True, "is_flag": True}
 
 
 @click.command()
-@click.option('--local', 'use_local', default=True, **fd,
+@click.option('--local', 'use_local', **fd,
               help="checks versions of locally installed tools")
 @click.option('--docker', 'use_docker', **fd,
               help="autodiscovery and airflow reporting for local docker")
@@ -104,9 +106,9 @@ fd = {"show_default": True, "show_envvar": True, "is_flag": True}
               help="get cluster size and allocation in kubernetes")
 @click.option('--verify', **fd,
               help="adds helm installations to report")
-@click.option('-f', '--hosts-file', **d, default=None, type=Path(exists=True),
+@click.option('-f', '--hosts-file', **d, default=None, type=Path(exists=True, readable=True),
               help="Hosts file to pass in various types of hosts (ssh, kubernetes, docker) - See README.md for sample")
-@click.option('-o', '--output-file', **d, type=Path(exists=True), default='report.json',
+@click.option('-o', '--output-file', **d, type=Path(), default='report.json',
               help="Output file to write report json, can be '-' for stdout")
 @click.option('-p', '--parallelism', show_default='Number CPU', type=int, default=None,
               help="How many cores to use for multiprocessing")
@@ -137,17 +139,18 @@ def cli(use_local: bool, use_docker: bool, use_kubernetes: bool,
         ]
 
         # get evverrryttthinngggg all at once
-        results = process_map(partial(get_from_getter, config_inputs=config_inputs), all_getters)
+        results: List[dict] = process_map(partial(get_from_getter, config_inputs=config_inputs), all_getters, max_workers=parallelism)
 
         # unflatten and assemble into report
-        for (host_type, getter_key, key), value in results:
-            if host_type not in report:
-                report[host_type] = {}
+        for result in results:
+            for (host_type, getter_key, key), value in result.items():
+                if host_type not in report:
+                    report[host_type] = {}
 
-            if getter_key not in report[host_type]:
-                report[host_type][getter_key] = {}
+                if getter_key not in report[host_type]:
+                    report[host_type][getter_key] = {}
 
-            report[host_type][getter_key][key] = value
+                report[host_type][getter_key][key] = value
 
         logging.info(f"Writing report to {output_file} ...")
         output.write(json.dumps(report, default=str))
