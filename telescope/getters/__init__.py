@@ -1,8 +1,6 @@
-import logging
-from abc import abstractmethod
 from typing import Type, Union
 
-log = logging.getLogger(__name__)
+from abc import abstractmethod
 
 
 class Getter:
@@ -25,19 +23,19 @@ class Getter:
 
 
 # noinspection PyUnresolvedReferences
-def get_for_type(host_type: str) -> Type[Union['KubernetesGetter', 'LocalDockerGetter', 'LocalGetter', 'SSHGetter']]:
+def get_for_type(host_type: str) -> Type[Union["KubernetesGetter", "LocalDockerGetter", "LocalGetter", "SSHGetter"]]:
     from telescope.getters.docker import LocalDockerGetter
     from telescope.getters.kubernetes import KubernetesGetter
     from telescope.getters.local import LocalGetter
     from telescope.getters.ssh import SSHGetter
 
-    if host_type == 'kubernetes':
+    if host_type == "kubernetes":
         return KubernetesGetter
-    elif host_type == 'docker':
+    elif host_type == "docker":
         return LocalDockerGetter
-    elif host_type == 'local':
+    elif host_type == "local":
         return LocalGetter
-    elif host_type == 'ssh':
+    elif host_type == "ssh":
         return SSHGetter
     else:
         raise RuntimeError(f"Unknown host type: {host_type}")

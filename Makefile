@@ -44,13 +44,14 @@ test:
 
 .PHONY: check-codestyle
 check-codestyle:
-	-# poetry run isort --diff --check-only --settings-path pyproject.toml ./
-	-# poetry run black --diff --check --config pyproject.toml ./
+	poetry run isort --diff --check-only --settings-path pyproject.toml ./
+	poetry run black --diff --check --config pyproject.toml ./
+	-echo "Skipping darglint..."
 	-# poetry run darglint --verbosity 2 telescope tests
 
 .PHONY: mypy
 mypy:
-	echo "Skipping mypy..."
+	-echo "Skipping mypy..."
 	-# poetry run mypy --config-file pyproject.toml ./
 
 .PHONY: check-safety

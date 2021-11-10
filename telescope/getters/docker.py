@@ -1,16 +1,13 @@
-import logging
-
 import docker
-
 from telescope.getters import Getter
-from telescope.util import get_json_or_clean_str
+from telescope.util import clean_airflow_report_output
 
 
 class LocalDockerGetter(Getter):
     try:
         docker_client = docker.from_env()
     except Exception as e:
-        logging.exception(e)
+        log.exception(e)
         docker_client = None
 
     def __init__(self, container_id: str = None):
@@ -19,15 +16,14 @@ class LocalDockerGetter(Getter):
     def get(self, cmd: str):
         _container = LocalDockerGetter.docker_client.containers.get(self.container_id)
         exec_res = _container.exec_run(cmd)
-        return get_json_or_clean_str(exec_res.output.decode('utf-8'))
+        return clean_airflow_report_output(exec_res.output.decode("utf-8"))
 
     def __eq__(self, other):
-        return type(self) == type(other) \
-               and self.container_id == other.container_id
+        return type(self) == type(other) and self.container_id == other.container_id
 
     @staticmethod
     def get_type():
-        return 'docker'
+        return "docker"
 
     def get_report_key(self):
         return self.container_id

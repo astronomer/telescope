@@ -1,5 +1,6 @@
+from typing import Any, Dict, List, Optional
+
 from dataclasses import dataclass
-from typing import List, Dict, Any, Optional
 
 
 @dataclass
@@ -57,8 +58,8 @@ class AirflowReport:
     def from_input_report_row(name, input_row):
         return AirflowReport(
             name=name,
-            version=input_row['AIRFLOW VERSION'],
-            executor=parse_airflow_executor(input_row['CONFIGURATION']),
+            version=input_row["AIRFLOW VERSION"],
+            executor=parse_airflow_executor(input_row["CONFIGURATION"]),
             num_schedulers=-1,
             num_webservers=-1,
             num_workers=0,
@@ -66,10 +67,10 @@ class AirflowReport:
             packages="",
             airflow_configurations="",
             non_default_configurations="",
-            pools=parse_airflow_report_pools(input_row['POOLS']),
+            pools=parse_airflow_report_pools(input_row["POOLS"]),
             env="",
             connections="",
-            task_run_info=""
+            task_run_info="",
         )
 
 

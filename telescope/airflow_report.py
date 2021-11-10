@@ -233,17 +233,35 @@ def pools_report() -> Any:
 # noinspection SqlNoDataSourceInspection
 @provide_session
 def dags_report(session) -> Any:
-    return [
-        dict(row)
-        for row in session.execute(
-            "select d.dag_id, d.root_dag_id, d.is_paused, "
-            "d.is_active, d.is_subdag, d.fileloc, d.owners, "
-            "string_agg(distinct ti.operator, ',') as operators, "
-            "count(distinct ti.task_id) as num_tasks "
-            "from dag d join task_instance ti on d.dag_id = ti.dag_id "
-            "group by 1,2,3,4,5,6,7"
-        )
+    from airflow.models import DagModel, TaskInstance
+    from sqlalchemy import distinct, func, literal_column
+
+    # Use string_agg if it's postgresql, use group_concat otherwise (sqlite, mysql, ?mssql?)
+    agg_fn = {"postgresql": func.string_agg}.get(session.bind.dialect.name, func.group_concat)
+    agg_fn_input = (
+        [distinct(TaskInstance.operator)] + [] if session.bind.dialect.name != "postgresql" else [literal_column("','")]
+    )
+
+    dag_model_fields = [
+        DagModel.dag_id,
+        DagModel.root_dag_id,
+        DagModel.is_paused,
+        DagModel.is_active,
+        DagModel.is_subdag,
+        DagModel.fileloc,
+        DagModel.owners,
     ]
+    q = (
+        session.query(
+            *dag_model_fields,
+            agg_fn(*agg_fn_input).label("operators"),
+            func.count(distinct(TaskInstance.task_id)).label("num_tasks"),
+        )
+        .join(TaskInstance, TaskInstance.dag_id == DagModel.dag_id)
+        .group_by(*dag_model_fields)
+        # .filter(DagModel.is_active == True)
+    )
+    return [dict(zip([desc["name"] for desc in q.column_descriptions], res)) for res in q.all()]
 
 
 @provide_session

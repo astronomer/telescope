@@ -45,10 +45,10 @@ pylint = "^2.10.2"
 pytest = "^6.2.4"
 pyupgrade = "^2.24.0"
 safety = "^1.10.3"
-pytest-xdist = "^2.4.0"
 pytest-integration = "^0.2.2"
 pytest-mock = "^3.6.1"
 apache-airflow = "^2.2.1"
+pytest-xdist = {extras = ["psutil"], version = "^2.4.0"}
 
 [tool.black]
 # https://github.com/psf/black
@@ -124,8 +124,8 @@ doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAI
 addopts = [
   "--strict-markers",
   "--tb=short",
-  "--ignore=telescope/airflow_report.py",
   "--disable-warnings",
+  "--numprocesses=auto",
   "--no-header",
   "--doctest-modules",
   "--doctest-continue-on-failure",

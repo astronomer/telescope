@@ -39,7 +39,7 @@ repos:
     hooks:
       - id: pytest
         name: pytest
-        entry: poetry run pytest --without-integration --without-slow-integration
+        entry: poetry run pytest -c pyproject.toml --without-integration --without-slow-integration
         types: [python]
         language: system
         pass_filenames: false
