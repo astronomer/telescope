@@ -88,7 +88,7 @@ def providers_report() -> Any:
         return result
     except ModuleNotFoundError:
         # Older version of airflow
-        return f"Airflow Version Too Old for Providers: {airflow.version.version}"
+        return None
 
 
 def hostname_report() -> Any:
