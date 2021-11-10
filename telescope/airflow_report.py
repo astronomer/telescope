@@ -224,14 +224,14 @@ def pools_report() -> Any:
 # noinspection SqlNoDataSourceInspection
 @provide_session
 def dags_report(session) -> Any:
-    return session.execute(
+    return [dict(row) for row in session.execute(
         "select d.dag_id, d.root_dag_id, d.is_paused, "
         "d.is_active, d.is_subdag, d.fileloc, d.owners, "
         "string_agg(distinct ti.operator, ',') as operators, "
         "count(distinct ti.task_id) as num_tasks "
         "from dag d join task_instance ti on d.dag_id = ti.dag_id "
         "group by 1,2,3,4,5,6,7"
-    )
+    )]
 
 
 @provide_session
