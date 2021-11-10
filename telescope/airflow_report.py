@@ -1,9 +1,10 @@
+from typing import Any
+
 import datetime
 import json
 import logging
 import sys
 from functools import reduce
-from typing import Any
 
 import airflow.jobs.base_job
 from airflow.models import TaskInstance
@@ -12,11 +13,13 @@ from airflow.utils import timezone
 try:
     from airflow.utils.session import provide_session
 except:
+    from typing import Callable, Iterator, TypeVar
+
+    import contextlib
     from functools import wraps
     from inspect import signature
-    from typing import Callable, Iterator, TypeVar
-    import contextlib
-    from airflow import settings, DAG
+
+    from airflow import DAG, settings
 
     RT = TypeVar("RT")
 
@@ -30,7 +33,6 @@ except:
             raise ValueError(f"Function {func.__qualname__} has no `session` argument") from None
 
         return session_args_idx
-
 
     @contextlib.contextmanager
     def create_session():
@@ -93,11 +95,13 @@ def providers_report() -> Any:
 
 def hostname_report() -> Any:
     import socket
+
     return socket.gethostname()
 
 
 def installed_packages_report() -> Any:
     import pkg_resources
+
     return {pkg.key: pkg.version for pkg in pkg_resources.working_set}
 
 
@@ -150,11 +154,11 @@ def pools_report() -> Any:
         return airflow.models.Pool.slots_stats()
     except AttributeError:
         from typing import Dict, Iterable, Optional, Tuple
-        from airflow.exceptions import AirflowException
-        from sqlalchemy.orm.session import Session
 
+        from airflow.exceptions import AirflowException
         from airflow.models import Pool
         from airflow.utils.state import State
+        from sqlalchemy.orm.session import Session
 
         EXECUTION_STATES = {
             State.RUNNING,
@@ -184,12 +188,13 @@ def pools_report() -> Any:
             pool_rows: Iterable[Tuple[str, int]] = query.all()
             for (pool_name, total_slots) in pool_rows:
                 if total_slots == -1:
-                    total_slots = float('inf')  # type: ignore
+                    total_slots = float("inf")  # type: ignore
                 pools[pool_name] = dict(total=total_slots, running=0, queued=0, open=0)
 
             state_count_by_pool = (
-                session.query(TaskInstance.pool, TaskInstance.state)
-                    .filter(TaskInstance.state.in_(list(EXECUTION_STATES)))
+                session.query(TaskInstance.pool, TaskInstance.state).filter(
+                    TaskInstance.state.in_(list(EXECUTION_STATES))
+                )
             ).all()
 
             # calculate queued and running metrics
@@ -224,14 +229,17 @@ def pools_report() -> Any:
 # noinspection SqlNoDataSourceInspection
 @provide_session
 def dags_report(session) -> Any:
-    return [dict(row) for row in session.execute(
-        "select d.dag_id, d.root_dag_id, d.is_paused, "
-        "d.is_active, d.is_subdag, d.fileloc, d.owners, "
-        "string_agg(distinct ti.operator, ',') as operators, "
-        "count(distinct ti.task_id) as num_tasks "
-        "from dag d join task_instance ti on d.dag_id = ti.dag_id "
-        "group by 1,2,3,4,5,6,7"
-    )]
+    return [
+        dict(row)
+        for row in session.execute(
+            "select d.dag_id, d.root_dag_id, d.is_paused, "
+            "d.is_active, d.is_subdag, d.fileloc, d.owners, "
+            "string_agg(distinct ti.operator, ',') as operators, "
+            "count(distinct ti.task_id) as num_tasks "
+            "from dag d join task_instance ti on d.dag_id = ti.dag_id "
+            "group by 1,2,3,4,5,6,7"
+        )
+    ]
 
 
 @provide_session
@@ -281,16 +289,14 @@ reports = [
 ]
 
 if __name__ == "__main__":
-    def try_reporter(r: Callable):
+
+    def try_reporter(r):
         try:
             return {r.__name__: r()}
         except Exception as e:
             logging.exception(f"Failed reporting {r.__name__}")
             return {r.__name__: str(e)}
 
-    sys.stdout.write(json.dumps(
-        reduce(
-            lambda x, y: {**x, **y},
-            [try_reporter(report) for report in reports]
-        ), default=str
-    ))
+    sys.stdout.write(
+        json.dumps(reduce(lambda x, y: {**x, **y}, [try_reporter(report) for report in reports]), default=str)
+    )

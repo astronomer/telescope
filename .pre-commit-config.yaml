@@ -1,5 +1,5 @@
 default_language_version:
-  python: python3.7
+  python: python3.8
 
 default_stages: [commit, push]
 
@@ -34,3 +34,13 @@ repos:
         entry: poetry run black --config pyproject.toml
         types: [python]
         language: system
+
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: poetry run pytest --without-integration --without-slow-integration
+        types: [python]
+        language: system
+        pass_filenames: false
+        always_run: true
