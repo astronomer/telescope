@@ -1,10 +1,14 @@
 from typing import Any
 
+import base64
 import datetime
 import json
 import logging
 import sys
 from functools import reduce
+
+logging.getLogger("airflow.settings").setLevel(logging.ERROR)
+logging.getLogger("google.cloud.bigquery.opentelemetry_tracing").setLevel(logging.ERROR)
 
 import airflow.jobs.base_job
 from airflow.models import TaskInstance
@@ -297,6 +301,11 @@ if __name__ == "__main__":
             logging.exception(f"Failed reporting {r.__name__}")
             return {r.__name__: str(e)}
 
+    collected_reports = [try_reporter(report) for report in reports]
+
+    sys.stdout.write("%%%%%%%\n")
     sys.stdout.write(
-        json.dumps(reduce(lambda x, y: {**x, **y}, [try_reporter(report) for report in reports]), default=str)
+        base64.encodebytes(
+            json.dumps(reduce(lambda x, y: {**x, **y}, collected_reports), default=str).encode("utf-8")
+        ).decode("utf-8")
     )
