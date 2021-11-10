@@ -1,4 +1,20 @@
 # Telescope
+
+<div align="center">
+
+[![Build status](https://github.com/telescope/telescope/workflows/build/badge.svg?branch=master&event=push)](https://github.com/telescope/telescope/actions?query=workflow%3Abuild)
+[![Dependencies Status](https://img.shields.io/badge/dependencies-up%20to%20date-brightgreen.svg)](https://github.com/telescope/telescope/pulls?utf8=%E2%9C%93&q=is%3Apr%20author%3Aapp%2Fdependabot)
+
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Security: bandit](https://img.shields.io/badge/security-bandit-green.svg)](https://github.com/PyCQA/bandit)
+[![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/telescope/telescope/blob/master/.pre-commit-config.yaml)
+[![Semantic Versions](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--versions-e10079.svg)](https://github.com/telescope/telescope/releases)
+
+A tool to observe distant (or local!) Airflow installations, and gather metadata or other required data.
+
+</div>
+
+# Telescope
 ![astronomer logo](astro.png)
 
 A tool to observe distant (or local!) Airflow installations, and gather metadata or other required data.
@@ -68,8 +84,8 @@ kubernetes:
     container: scheduler
 
 ssh:
-  - 1.2.3.4
-  - foo.com
+  - host: 1.2.3.4
+  - host: foo.com
 ```
 
 ## Docker autodiscovery
@@ -103,4 +119,4 @@ kubernetes:
 `--verify` - includes the details of installed helm charts in the cluster (airflow / astronomer)
 
 ## Cluster Info
-`--cluster-info` gathers information about the provider and size of the kubernetes cluster
+`--cluster-info` gathers information about the provider and size of the kubernetes cluster`
