@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List
 
 import base64
 import datetime
@@ -136,7 +136,7 @@ def configuration_report() -> Any:
     return running_configuration
 
 
-def airflow_env_vars_report() -> Any:
+def env_vars_report() -> Any:
     import os
 
     config_options = []
@@ -244,6 +244,7 @@ def dags_report(session) -> Any:
 
     dag_model_fields = [
         DagModel.dag_id,
+        DagModel.schedule_interval,
         DagModel.root_dag_id,
         DagModel.is_paused,
         DagModel.is_active,
@@ -262,6 +263,20 @@ def dags_report(session) -> Any:
         # .filter(DagModel.is_active == True)
     )
     return [dict(zip([desc["name"] for desc in q.column_descriptions], res)) for res in q.all()]
+
+
+@provide_session
+def connections_report(session) -> List[str]:
+    from airflow.models.connection import Connection
+
+    return session.query(Connection.conn_id).all()
+
+
+@provide_session
+def variables_report(session) -> List[str]:
+    from airflow.models.variable import Variable
+
+    return session.query(Variable.key).all()
 
 
 @provide_session
@@ -304,10 +319,12 @@ reports = [
     hostname_report,
     installed_packages_report,
     configuration_report,
-    airflow_env_vars_report,
+    env_vars_report,
     pools_report,
     dags_report,
     usage_stats_report,
+    connections_report,
+    variables_report,
 ]
 
 if __name__ == "__main__":
