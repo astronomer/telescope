@@ -239,7 +239,7 @@ def dags_report(session) -> Any:
     # Use string_agg if it's postgresql, use group_concat otherwise (sqlite, mysql, ?mssql?)
     agg_fn = {"postgresql": func.string_agg}.get(session.bind.dialect.name, func.group_concat)
     agg_fn_input = (
-        [distinct(TaskInstance.operator)] + [] if session.bind.dialect.name != "postgresql" else [literal_column("','")]
+        [distinct(TaskInstance.operator)] + ([] if session.bind.dialect.name != "postgresql" else [literal_column("','")])
     )
 
     dag_model_fields = [
