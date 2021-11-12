@@ -54,7 +54,7 @@ def assemble(input_report: dict, output_filepath: str, report_type: str):
             [asdict(x) for x in [InfrastructureReport.from_input_report_row(input_row=input_report["cluster_info"])]]
         )
 
-    maybe_verify = input_report.get("verify", {}).get("helm")
+    maybe_verify: dict = input_report.get("verify", {}).get("helm", {})
 
     airflows = set()
     dags_active = set()
