@@ -65,7 +65,7 @@ def assemble(input_report: dict, output_filepath: str, report_type: str):
     for host_type in ["kubernetes", "docker", "ssh"]:
         if host_type in input_report:
             for key, value in input_report[host_type].items():
-                airflows += key
+                airflows.add(key)
                 airflow_reports.append(
                     asdict(
                         AirflowReport.from_input_report_row(
@@ -76,9 +76,9 @@ def assemble(input_report: dict, output_filepath: str, report_type: str):
 
                 for dag_report in value["airflow_report"].get("dags_report"):
                     if dag_report["is_active"] and not dag_report["is_paused"]:
-                        dags_active += dag_report["dag_id"]
+                        dags_active.add(dag_report["dag_id"])
                     else:
-                        dags_inactive += dag_report["dag_id"]
+                        dags_inactive.add(dag_report["dag_id"])
                     dag_reports.append(asdict(DAGReport(airflow_name=key, **dag_report)))
 
             output_reports["Airflow Report"] = pd.DataFrame(airflow_reports)
