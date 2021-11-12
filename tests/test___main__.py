@@ -12,6 +12,7 @@ from telescope.getters.kubernetes import KubernetesGetter
 from telescope.getters.local import LocalGetter
 from telescope.getters.ssh import SSHGetter
 from telescope.util import clean_airflow_report_output, remove_initial_log_lines
+from tests.conftest import manual_tests
 
 SAMPLE_HOSTS = {
     "local": None,
@@ -59,7 +60,7 @@ def test_cli_local_file():
 
 
 # noinspection PyTypeChecker
-@pytest.mark.skipif(not bool(os.getenv("MANUAL_TESTS")), reason="requires env setup")
+@manual_tests
 def test_cli_docker():
     runner = CliRunner()
     result = runner.invoke(cli, "--docker --no-report -o '-'")
@@ -72,7 +73,7 @@ def test_cli_docker():
 
 
 # noinspection PyTypeChecker
-@pytest.mark.skipif(not bool(os.getenv("MANUAL_TESTS")), reason="requires credentials")
+@manual_tests
 def test_cli_kubernetes():
     runner = CliRunner()
     result = runner.invoke(cli, "--cluster-info --kubernetes --no-report -o '-'")
