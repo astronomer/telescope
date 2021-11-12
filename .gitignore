@@ -626,3 +626,4 @@ output.yaml
 .idea
 out.html
 out.xlsx
+report.*
