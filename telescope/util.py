@@ -60,7 +60,7 @@ def remove_initial_log_lines(log_string: str) -> str:
     enumerated_log_lines = list(enumerate(log_lines))
     found_i = -1
     for i, line in enumerated_log_lines:
-        if "{" in line:
+        if '{"' in line:
             found_i = i
             break
     return "\n".join(log_lines[found_i:])

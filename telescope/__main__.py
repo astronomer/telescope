@@ -2,12 +2,13 @@ from typing import Any, Dict, List
 
 import json
 import logging
+import os.path
 from functools import partial
 from importlib.resources import path
 
 import click as click
 import yaml
-from click import Choice, Path
+from click import BadOptionUsage, Choice, Path
 from tqdm.contrib.concurrent import process_map
 
 import telescope.util
@@ -16,6 +17,9 @@ from telescope.functions.cluster_info import cluster_info
 from telescope.getter_util import gather_getters, get_from_getter
 from telescope.getters.kubernetes import KubernetesGetter
 from telescope.getters.local import LocalGetter
+from telescope.reporters.report import assemble, assemble_from_file
+
+log = logging.getLogger(__name__)
 
 with path(telescope, "config.yaml") as p:
     CONFIG_FILE = p.resolve()
@@ -53,7 +57,7 @@ fd = {"show_default": True, "show_envvar": True, "is_flag": True}
     **d,
     type=Path(),
     default="report.json",
-    help="Output file to write report json, can be '-' for stdout",
+    help="Output file to write intermediate gathered data json, and report (with report_type as file extension), can be '-' for stdout",
 )
 @click.option(
     "-p",
@@ -89,7 +93,7 @@ def cli(
         report = {}
 
         if should_gather:
-            logging.info(f"Gathering data and saving to {output_file} ...")
+            log.info(f"Gathering data and saving to {output_file} ...")
             config_inputs = yaml.safe_load(input_f)
 
             # Add special method calls, don't know a better way to do this
@@ -125,12 +129,29 @@ def cli(
 
                     report[host_type][getter_key][key] = value
 
-            logging.info(f"Writing report to {output_file} ...")
+            log.info(f"Writing report to {output_file} ...")
             output.write(json.dumps(report, default=str))
 
         if should_report:
-            # TODO
-            pass
+            report_output_file = output_file
+            if ".json" in output_file:
+                report_output_file = report_output_file.replace(".json", f".{report_type}")
+            log.info(f"Generating report to {report_output_file} ...")
+
+            if not should_gather:
+                # We didn't have a "gather" step, so there's filled "report" object. Hope there's a file
+                if not os.path.exists(output_file):
+                    raise BadOptionUsage(
+                        "--report", f"There is no data generated to report on at {output_file}, failing to report"
+                    )
+
+                assemble_from_file(output_file, output_filepath=report_output_file, report_type=report_type)
+            else:
+                if not len(report):
+                    raise BadOptionUsage(
+                        "--report", "There is no data to generate a report on without --gather, failing to report"
+                    )
+                assemble(report, output_filepath=report_output_file, report_type=report_type)
 
 
 if __name__ == "__main__":

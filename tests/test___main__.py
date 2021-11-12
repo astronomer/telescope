@@ -1,4 +1,5 @@
 import json
+import os
 
 import pytest
 from click.testing import CliRunner
@@ -58,7 +59,7 @@ def test_cli_local_file():
 
 
 # noinspection PyTypeChecker
-@pytest.mark.integration_test
+@pytest.mark.skipif(not bool(os.getenv("MANUAL_TESTS")), reason="requires env setup")
 def test_cli_docker():
     runner = CliRunner()
     result = runner.invoke(cli, "--docker --no-report -o '-'")
@@ -71,7 +72,7 @@ def test_cli_docker():
 
 
 # noinspection PyTypeChecker
-@pytest.mark.slow_integration_test
+@pytest.mark.skipif(not bool(os.getenv("MANUAL_TESTS")), reason="requires credentials")
 def test_cli_kubernetes():
     runner = CliRunner()
     result = runner.invoke(cli, "--cluster-info --kubernetes --no-report -o '-'")
@@ -88,7 +89,7 @@ def test_gather_getters_local():
     assert actual == expected
 
 
-def test_gather_getters_kube_autodiscovery(mocker):
+def test_mock_gather_getters_kube_autodiscovery(mocker):
     def _kube_autodiscover():
         return [{"name": "foo", "namespace": "bar", "container": "scheduler"}]
 
@@ -99,7 +100,7 @@ def test_gather_getters_kube_autodiscovery(mocker):
     assert actual == expected
 
 
-def test_gather_getters_docker_autodiscovery(mocker: MockerFixture):
+def test_mock_gather_getters_docker_autodiscovery(mocker: MockerFixture):
     def _docker_autodiscover():
         return [{"container_id": "foo"}]
 

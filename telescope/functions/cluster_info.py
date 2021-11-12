@@ -28,6 +28,7 @@ def cluster_info(getter: KubernetesGetter):
         "type": "k8s",
         "version": res.git_version,
         "provider": cloud_provider(res.git_version),
+        "num_nodes": len(nodes_res.items),
         "allocatable_cpu": sum(parse_cpu(r.status.allocatable["cpu"]) for r in nodes_res.items),
         "allocatable_gb": int(sum(parse_mem(r.status.allocatable["memory"]) for r in nodes_res.items) / 1024 ** 2),
         "capacity_cpu": sum(parse_cpu(r.status.capacity["cpu"]) for r in nodes_res.items),

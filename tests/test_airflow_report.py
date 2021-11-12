@@ -82,7 +82,7 @@ def test_airflow_report(docker_scheduler):
     assert type(report["providers_report"]) in [
         type(None),
         dict,
-    ], "PROVIDERS is either a dict of providers or a string if it's 1.x saying they aren't supported"
+    ], "providers_report is either a dict of providers or None if it's 1.x (not supported)"
 
     assert "installed_packages_report" in report
     assert type(report["installed_packages_report"]) == dict
@@ -96,8 +96,14 @@ def test_airflow_report(docker_scheduler):
     assert "dags_report" in report
     assert type(report["dags_report"]) == list
 
-    assert "airflow_env_vars_report" in report
-    assert type(report["airflow_env_vars_report"]) == dict
+    assert "env_vars_report" in report
+    assert type(report["env_vars_report"]) == dict
 
     assert "usage_stats_report" in report
     assert type(report["usage_stats_report"]) == dict
+
+    assert "connections_report" in report
+    assert type(report["connections_report"]) == list
+
+    assert "variables_report" in report
+    assert type(report["variables_report"]) == list
