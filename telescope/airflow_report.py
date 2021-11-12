@@ -238,8 +238,8 @@ def dags_report(session) -> Any:
 
     # Use string_agg if it's postgresql, use group_concat otherwise (sqlite, mysql, ?mssql?)
     agg_fn = {"postgresql": func.string_agg}.get(session.bind.dialect.name, func.group_concat)
-    agg_fn_input = (
-        [distinct(TaskInstance.operator)] + ([] if session.bind.dialect.name != "postgresql" else [literal_column("','")])
+    agg_fn_input = [distinct(TaskInstance.operator)] + (
+        [] if session.bind.dialect.name != "postgresql" else [literal_column("','")]
     )
 
     dag_model_fields = [
@@ -269,14 +269,14 @@ def dags_report(session) -> Any:
 def connections_report(session) -> List[str]:
     from airflow.models.connection import Connection
 
-    return session.query(Connection.conn_id).all()
+    return [conn_id for (conn_id,) in session.query(Connection.conn_id)]
 
 
 @provide_session
 def variables_report(session) -> List[str]:
     from airflow.models.variable import Variable
 
-    return session.query(Variable.key).all()
+    return [key for (key,) in session.query(Variable.key)]
 
 
 @provide_session
