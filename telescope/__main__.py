@@ -17,7 +17,7 @@ from telescope.functions.cluster_info import cluster_info
 from telescope.getter_util import gather_getters, get_from_getter
 from telescope.getters.kubernetes import KubernetesGetter
 from telescope.getters.local import LocalGetter
-from telescope.reporters.report import assemble, assemble_from_file
+from telescope.reporters.report import REPORT_TYPES, assemble, assemble_from_file
 
 log = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ fd = {"show_default": True, "show_envvar": True, "is_flag": True}
 @click.option(
     "--report/--no-report", "should_report", **fd, default=True, help="generate report summary of gathered data"
 )
-@click.option("--report-type", type=Choice(["xlsx", "html", "md"]), default="xlsx", help="What report type to generate")
+@click.option("--report-type", type=Choice(REPORT_TYPES.keys()), default="xlsx", help="What report type to generate")
 def cli(
     use_local: bool,
     use_docker: bool,
