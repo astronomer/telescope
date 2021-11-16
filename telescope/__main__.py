@@ -81,6 +81,7 @@ def cli(
     use_local: bool,
     use_docker: bool,
     use_kubernetes: bool,
+    label_selector: str,
     should_verify: bool,
     should_precheck: bool,
     should_cluster_info: bool,
@@ -112,7 +113,9 @@ def cli(
             # flatten getters - for multiproc
             all_getters = [
                 getter
-                for (_, getters) in gather_getters(use_local, use_docker, use_kubernetes, hosts_file).items()
+                for (_, getters) in gather_getters(
+                    use_local, use_docker, use_kubernetes, hosts_file, label_selector
+                ).items()
                 for getter in getters
             ]
 
