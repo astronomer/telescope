@@ -47,7 +47,7 @@ pyupgrade = "^2.24.0"
 safety = "^1.10.3"
 pytest-integration = "^0.2.2"
 pytest-mock = "^3.6.1"
-apache-airflow = "^2.2.1"
+apache-airflow = "^2.2.2"
 pytest-xdist = {extras = ["psutil"], version = "^2.4.0"}
 
 [tool.black]
