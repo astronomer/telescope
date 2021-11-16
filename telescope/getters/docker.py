@@ -1,6 +1,10 @@
+import logging
+
 import docker
 from telescope.getters import Getter
 from telescope.util import clean_airflow_report_output
+
+log = logging.getLogger(__name__)
 
 
 class LocalDockerGetter(Getter):
