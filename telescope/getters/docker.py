@@ -1,13 +1,19 @@
+import logging
+
+from docker.errors import DockerException
+
 import docker
 from telescope.getters import Getter
 from telescope.util import clean_airflow_report_output
+
+log = logging.getLogger(__name__)
 
 
 class LocalDockerGetter(Getter):
     try:
         docker_client = docker.from_env()
-    except Exception as e:
-        log.exception(e)
+    except DockerException as e:
+        log.warning("Unable to initialize docker!")
         docker_client = None
 
     def __init__(self, container_id: str = None):
