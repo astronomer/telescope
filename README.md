@@ -23,45 +23,44 @@ Usage: telescope [OPTIONS]
   gather usage metadata
 
 Options:
-  --version                     Show the version and exit.
-  --local                       checks versions of locally installed tools
-                                [env var: TELESCOPE_USE_LOCAL; default: False]
-  --docker                      autodiscovery and airflow reporting for local
-                                docker  [env var: TELESCOPE_USE_DOCKER;
-                                default: False]
-  --kubernetes                  autodiscovery and airflow reporting for
-                                kubernetes  [env var:
-                                TELESCOPE_USE_KUBERNETES; default: False]
-  --cluster-info                get cluster size and allocation in kubernetes
-                                [env var: TELESCOPE_SHOULD_CLUSTER_INFO;
-                                default: False]
-  --verify                      adds helm installations to report  [env var:
-                                TELESCOPE_SHOULD_VERIFY; default: False]
-  --precheck                    runs Astronomer Enterprise pre-install sanity-
-                                checks in the report  [env var:
-                                TELESCOPE_SHOULD_PRECHECK; default: False]
-  -f, --hosts-file PATH         Hosts file to pass in various types of hosts
-                                (ssh, kubernetes, docker) - See README.md for
-                                sample  [env var: TELESCOPE_HOSTS_FILE]
-  -o, --output-file PATH        Output file to write intermediate gathered
-                                data json, and report (with report_type as
-                                file extension), can be '-' for stdout  [env
-                                var: TELESCOPE_OUTPUT_FILE; default:
-                                report.json]
-  -p, --parallelism INTEGER     How many cores to use for multiprocessing
-                                [default: (Number CPU)]
-  --gather / --no-gather        gather data about Airflow environments  [env
-                                var: TELESCOPE_SHOULD_GATHER; default: gather]
-  --report / --no-report        generate report summary of gathered data  [env
-                                var: TELESCOPE_SHOULD_REPORT; default: report]
-  --report-type [xlsx|html|md]  What report type to generate
-  --help                        Show this message and exit.
+  --version                       Show the version and exit.
+  --local                         checks versions of locally installed tools
+                                  [default: False]
+  --docker                        autodiscovery and airflow reporting for
+                                  local docker  [default: False]
+  --kubernetes                    autodiscovery and airflow reporting for
+                                  kubernetes  [default: False]
+  -l, --label-selector TEXT       Label selector for Kubernetes Autodiscovery
+                                  [default: component=scheduler]
+  --cluster-info                  get cluster size and allocation in
+                                  kubernetes  [default: False]
+  --verify                        adds helm installations to report  [default:
+                                  False]
+  --precheck                      runs Astronomer Enterprise pre-install
+                                  sanity-checks in the report  [default:
+                                  False]
+  -f, --hosts-file PATH           Hosts file to pass in various types of hosts
+                                  (ssh, kubernetes, docker) - See README.md
+                                  for sample
+  -o, --output-file PATH          Output file to write intermediate gathered
+                                  data json, and report (with report_type as
+                                  file extension), can be '-' for stdout
+                                  [default: report.json]
+  -p, --parallelism INTEGER       How many cores to use for multiprocessing
+                                  [default: (Number CPU)]
+  --gather / --no-gather          gather data about Airflow environments
+                                  [default: gather]
+  --report / --no-report          generate report summary of gathered data
+                                  [default: report]
+  --report-type [html|json|csv|xlsx]
+                                  What report type to generate
+  --help                          Show this message and exit.
 ```
 
 # Requirements
 ## Locally - Python
-- Python 3.x
-- PIP
+- Python >=3.8
+- `pip`
 - `KUBECONFIG` _or_ SSH Access _or_ `docker.sock` Access
 
 ## Locally - Docker or Kubernetes or SSH
@@ -72,10 +71,10 @@ Options:
 
 ## Remote Airflow Requirements
 - Airflow Scheduler >1.10.5
-- label `component=scheduler` (for docker / kubernetes autodiscovery)
+- Kubernetes Scheduler has label `component=scheduler` (or another `--label-selector` value for kubernetes autodiscovery)
 - Python 3
 - Curl
-- Postgresql/Mysql/Sqlite Metadata Database
+- Postgresql/Mysql/Sqlite Metadata Database (support not guaranteed for other backing databases)
 
 # Input
 ## Example `hosts.yaml` input 
@@ -109,7 +108,8 @@ docker:
 ## Kubernetes autodiscovery
 Either use `--kubernetes` or an empty `kubernets` in your hosts file to enable autodiscovery.
 Autodiscovery searches for pods running in the Kubernetes cluster defined by `KUBEPROFILE` 
-in any namespace, that contain the label `component=scheduler`, and returns the namespace, name, and container (`scheduler`)
+in any namespace, that contain the label `component=scheduler` (or another label defined by `--label-selector`), 
+and returns the namespace, name, and container (`scheduler`)
 
 - `hosts.yaml`
 ```
