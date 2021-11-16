@@ -14,7 +14,7 @@ from telescope.getters.local import LocalGetter
 log = logging.getLogger(__name__)
 
 
-def parse_getters_from_hosts_file(hosts: dict) -> Dict[str, list]:
+def parse_getters_from_hosts_file(hosts: dict, label_selector: str = "") -> Dict[str, list]:
     _getters = {}
     for host_type in hosts:
         hosts_of_type = [] if hosts[host_type] is None else hosts[host_type]
@@ -33,7 +33,7 @@ def parse_getters_from_hosts_file(hosts: dict) -> Dict[str, list]:
             # If we have an "autodiscovery" as a method, and the list is empty, do it
             if len(hosts_of_type) == 0 and has_autodiscovery:
                 log.info(f"Attempting autodiscovery for {host_type} hosts...")
-                hosts_of_type = AUTODISCOVERERS["method"][host_type]()
+                hosts_of_type = AUTODISCOVERERS["method"][host_type](label_selector=label_selector)
                 log.info(f"Adding {len(hosts_of_type)} discovered scheduler pods/containers...")
             else:
                 log.info(f"Adding {len(hosts_of_type)} defined {host_type} hosts...")
@@ -46,7 +46,11 @@ def parse_getters_from_hosts_file(hosts: dict) -> Dict[str, list]:
 
 
 def gather_getters(
-    use_local: bool = False, use_docker: bool = False, use_kubernetes: bool = False, hosts_file: str = ""
+    use_local: bool = False,
+    use_docker: bool = False,
+    use_kubernetes: bool = False,
+    hosts_file: str = "",
+    label_selector: str = "",
 ) -> Dict[str, list]:
     _getters = {}
 
@@ -55,7 +59,7 @@ def gather_getters(
         log.info(f"Parsing user supplied hosts file... {hosts_file}")
         with open(hosts_file) as hosts_f:
             parsed_host_file = yaml.safe_load(hosts_f)
-            return parse_getters_from_hosts_file(parsed_host_file)
+            return parse_getters_from_hosts_file(parsed_host_file, label_selector)
 
     # or use passed-in flags and autodiscovery
     else:
@@ -65,7 +69,7 @@ def gather_getters(
         ]:
             if should:
                 log.info(f"Attempting autodiscovery for {host_type} hosts...")
-                _getters[host_type] = [getter(**discovery) for discovery in autodiscover()]
+                _getters[host_type] = [getter(**discovery) for discovery in autodiscover(label_selector=label_selector)]
                 log.info(f"Discovered {len(_getters[host_type])} {host_type} scheduler pods/containers...")
 
         # Add local

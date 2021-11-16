@@ -38,6 +38,9 @@ fd = {"show_default": True, "show_envvar": True, "is_flag": True}
 @click.option("--local", "use_local", **fd, help="checks versions of locally installed tools")
 @click.option("--docker", "use_docker", **fd, help="autodiscovery and airflow reporting for local docker")
 @click.option("--kubernetes", "use_kubernetes", **fd, help="autodiscovery and airflow reporting for kubernetes")
+@click.option(
+    "-l", "--label-selector", **d, default="component=scheduler", help="Label selector for Kubernetes Autodiscovery"
+)
 @click.option("--cluster-info", "should_cluster_info", **fd, help="get cluster size and allocation in kubernetes")
 @click.option("--verify", "should_verify", **fd, help="adds helm installations to report")
 @click.option(

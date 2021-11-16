@@ -91,7 +91,7 @@ def test_gather_getters_local():
 
 
 def test_mock_gather_getters_kube_autodiscovery(mocker):
-    def _kube_autodiscover():
+    def _kube_autodiscover(**kwargs):
         return [{"name": "foo", "namespace": "bar", "container": "scheduler"}]
 
     mocker.patch("telescope.getter_util.kube_autodiscover", _kube_autodiscover)
@@ -102,7 +102,7 @@ def test_mock_gather_getters_kube_autodiscovery(mocker):
 
 
 def test_mock_gather_getters_docker_autodiscovery(mocker: MockerFixture):
-    def _docker_autodiscover():
+    def _docker_autodiscover(**kwargs):
         return [{"container_id": "foo"}]
 
     mocker.patch("telescope.getter_util.docker_autodiscover", _docker_autodiscover)
