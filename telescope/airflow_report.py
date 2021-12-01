@@ -1,18 +1,17 @@
 from typing import Any, List
 
 import base64
-import datetime
 import json
 import logging
 import sys
 from functools import reduce
 
+from sqlalchemy import text
+
 logging.getLogger("airflow.settings").setLevel(logging.ERROR)
 logging.getLogger("google.cloud.bigquery.opentelemetry_tracing").setLevel(logging.ERROR)
 
 import airflow.jobs.base_job
-from airflow.models import TaskInstance
-from airflow.utils import timezone
 
 try:
     from airflow.utils.session import provide_session
@@ -279,38 +278,28 @@ def variables_report(session) -> List[str]:
     return [key for (key,) in session.query(Variable.key)]
 
 
+# noinspection SqlResolve
 @provide_session
 def usage_stats_report(session) -> Any:
     # Task instance stats
-    total_task_instances = session.query(TaskInstance).count()
-    task_instances_1_day = (
-        session.query(TaskInstance)
-        .filter(TaskInstance.start_date > timezone.utcnow() - datetime.timedelta(days=1))
-        .count()
+    sql = text(
+        """SELECT
+            dag_id,
+            count(1) filter ( where state = 'success' AND start_date > now() - interval '1 days') as "1_days_success",
+            count(1) filter ( where state = 'failed' AND start_date > now() - interval '1 days') as "1_days_failed",
+            count(1) filter ( where state = 'success' AND start_date > now() - interval '7 days') as "7_days_success",
+            count(1) filter ( where state = 'failed' AND start_date > now() - interval '7 days') as "7_days_failed",
+            count(1) filter ( where state = 'success' AND start_date > now() - interval '30 days') as "30_days_success",
+            count(1) filter ( where state = 'failed' AND start_date > now() - interval '30 days') as "30_days_failed",
+            count(1) filter ( where state = 'success' AND start_date > now() - interval '365 days') as "365_days_success",
+            count(1) filter ( where state = 'failed' AND start_date > now() - interval '365 days') as "365_days_failed",
+            count(1) filter ( where state = 'success' ) as "all_days_success",
+            count(1) filter ( where state = 'failed' ) as "all_days_failed"
+        FROM task_instance
+        GROUP BY 1;
+    """
     )
-    task_instances_7_days = (
-        session.query(TaskInstance)
-        .filter(TaskInstance.start_date > timezone.utcnow() - datetime.timedelta(days=7))
-        .count()
-    )
-    task_instances_30_days = (
-        session.query(TaskInstance)
-        .filter(TaskInstance.start_date > timezone.utcnow() - datetime.timedelta(days=30))
-        .count()
-    )
-    task_instances_365_days = (
-        session.query(TaskInstance)
-        .filter(TaskInstance.start_date > timezone.utcnow() - datetime.timedelta(days=365))
-        .count()
-    )
-
-    return {
-        "total": total_task_instances,
-        "1_day": task_instances_1_day,
-        "7_days": task_instances_7_days,
-        "30_days": task_instances_30_days,
-        "365_days": task_instances_365_days,
-    }
+    return [dict(r) for r in session.execute(sql)]
 
 
 reports = [
