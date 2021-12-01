@@ -282,19 +282,29 @@ def variables_report(session) -> List[str]:
 @provide_session
 def usage_stats_report(session) -> Any:
     # Task instance stats
+    def days_ago(days: int) -> str:
+        if session.bind.dialect.name == "sqlite":
+            return f"DATE('now', '-{days} days')"
+        elif session.bind.dialect.name == "mysql":
+            return f"DATE_SUB(NOW(), INTERVAL {days} day);"
+        else:
+            # postgresql
+            return f"now() - interval '{days} days'"
+
     sql = text(
-        """SELECT
+        f"""
+        SELECT
             dag_id,
-            count(1) filter ( where state = 'success' AND start_date > now() - interval '1 days') as "1_days_success",
-            count(1) filter ( where state = 'failed' AND start_date > now() - interval '1 days') as "1_days_failed",
-            count(1) filter ( where state = 'success' AND start_date > now() - interval '7 days') as "7_days_success",
-            count(1) filter ( where state = 'failed' AND start_date > now() - interval '7 days') as "7_days_failed",
-            count(1) filter ( where state = 'success' AND start_date > now() - interval '30 days') as "30_days_success",
-            count(1) filter ( where state = 'failed' AND start_date > now() - interval '30 days') as "30_days_failed",
-            count(1) filter ( where state = 'success' AND start_date > now() - interval '365 days') as "365_days_success",
-            count(1) filter ( where state = 'failed' AND start_date > now() - interval '365 days') as "365_days_failed",
-            count(1) filter ( where state = 'success' ) as "all_days_success",
-            count(1) filter ( where state = 'failed' ) as "all_days_failed"
+            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(1)} and dag_id = dag_id) as "1_days_success",
+            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(1)} and dag_id = dag_id) as "1_days_failed",
+            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(7)} and dag_id = dag_id) as "7_days_success",
+            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(7)} and dag_id = dag_id) as "7_days_failed",
+            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(30)} and dag_id = dag_id) as "30_days_success",
+            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(30)} and dag_id = dag_id) as "30_days_failed",
+            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(365)} and dag_id = dag_id) as "365_days_success",
+            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(365)} and dag_id = dag_id) as "365_days_failed",
+            (select count(1) from task_instance where state = 'success' and dag_id = dag_id) as "all_days_success",
+            (select count(1) from task_instance where state = 'failed' and dag_id = dag_id) as "all_days_failed"
         FROM task_instance
         GROUP BY 1;
     """
