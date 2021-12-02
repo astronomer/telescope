@@ -90,8 +90,12 @@ def sum_usage_stats_report_summary(usage_stats_report: Optional[List[Dict[str, i
                 key_success = key.replace("_failed", "_success")
                 key_pct = key.replace("_failed", "_failed_pct")
                 try:
-                    value_pct = int(value / (reduced.get(key_success, 1) + value) * 100)  # failed / success
-                    sum_report[key_pct] = value_pct
+                    value_all = reduced.get(key_success, 1) + value
+                    if value_all != 0:
+                        value_pct = int(value / value_all * 100)  # failed / success
+                        sum_report[key_pct] = value_pct
+                    else:
+                        sum_report[key_pct] = 0
                 except Exception:
                     sum_report[key_pct] = -1
             else:
