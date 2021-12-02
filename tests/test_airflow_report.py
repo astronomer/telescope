@@ -100,7 +100,7 @@ def test_airflow_report(docker_scheduler):
     assert type(report["env_vars_report"]) == dict
 
     assert "usage_stats_report" in report
-    assert type(report["usage_stats_report"]) == dict
+    assert type(report["usage_stats_report"]) == list
 
     assert "connections_report" in report
     assert type(report["connections_report"]) == list

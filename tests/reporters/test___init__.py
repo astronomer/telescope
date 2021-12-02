@@ -1,4 +1,6 @@
-from telescope.reporters import AirflowReport, DAGReport, InfrastructureReport
+import pytest
+
+from telescope.reporters import AirflowReport, DAGReport, InfrastructureReport, sum_usage_stats_report_summary
 
 
 def test_infrastructure_report_from_input_report_row(sample_report):
@@ -393,7 +395,7 @@ def test_airflow_report_from_input_report_row(sample_report):
             "variables": [],
         },
         connections=["AIRFLOW_CONN_AIRFLOW_DB", "my-test-connection", "my-other-test-connection"],
-        task_run_info={"total": 72, "1_day": 0, "7_days": 0, "30_days": 0, "365_days": 72},
+        task_run_info={},
     )
     assert actual == expected
 
@@ -418,4 +420,97 @@ def test_dag_report_from_input_report_row(sample_report):
     )
 
     print(actual)
+    assert actual == expected
+
+
+@pytest.mark.parametrize(
+    "data,expected",
+    [("", {}), ("{}", {}), ([], {}), ({}, {})],
+)
+def test_sum_usage_stats_report_summary_missing(data, expected):
+    actual = sum_usage_stats_report_summary(data)
+    assert actual == expected
+
+
+def test_sum_usage_stats_report_summary_basic():
+    data = [
+        {
+            "dag_id": "kube_sensor_test_MINIMAL",
+            "1_days_success": 1,
+            "1_days_failed": 0,
+            "7_days_success": 35,
+            "7_days_failed": 6,
+            "30_days_success": 35,
+            "30_days_failed": 6,
+            "365_days_success": 35,
+            "365_days_failed": 6,
+            "all_days_success": 35,
+            "all_days_failed": 6,
+        },
+        {
+            "dag_id": "kps_test",
+            "1_days_success": 1,
+            "1_days_failed": 0,
+            "7_days_success": 35,
+            "7_days_failed": 6,
+            "30_days_success": 35,
+            "30_days_failed": 6,
+            "365_days_success": 35,
+            "365_days_failed": 6,
+            "all_days_success": 35,
+            "all_days_failed": 6,
+        },
+        {
+            "dag_id": "kube_sensor_test_MINIMAL_BACK_TO_FULL",
+            "1_days_success": 1,
+            "1_days_failed": 0,
+            "7_days_success": 35,
+            "7_days_failed": 6,
+            "30_days_success": 35,
+            "30_days_failed": 6,
+            "365_days_success": 35,
+            "365_days_failed": 6,
+            "all_days_success": 35,
+            "all_days_failed": 6,
+        },
+        {
+            "dag_id": "kube_sensor_test",
+            "1_days_success": 1,
+            "1_days_failed": 0,
+            "7_days_success": 35,
+            "7_days_failed": 6,
+            "30_days_success": 35,
+            "30_days_failed": 6,
+            "365_days_success": 35,
+            "365_days_failed": 6,
+            "all_days_success": 35,
+            "all_days_failed": 6,
+        },
+        {
+            "dag_id": "kube_sensor_test_FULL",
+            "1_days_success": 1,
+            "1_days_failed": 0,
+            "7_days_success": 35,
+            "7_days_failed": 6,
+            "30_days_success": 35,
+            "30_days_failed": 6,
+            "365_days_success": 35,
+            "365_days_failed": 6,
+            "all_days_success": 35,
+            "all_days_failed": 6,
+        },
+    ]
+    actual = sum_usage_stats_report_summary(data)
+    expected = {
+        "1_days_success": 5,
+        "1_days_failed_pct": 0.0,
+        "7_days_success": 175,
+        "7_days_failed_pct": 14,
+        "30_days_success": 175,
+        "30_days_failed_pct": 14,
+        "365_days_success": 175,
+        "365_days_failed_pct": 14,
+        "all_days_success": 175,
+        "all_days_failed_pct": 14,
+    }
     assert actual == expected
