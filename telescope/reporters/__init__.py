@@ -75,11 +75,11 @@ def sum_usage_stats_report_summary(usage_stats_report: Optional[List[Dict[str, i
     def accumulate(key, accumulator, next_val):
         return accumulator + next_val.get(key, 0)
 
-    # Take all the keys -
+    # Take all the keys from the first record -
     # keys = ['1_days_success', '1_days_failed', '7_days_success', '7_days_failed', '30_days_success',
     #           '30_days_failed', '365_days_success', '365_days_failed', 'all_days_success', 'all_days_failed']
     # Reduce them all down to a sum value, then further summarize to successes and percents
-    try:
+    if type(usage_stats_report) == list and len(usage_stats_report):
         reduced = {
             key: reduce(partial(accumulate, key), usage_stats_report, 0)
             for key in usage_stats_report[0].keys()
@@ -89,12 +89,13 @@ def sum_usage_stats_report_summary(usage_stats_report: Optional[List[Dict[str, i
             if "_failed" in key:
                 key_success = key.replace("_failed", "_success")
                 key_pct = key.replace("_failed", "_failed_pct")
-                value_pct = int(value / reduced.get(key_success, 0) * 100)  # failed / success
-                sum_report[key_pct] = value_pct
+                try:
+                    value_pct = int(value / (reduced.get(key_success, 1) + value) * 100)  # failed / success
+                    sum_report[key_pct] = value_pct
+                except Exception:
+                    sum_report[key_pct] = -1
             else:
                 sum_report[key] = value
-    except Exception:
-        pass
     return sum_report
 
 

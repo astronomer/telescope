@@ -505,12 +505,12 @@ def test_sum_usage_stats_report_summary_basic():
         "1_days_success": 5,
         "1_days_failed_pct": 0.0,
         "7_days_success": 175,
-        "7_days_failed_pct": 17.0,
+        "7_days_failed_pct": 14,
         "30_days_success": 175,
-        "30_days_failed_pct": 17.0,
+        "30_days_failed_pct": 14,
         "365_days_success": 175,
-        "365_days_failed_pct": 17.0,
+        "365_days_failed_pct": 14,
         "all_days_success": 175,
-        "all_days_failed_pct": 17.0,
+        "all_days_failed_pct": 14,
     }
     assert actual == expected
