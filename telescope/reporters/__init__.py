@@ -3,6 +3,7 @@ from typing import Dict, List, Optional, Union
 import logging
 from collections.abc import MutableMapping
 from dataclasses import dataclass
+from functools import partial, reduce
 
 import jmespath
 
@@ -66,6 +67,37 @@ def parse_replicas_from_helm(deployment_name: str, component: str, helm_report: 
     # return jmespath.search(f'[?name == "{deployment_name}".values.{component}.replicas', helm_report)
 
 
+# noinspection PyBroadException,TryExceptPass
+def sum_usage_stats_report_summary(usage_stats_report: Optional[List[Dict[str, int]]]) -> Dict[str, int]:
+    """reduce the usage stats split out by dag, and reduce, and calc % of failures"""
+    sum_report = {}
+
+    def accumulate(key, accumulator, next_val):
+        return accumulator + next_val.get(key, 0)
+
+    # Take all the keys -
+    # keys = ['1_days_success', '1_days_failed', '7_days_success', '7_days_failed', '30_days_success',
+    #           '30_days_failed', '365_days_success', '365_days_failed', 'all_days_success', 'all_days_failed']
+    # Reduce them all down to a sum value, then further summarize to successes and percents
+    try:
+        reduced = {
+            key: reduce(partial(accumulate, key), usage_stats_report, 0)
+            for key in usage_stats_report[0].keys()
+            if key != "dag_id"
+        }
+        for key, value in reduced.items():
+            if "_failed" in key:
+                key_success = key.replace("_failed", "_success")
+                key_pct = key.replace("_failed", "_failed_pct")
+                value_pct = int(value / reduced.get(key_success, 0) * 100)  # failed / success
+                sum_report[key_pct] = value_pct
+            else:
+                sum_report[key] = value
+    except Exception:
+        pass
+    return sum_report
+
+
 @dataclass
 class AirflowReport:
     name: str
@@ -107,7 +139,7 @@ class AirflowReport:
             connections=input_row.get("env_vars_report", {}).get("connections", [])
             + input_row.get("connections_report", []),
             # ", ".join(input_row.get('env_vars_report', {}).get('connections', []) + input_row.get('connections_report', [])),
-            task_run_info=input_row.get("usage_stats_report")
+            task_run_info=sum_usage_stats_report_summary(input_row.get("usage_stats_report", []))
             # "; ".join([f"{k}: {v}" for k, v in input_row.get('usage_stats_report', {}).items()])
         )
 
