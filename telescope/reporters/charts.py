@@ -7,8 +7,8 @@ COLORS = px.colors.qualitative.Prism
 
 def pretty_pie_chart(fig):
     fig.update_traces(
-        textposition="inside",
-        textinfo="percent+label",
+        textposition="outside",
+        texttemplate="%{label} - %{value:s} Deployments <br>(%{percent})",
     )
     fig.update_layout(margin=dict(l=5, r=5, t=50, b=5), showlegend=False)
     return fig
