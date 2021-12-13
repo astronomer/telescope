@@ -400,7 +400,7 @@ def test_airflow_report_from_input_report_row(sample_report):
         default_pool_slots=128,
         num_pools=1,
         num_connections=3,
-        unique_operators=["PythonOperator", "DummyOperator"],
+        unique_operators=["DummyOperator", "PythonOperator"],
         task_runs_monthly_success=-1,
         num_dags=2,
         num_tasks=6,

@@ -162,11 +162,13 @@ class AirflowReport:
             connections=connections,
             num_connections=len(connections),
             unique_operators=list(
-                {
-                    op
-                    for dr in (input_row.get("dags_report", []) or [])
-                    for op in (dr.get("operators", "") or "").split(",")
-                }
+                sorted(
+                    {
+                        op
+                        for dr in (input_row.get("dags_report", []) or [])
+                        for op in (dr.get("operators", "") or "").split(",")
+                    }
+                )
             ),
             task_run_info=task_run_info,
             task_runs_monthly_success=task_run_info.get("30_days_success", -1),
