@@ -30,7 +30,6 @@ def test_airflow_report_from_input_report_row(sample_report):
         version="2.1.3+astro.1",
         executor="CeleryExecutor",
         num_schedulers=1,
-        scheduler_resources="",
         num_webservers=1,
         num_workers=1,
         providers={
@@ -396,7 +395,19 @@ def test_airflow_report_from_input_report_row(sample_report):
         },
         connections=["AIRFLOW_CONN_AIRFLOW_DB", "my-test-connection", "my-other-test-connection"],
         task_run_info={},
+        num_providers=15,
+        parallelism=32,
+        default_pool_slots=128,
+        num_pools=1,
+        num_connections=3,
+        unique_operators=["DummyOperator", "PythonOperator"],
+        task_runs_monthly_success=-1,
+        num_dags=2,
+        num_tasks=6,
+        num_dags_active=1,
+        num_dags_inactive=1,
     )
+    print(actual)
     assert actual == expected
 
 
@@ -415,11 +426,7 @@ def test_dag_report_from_input_report_row(sample_report):
         owners="airflow",
         operators="DummyOperator,PythonOperator",
         num_tasks=3,
-        connections="",
-        variables="",
     )
-
-    print(actual)
     assert actual == expected
 
 

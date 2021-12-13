@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Set, Union
 
 import logging
 from collections.abc import MutableMapping
@@ -15,6 +15,8 @@ class SummaryReport:
     num_airflows: int
     num_dags_active: int
     num_dags_inactive: int
+    num_tasks: int
+    num_successful_task_runs_monthly: int
 
 
 @dataclass
@@ -63,9 +65,6 @@ def parse_replicas_from_helm(deployment_name: str, component: str, helm_report: 
             return k.get("values", {}).get(component, {}).get("replicas", 1)
     return -1
 
-    # was having issues with - and | in key name
-    # return jmespath.search(f'[?name == "{deployment_name}".values.{component}.replicas', helm_report)
-
 
 # noinspection PyBroadException,TryExceptPass
 def sum_usage_stats_report_summary(usage_stats_report: Optional[List[Dict[str, int]]]) -> Dict[str, int]:
@@ -103,49 +102,80 @@ def sum_usage_stats_report_summary(usage_stats_report: Optional[List[Dict[str, i
     return sum_report
 
 
+def dag_is_active(dag: dict) -> bool:
+    return dag.get("is_active", False) and not dag.get("is_paused", False)
+
+
 @dataclass
 class AirflowReport:
     name: str
     version: str
     executor: str
     num_schedulers: int
-    scheduler_resources: str
     num_webservers: int
     num_workers: int
     providers: Dict[str, str]
+    num_providers: int
     packages: Dict[str, str]
     non_default_configurations: Dict[str, str]
+    parallelism: int
     pools: Dict[str, Dict[str, int]]
+    default_pool_slots: int
+    num_pools: int
     env: Dict[str, List[str]]
     connections: List[str]
+    num_connections: int
+    unique_operators: List[str]
     task_run_info: Dict[str, int]
+    task_runs_monthly_success: int
+    num_dags: int
+    num_tasks: int
+    num_dags_active: int
+    num_dags_inactive: int
 
     @staticmethod
     def from_input_report_row(name: str, input_row: dict, verify: dict = None):
+        task_run_info = sum_usage_stats_report_summary(input_row.get("usage_stats_report", []))
+        connections = input_row.get("env_vars_report", {}).get("connections", []) + input_row.get(
+            "connections_report", []
+        )
         return AirflowReport(
             name=name,
             version=input_row.get("airflow_version_report"),
             executor=jmespath.search("configuration_report.core.executor | [0]", input_row),
             num_schedulers=parse_replicas_from_helm(deployment_name=name, component="scheduler", helm_report=verify),
-            scheduler_resources="",
             num_webservers=parse_replicas_from_helm(deployment_name=name, component="webserver", helm_report=verify),
             num_workers=parse_replicas_from_helm(deployment_name=name, component="workers", helm_report=verify),
-            providers=input_row.get("providers_report"),
-            # ", ".join([f"{k}:{v}" for k, v in (input_row.get("providers_report") or {}).items()]),
+            providers=input_row.get("providers_report", []),
+            num_providers=len(input_row.get("providers_report", []) or []),
             packages=input_row.get("installed_packages_report"),
-            # ", ".join([f"{k}=={v}" for k, v in input_row.get("installed_packages_report").items()]),
             non_default_configurations=parse_non_default_configurations(
                 config_report=input_row.get("configuration_report", {})
             ),
+            parallelism=int(
+                input_row.get("configuration_report", {}).get("core", {}).get("parallelism", ("-1", "-1"))[0]
+            ),
             pools=input_row.get("pools_report"),
-            # ", ".join([f"{k} - {v['total']}" for k, v in input_row.get("pools_report", {}).items()]),
+            num_pools=len(input_row.get("pools_report")),
+            default_pool_slots=input_row.get("pools_report", {}).get("default_pool", {}).get("total", -1),
             env=input_row.get("env_vars_report"),
-            # "; ".join([f"{k}: {', '.join(v)}" for k, v in input_row.get('env_vars_report', {}).items() if len(v)]),
-            connections=input_row.get("env_vars_report", {}).get("connections", [])
-            + input_row.get("connections_report", []),
-            # ", ".join(input_row.get('env_vars_report', {}).get('connections', []) + input_row.get('connections_report', [])),
-            task_run_info=sum_usage_stats_report_summary(input_row.get("usage_stats_report", []))
-            # "; ".join([f"{k}: {v}" for k, v in input_row.get('usage_stats_report', {}).items()])
+            connections=connections,
+            num_connections=len(connections),
+            unique_operators=list(
+                sorted(
+                    {
+                        op
+                        for dr in (input_row.get("dags_report", []) or [])
+                        for op in (dr.get("operators", "") or "").split(",")
+                    }
+                )
+            ),
+            task_run_info=task_run_info,
+            task_runs_monthly_success=task_run_info.get("30_days_success", -1),
+            num_tasks=sum(dr.get("num_tasks", 0) for dr in input_row.get("dags_report", [])),
+            num_dags=len(input_row.get("dags_report", [])),
+            num_dags_active=len([0 for dag in input_row.get("dags_report", []) if dag_is_active(dag)]),
+            num_dags_inactive=len([0 for dag in input_row.get("dags_report", []) if not dag_is_active(dag)]),
         )
 
 
@@ -160,7 +190,5 @@ class DAGReport:
     schedule_interval: Optional[str]
     fileloc: str
     owners: str
-    operators: str  # List[str]
+    operators: str
     num_tasks: int
-    connections: str = ""  # List[str]
-    variables: str = ""  # List[str]

@@ -21,13 +21,6 @@ from telescope.reporters.report import REPORT_TYPES, assemble, assemble_from_fil
 
 log = logging.getLogger(__name__)
 
-with path(telescope, "config.yaml") as p:
-    CONFIG_FILE = p.resolve()
-
-# TODO
-# @click.option('-n', '--namespace', type=str, help="Only for Kubernetes - limit autodiscovery to a specific namespace")
-# @click.option('--kube-config', type=str)
-
 
 d = {"show_default": True, "show_envvar": True}
 fd = {"show_default": True, "show_envvar": True, "is_flag": True}
@@ -71,10 +64,10 @@ fd = {"show_default": True, "show_envvar": True, "is_flag": True}
     help="How many cores to use for multiprocessing",
 )
 @click.option(
-    "--gather/--no-gather", "should_gather", **fd, default=True, help="gather data about Airflow environments"
+    "--gather/--no-gather", "should_gather", **fd, default=True, help="Gather data about Airflow environments"
 )
 @click.option(
-    "--report/--no-report", "should_report", **fd, default=True, help="generate report summary of gathered data"
+    "--report/--no-report", "should_report", **fd, default=True, help="Generate report summary of gathered data"
 )
 @click.option("--report-type", type=Choice(REPORT_TYPES.keys()), default="xlsx", help="What report type to generate")
 def cli(
@@ -91,57 +84,62 @@ def cli(
     should_gather: bool,
     should_report: bool,
     report_type: str,
-):
+) -> None:
     """Telescope - A tool to observe distant (or local!) Airflow installations, and gather usage metadata"""
-    with open(CONFIG_FILE) as input_f, click.open_file(output_file, "w") as output:
+    # noinspection PyTypeChecker
+    with path(telescope, "config.yaml") as config_file_path, open(config_file_path.resolve()) as config_file:
         report = {}
 
         if should_gather:
-            log.info(f"Gathering data and saving to {output_file} ...")
-            config_inputs = yaml.safe_load(input_f)
+            with click.open_file(output_file, "w") as output:
+                log.info(f"Gathering data and saving to {output_file} ...")
+                config_inputs = yaml.safe_load(config_file)
 
-            # Add special method calls, don't know a better way to do this
-            if should_cluster_info:
-                report["cluster_info"] = cluster_info(KubernetesGetter())
+                # Add special method calls, don't know a better way to do this
+                if should_cluster_info:
+                    report["cluster_info"] = cluster_info(KubernetesGetter())
 
-            if should_precheck:
-                report["precheck"] = precheck(KubernetesGetter())
+                if should_precheck:
+                    report["precheck"] = precheck(KubernetesGetter())
 
-            if should_verify:
-                report["verify"] = verify(LocalGetter())
+                if should_verify:
+                    report["verify"] = verify(LocalGetter())
 
-            # flatten getters - for multiproc
-            all_getters = [
-                getter
-                for (_, getters) in gather_getters(
-                    use_local, use_docker, use_kubernetes, hosts_file, label_selector
-                ).items()
-                for getter in getters
-            ]
+                # flatten getters - for multiproc
+                all_getters = [
+                    getter
+                    for (_, getters) in gather_getters(
+                        use_local, use_docker, use_kubernetes, hosts_file, label_selector
+                    ).items()
+                    for getter in getters
+                ]
 
-            # get evverrryttthinngggg all at once
-            results: List[Dict[Any, Any]] = process_map(
-                partial(get_from_getter, config_inputs=config_inputs), all_getters, max_workers=parallelism
-            )
+                # get evverrryttthinngggg all at once
+                results: List[Dict[Any, Any]] = process_map(
+                    partial(get_from_getter, config_inputs=config_inputs), all_getters, max_workers=parallelism
+                )
 
-            # unflatten and assemble into report
-            for result in results:
-                for (host_type, getter_key, key), value in result.items():
-                    if host_type not in report:
-                        report[host_type] = {}
+                # unflatten and assemble into report
+                for result in results:
+                    for (host_type, getter_key, key), value in result.items():
+                        if host_type not in report:
+                            report[host_type] = {}
 
-                    if getter_key not in report[host_type]:
-                        report[host_type][getter_key] = {}
+                        if getter_key not in report[host_type]:
+                            report[host_type][getter_key] = {}
 
-                    report[host_type][getter_key][key] = value
+                        report[host_type][getter_key][key] = value
 
-            log.info(f"Writing report to {output_file} ...")
-            output.write(json.dumps(report, default=str))
+                log.info(f"Writing report to {output_file} ...")
+                output.write(json.dumps(report, default=str))
 
         if should_report:
             report_output_file = output_file
             if ".json" in output_file:
-                report_output_file = report_output_file.replace(".json", f".{report_type}")
+                if report_type == "json":
+                    report_output_file = report_output_file.replace(".json", f"_output.json")
+                else:
+                    report_output_file = report_output_file.replace(".json", f"_output.{report_type}")
             log.info(f"Generating report to {report_output_file} ...")
 
             if not should_gather:
