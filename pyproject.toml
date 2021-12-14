@@ -33,7 +33,7 @@ openpyxl = "^3.0.9"
 jmespath = "^0.10.0"
 Jinja2 = ">2.10.1"
 plotly = "^5.4.0"
-kaleido = "0.2.1"
+kaleido = "0.2.1.post1"
 humanize = "^3.13.1"
 
 [tool.poetry.dev-dependencies]
