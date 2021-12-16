@@ -21,7 +21,7 @@ include = ["telescope/config.yaml"]
 python = "^3.8"
 importlib_metadata = {version = "^4.5.0", python = "<3.8"}
 rich = "^10.7.0"
-kubernetes = "^19.15.0"
+kubernetes = "^21.7.0"
 fabric = "^2.6.0"
 docker = "^5.0.3"
 invoke = "^1.6.0"
