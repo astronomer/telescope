@@ -1,3 +1,4 @@
+import json
 import logging
 
 from docker.errors import DockerException
@@ -22,7 +23,7 @@ class LocalDockerGetter(Getter):
     def get(self, cmd: str):
         _container = LocalDockerGetter.docker_client.containers.get(self.container_id)
         exec_res = _container.exec_run(cmd)
-        return clean_airflow_report_output(exec_res.output.decode("utf-8"))
+        return json.loads(clean_airflow_report_output(exec_res.output.decode("utf-8")))
 
     def __eq__(self, other):
         return type(self) == type(other) and self.container_id == other.container_id

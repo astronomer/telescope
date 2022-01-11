@@ -165,6 +165,7 @@ ssh:
 
 ## Report
 `--report` generate a report of type `--report-format` from the gathered data
+> Note: Required to generate `charts/` and `reports.xlsx` reporting
 
 ## Label Selection
 `--label-selector` allows Kubernetes Autodiscovery to locate Airflow Deployments with alternate key/values. 
