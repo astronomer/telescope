@@ -3,6 +3,7 @@ from typing import Any, List
 import base64
 import json
 import logging
+import re
 import sys
 from functools import reduce
 
@@ -261,7 +262,54 @@ def dags_report(session) -> Any:
         .group_by(*dag_model_fields)
         # .filter(DagModel.is_active == True)
     )
-    return [dict(zip([desc["name"] for desc in q.column_descriptions], res)) for res in q.all()]
+    dags = [dict(zip([desc["name"] for desc in q.column_descriptions], res)) for res in q.all()]
+    for dag in dags:
+        if dag["fileloc"]:
+            dag["variables"], dag["connections"] = dag_varconn_usage(dag["fileloc"])
+            for dag_complexity_metric_name, dag_complexity_metric_value in dag_complexity_report(
+                dag["fileloc"]
+            ).items():
+                dag[dag_complexity_metric_name] = dag_complexity_metric_value
+    return dags
+
+
+var_patterns = [
+    re.compile(r"{{[\s]*var.value.([a-zA-Z-_]+)[\s]*}}"),  # "{{ var.value.<> }}"
+    re.compile(r"{{[\s]*var.json.([a-zA-Z-_]+)[\s]*}}"),  # "{{ var.json.<> }}"
+    re.compile(r"Variable.get\(([a-zA-Z-_]+)\)"),  # "Variable.get(<>)"
+]
+
+conn_patterns = [
+    re.compile(r"conn_id=([a-zA-Z-_]+)"),  # "conn_id=<>"
+    re.compile(r"{{[\s]*conn.([a-zA-Z-_]+)[\s]*}}"),  # "{{ conn.<> }}"
+]
+
+
+def dag_varconn_usage(dag_path: str):
+    var_results = set()
+    conn_results = set()
+    with open(dag_path) as f:
+        dag_contents = f.read()
+        for (results, patterns) in [(conn_results, conn_patterns), (var_results, var_patterns)]:
+            for pattern in patterns:
+                search_results = pattern.search(dag_contents)
+                if search_results:
+                    results.add(search_results.groups())
+    return (var_results or None), (conn_results or None)
+
+
+def dag_complexity_report(dag_path: str):
+    from radon.complexity import average_complexity, cc_rank, cc_visit
+    from radon.metrics import mi_rank, mi_visit
+    from radon.raw import analyze
+
+    with open(dag_path) as f:
+        dag_contents = f.read()
+        return {
+            "cc_rank": cc_rank(average_complexity(cc_visit(dag_contents))),
+            "mi_rank": mi_rank(mi_visit(dag_contents, False)),
+            "analysis": analyze(dag_contents)._asdict(),
+        }
 
 
 @provide_session
@@ -286,7 +334,7 @@ def usage_stats_report(session) -> Any:
         if session.bind.dialect.name == "sqlite":
             return f"DATE('now', '-{days} days')"
         elif session.bind.dialect.name == "mysql":
-            return f"DATE_SUB(NOW(), INTERVAL {days} day);"
+            return f"DATE_SUB(NOW(), INTERVAL {days} day)"
         else:
             # postgresql
             return f"now() - interval '{days} days'"
@@ -326,8 +374,8 @@ reports = [
     variables_report,
 ]
 
-if __name__ == "__main__":
 
+def main():
     def try_reporter(r):
         try:
             return {r.__name__: r()}
@@ -343,3 +391,7 @@ if __name__ == "__main__":
             json.dumps(reduce(lambda x, y: {**x, **y}, collected_reports), default=str).encode("utf-8")
         ).decode("utf-8")
     )
+
+
+if __name__ == "__main__":
+    main()

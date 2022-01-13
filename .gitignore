@@ -627,3 +627,7 @@ output.yaml
 out.html
 out.xlsx
 report.*
+
+airflow_report/*
+!airflow_report/__main__.py
+airflow_report.pyz

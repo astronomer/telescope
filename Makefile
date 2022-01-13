@@ -91,3 +91,9 @@ build-remove:
 
 .PHONY: clean-all
 clean-all: pycache-remove build-remove docker-remove
+
+package_report:
+	python -m pip install radon --target airflow_report
+	rm -f airflow_report/*.dist-info/*
+	rmdir airflow_report/*.dist-info
+	python -m zipapp -p "/usr/bin/env python3" airflow_report
