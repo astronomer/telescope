@@ -265,11 +265,20 @@ def dags_report(session) -> Any:
     dags = [dict(zip([desc["name"] for desc in q.column_descriptions], res)) for res in q.all()]
     for dag in dags:
         if dag["fileloc"]:
-            dag["variables"], dag["connections"] = dag_varconn_usage(dag["fileloc"])
-            for dag_complexity_metric_name, dag_complexity_metric_value in dag_complexity_report(
-                dag["fileloc"]
-            ).items():
-                dag[dag_complexity_metric_name] = dag_complexity_metric_value
+            try:
+                dag["variables"], dag["connections"] = dag_varconn_usage(dag["fileloc"])
+            except:
+                dag["variables"] = None
+                dag["connections"] = None
+            try:
+                for dag_complexity_metric_name, dag_complexity_metric_value in dag_complexity_report(
+                    dag["fileloc"]
+                ).items():
+                    dag[dag_complexity_metric_name] = dag_complexity_metric_value
+            except:
+                dag["cc_rank"] = None
+                dag["mi_rank"] = None
+                dag["analysis"] = None
     return dags
 
 

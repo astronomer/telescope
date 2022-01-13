@@ -139,44 +139,52 @@ class AirflowReport:
         connections = input_row.get("env_vars_report", {}).get("connections", []) + input_row.get(
             "connections_report", []
         )
-        return AirflowReport(
-            name=name,
-            version=input_row.get("airflow_version_report"),
-            executor=jmespath.search("configuration_report.core.executor | [0]", input_row),
-            num_schedulers=parse_replicas_from_helm(deployment_name=name, component="scheduler", helm_report=verify),
-            num_webservers=parse_replicas_from_helm(deployment_name=name, component="webserver", helm_report=verify),
-            num_workers=parse_replicas_from_helm(deployment_name=name, component="workers", helm_report=verify),
-            providers=input_row.get("providers_report", []),
-            num_providers=len(input_row.get("providers_report", []) or []),
-            packages=input_row.get("installed_packages_report"),
-            non_default_configurations=parse_non_default_configurations(
-                config_report=input_row.get("configuration_report", {})
-            ),
-            parallelism=int(
-                input_row.get("configuration_report", {}).get("core", {}).get("parallelism", ("-1", "-1"))[0]
-            ),
-            pools=input_row.get("pools_report"),
-            num_pools=len(input_row.get("pools_report")),
-            default_pool_slots=input_row.get("pools_report", {}).get("default_pool", {}).get("total", -1),
-            env=input_row.get("env_vars_report"),
-            connections=connections,
-            num_connections=len(connections),
-            unique_operators=list(
-                sorted(
-                    {
-                        op
-                        for dr in (input_row.get("dags_report", []) or [])
-                        for op in (dr.get("operators", "") or "").split(",")
-                    }
-                )
-            ),
-            task_run_info=task_run_info,
-            task_runs_monthly_success=task_run_info.get("30_days_success", -1),
-            num_tasks=sum(dr.get("num_tasks", 0) for dr in input_row.get("dags_report", [])),
-            num_dags=len(input_row.get("dags_report", [])),
-            num_dags_active=len([0 for dag in input_row.get("dags_report", []) if dag_is_active(dag)]),
-            num_dags_inactive=len([0 for dag in input_row.get("dags_report", []) if not dag_is_active(dag)]),
-        )
+        try:
+            return AirflowReport(
+                name=name,
+                version=input_row.get("airflow_version_report"),
+                executor=jmespath.search("configuration_report.core.executor | [0]", input_row),
+                num_schedulers=parse_replicas_from_helm(
+                    deployment_name=name, component="scheduler", helm_report=verify
+                ),
+                num_webservers=parse_replicas_from_helm(
+                    deployment_name=name, component="webserver", helm_report=verify
+                ),
+                num_workers=parse_replicas_from_helm(deployment_name=name, component="workers", helm_report=verify),
+                providers=input_row.get("providers_report", []),
+                num_providers=len(input_row.get("providers_report", []) or []),
+                packages=input_row.get("installed_packages_report"),
+                non_default_configurations=parse_non_default_configurations(
+                    config_report=input_row.get("configuration_report", {})
+                ),
+                parallelism=int(
+                    input_row.get("configuration_report", {}).get("core", {}).get("parallelism", ("-1", "-1"))[0]
+                ),
+                pools=input_row.get("pools_report"),
+                num_pools=len(input_row.get("pools_report")),
+                default_pool_slots=input_row.get("pools_report", {}).get("default_pool", {}).get("total", -1),
+                env=input_row.get("env_vars_report"),
+                connections=connections,
+                num_connections=len(connections),
+                unique_operators=list(
+                    sorted(
+                        {
+                            op
+                            for dr in (input_row.get("dags_report", []) or [])
+                            for op in (dr.get("operators", "") or "").split(",")
+                        }
+                    )
+                ),
+                task_run_info=task_run_info,
+                task_runs_monthly_success=task_run_info.get("30_days_success", -1),
+                num_tasks=sum(dr.get("num_tasks", 0) for dr in input_row.get("dags_report", [])),
+                num_dags=len(input_row.get("dags_report", [])),
+                num_dags_active=len([0 for dag in input_row.get("dags_report", []) if dag_is_active(dag)]),
+                num_dags_inactive=len([0 for dag in input_row.get("dags_report", []) if not dag_is_active(dag)]),
+            )
+        except Exception as e:
+            log.error(input_row)
+            log.exception(e)
 
 
 @dataclass
