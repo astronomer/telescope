@@ -200,3 +200,8 @@ class DAGReport:
     owners: str
     operators: str
     num_tasks: int
+    variables: Optional[str] = None
+    connections: Optional[str] = None
+    cc_rank: Optional[str] = None
+    mi_rank: Optional[str] = None
+    analysis: Optional[str] = None
