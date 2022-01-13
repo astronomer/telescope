@@ -16,7 +16,7 @@ docker:
   airflow_report: &airflow_report
     - /bin/sh
     - -c
-    - curl -ssl https://raw.githubusercontent.com/astronomer/telescope/main/telescope/airflow_report.py | PYTHONWARNINGS=ignore /usr/bin/env python3
+    - curl -ssl https://raw.githubusercontent.com/astronomer/telescope/dev/airflow_report.pyz | PYTHONWARNINGS=ignore bash
 
 kubernetes:
   airflow_report: *airflow_report
