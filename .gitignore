@@ -630,4 +630,3 @@ report.*
 
 airflow_report/*
 !airflow_report/__main__.py
-airflow_report.pyz
