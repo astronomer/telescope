@@ -7,8 +7,8 @@ from time import sleep, time
 import pytest
 from docker.models.containers import Container
 
+import airflow_report
 import docker
-import telescope
 from telescope.util import clean_airflow_report_output
 
 
@@ -63,12 +63,12 @@ def copy_to_container(container: Container, container_path: str, local_path: str
 
 @pytest.mark.slow_integration_test
 def test_airflow_report(docker_scheduler):
-    with path(telescope, "airflow_report.py") as p:
-        airflow_report = str(p.resolve())
+    with path(airflow_report, "__main__.py") as p:
+        airflow_report_path = str(p.resolve())
 
-    copy_to_container(docker_scheduler, "/opt/airflow/", local_path=airflow_report, name="airflow_report.py")
+    copy_to_container(docker_scheduler, "/opt/airflow/", local_path=airflow_report_path, name="__main__.py")
 
-    exit_code, output = docker_scheduler.exec_run("python airflow_report.py")
+    exit_code, output = docker_scheduler.exec_run("python __main__.py")
     print(output.decode("utf-8"))
     report = json.loads(clean_airflow_report_output(output.decode("utf-8")))
     assert "airflow_version_report" in report  # '2.2.1'
