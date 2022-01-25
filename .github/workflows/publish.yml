@@ -22,6 +22,15 @@ jobs:
 
     - uses: actions/checkout@v2
 
+    - name: Install poetry
+      run: make poetry-download
+
+    - name: Set up cache
+      uses: actions/cache@v2.1.6
+      with:
+        path: .venv
+        key: venv-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('poetry.lock') }}
+
     - name: Build
       run: make package
 
