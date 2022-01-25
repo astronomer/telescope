@@ -1,5 +1,4 @@
 import json
-import os
 
 import pytest
 from click.testing import CliRunner
@@ -11,7 +10,7 @@ from telescope.getters.docker import LocalDockerGetter
 from telescope.getters.kubernetes import KubernetesGetter
 from telescope.getters.local import LocalGetter
 from telescope.getters.ssh import SSHGetter
-from telescope.util import clean_airflow_report_output, remove_initial_log_lines
+from telescope.util import remove_initial_log_lines
 from tests.conftest import manual_tests
 
 SAMPLE_HOSTS = {
