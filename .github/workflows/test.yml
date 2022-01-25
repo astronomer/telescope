@@ -1,13 +1,13 @@
-name: build
-
+name: test
 on: [push, pull_request]
-
 jobs:
   build:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.8", "3.9"]
+#        python-version: ["3.7", "3.8", "3.9"]
+        python-version: ["3.9"]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v2
@@ -36,7 +36,3 @@ jobs:
     - name: Run tests
       run: |
         make test
-
-#    - name: Run safety checks
-#      run: |
-#        make check-safety

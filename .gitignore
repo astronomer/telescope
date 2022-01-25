@@ -617,7 +617,6 @@ MigrationBackup/
 # End of https://www.gitignore.io/api/osx,python,pycharm,windows,visualstudio,visualstudiocode
 
 cookiecutter-config-file.yml
-resources/
 report.json
 !tests/resources
 airflow_debug_report.md
@@ -627,6 +626,7 @@ output.yaml
 out.html
 out.xlsx
 report.*
+telescope.pyz
 
-airflow_report/*
-!airflow_report/__main__.py
+dist
+requirements.txt

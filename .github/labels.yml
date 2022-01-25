@@ -1,0 +1,27 @@
+- name: "bug"
+  color: "d73a4a"
+  description: "Something isn't working"
+- name: "documentation"
+  color: "0075ca"
+  description: "Improvements or additions to documentation"
+- name: breaking
+  description: Breaking Changes
+  color: 7c3ea5
+- name: "enhancement"
+  color: "a22eef"
+- name: "wontfix"
+  color: "000000"
+  description: "This will not be worked on"
+  from_name: "wontfix"
+- name: github_actions
+  description: Pull requests that update Github_actions code
+  color: "000000"
+- name: refactoring
+  description: A code change that neither fixes a bug nor adds a feature
+  color: d4c5f9
+- name: removal
+  description: Removals and Deprecations
+  color: f00000
+- name: testing
+  description: Adding missing tests or correcting existing tests
+  color: 79e57f
