@@ -618,7 +618,7 @@ MigrationBackup/
 
 cookiecutter-config-file.yml
 report.json
-!tests/resources
+!tests/telescope/resources
 airflow_debug_report.md
 output.yaml
 .env
@@ -626,7 +626,8 @@ output.yaml
 out.html
 out.xlsx
 report.*
-telescope.pyz
+airflow_report.pyz
 
 dist
 requirements.txt
+!airflow_report/requirements.txt

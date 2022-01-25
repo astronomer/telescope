@@ -20,8 +20,6 @@ poetry-remove:
 install:
 	poetry lock -n && poetry export --without-hashes > requirements.txt
 	poetry install -n
-	echo "Skipping mypy..."
-	-# poetry run mypy --install-types --non-interactive ./
 
 .PHONY: pre-commit-install
 pre-commit-install:
@@ -92,8 +90,18 @@ build-remove:
 .PHONY: clean-all
 clean-all: pycache-remove build-remove docker-remove
 
-package_report:
-	python -m pip install radon --target airflow_report
-	rm -f airflow_report/*.dist-info/*
-	rmdir airflow_report/*.dist-info
-	python -m zipapp -p "/usr/bin/env python3" airflow_report
+package_report: build-remove install
+	mkdir -p build
+	python -m pip install -r airflow_report/requirements.txt --target build
+	rm -f build/*.dist-info/*
+	rmdir build/*.dist-info
+	python -m zipapp \
+		--compress \
+		--main airflow_report.__main__:main \
+		--python "/usr/bin/env python3" \
+		--output airflow_report.pyz \
+		build
+
+package:
+	echo "hi"
+	# pyoxidizer
