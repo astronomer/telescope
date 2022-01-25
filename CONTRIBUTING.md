@@ -1,5 +1,8 @@
 # How to contribute
 
+## Development & CICD Overview
+![CICD](resources/telescope_cicd.drawio.png)
+
 ## Dependencies
 
 We use `poetry` to manage the [dependencies](https://github.com/python-poetry/poetry).
@@ -234,9 +237,6 @@ This command launches `Poetry` integrity checks as well as identifies security i
 ```bash
 make check-safety
 ```
-
-</p>
-</details>
 
 </p>
 </details>
