@@ -11,14 +11,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [ '3.7', '3.8', '3.9' ]
-        os: [ ubuntu-latest, macos-latest, windows-latest ]
+#        python-version: ["3.7", "3.8", "3.9"]
+        python-version: ["3.9"]
+#        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
 
     steps:
-    - uses: actions/setup-python@v1
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2.2.2
       with:
-        python-version: '3.8'
-        architecture: x64
+        python-version: ${{ matrix.python-version }}
 
     - uses: actions/checkout@v2
 
@@ -32,7 +34,7 @@ jobs:
         key: venv-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}-${{ hashFiles('poetry.lock') }}
 
     - name: Build
-      run: make package
+      run: make package_report
 
     - name: Upload binaries to release
       uses: svenstaro/upload-release-action@v2
