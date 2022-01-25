@@ -1,8 +1,13 @@
+from lazyimport import lazyimport
+
+lazyimport(
+    globals(),
+    """
 import numpy as np
 import plotly.express as px
 from pandas import DataFrame
-
-COLORS = px.colors.qualitative.Prism
+""",
+)
 
 
 def pretty_pie_chart(fig):
@@ -14,13 +19,14 @@ def pretty_pie_chart(fig):
     return fig
 
 
+# noinspection PyUnresolvedReferences
 def create_airflow_versions_chart(airflow_df: DataFrame, output_file: str) -> None:
     vc = airflow_df["version"].value_counts()
     pretty_pie_chart(
         px.pie(
             vc,
             title="Airflow Version",
-            color_discrete_sequence=COLORS,
+            color_discrete_sequence=px.colors.qualitative.Prism,
             names=vc.index,
             values=vc.values,
         )
@@ -39,13 +45,14 @@ def prettify_bar_chart(fig):
     )
 
 
+# noinspection PyUnresolvedReferences
 def create_dags_per_airflow_chart(airflow_df: DataFrame, output_file: str) -> None:
     airflow_df["name"] = airflow_df["name"].str.split("|").str[0]
     prettify_bar_chart(
         px.bar(
             airflow_df,
             title="Active DAGs per Airflow",
-            color_discrete_sequence=COLORS,
+            color_discrete_sequence=px.colors.qualitative.Prism,
             x="name",
             y="num_dags_active",
             text="num_dags_active",
@@ -54,13 +61,14 @@ def create_dags_per_airflow_chart(airflow_df: DataFrame, output_file: str) -> No
     ).write_image(output_file)
 
 
+# noinspection PyUnresolvedReferences
 def create_tasks_per_airflow_chart(airflow_df: DataFrame, output_file: str) -> None:
     airflow_df["name"] = airflow_df["name"].str.split("|").str[0]
     prettify_bar_chart(
         px.bar(
             airflow_df,
             title="Tasks per Airflow (Log Scale)",
-            color_discrete_sequence=COLORS,
+            color_discrete_sequence=px.colors.qualitative.Prism,
             x="name",
             y="num_tasks",
             log_y=True,
@@ -70,13 +78,14 @@ def create_tasks_per_airflow_chart(airflow_df: DataFrame, output_file: str) -> N
     ).write_image(output_file)
 
 
+# noinspection PyUnresolvedReferences
 def create_task_runs_per_airflow_chart(airflow_df: DataFrame, output_file: str) -> None:
     airflow_df["name"] = airflow_df["name"].str.split("|").str[0]
     prettify_bar_chart(
         px.bar(
             airflow_df,
             title="Monthly Successful Task Runs per Airflow (Log Scale)",
-            color_discrete_sequence=COLORS,
+            color_discrete_sequence=px.colors.qualitative.Prism,
             x="name",
             y="task_runs_monthly_success",
             labels={"task_runs_monthly_success": "Monthly Successful Task Runs", "name": "Airflow"},
@@ -86,13 +95,14 @@ def create_task_runs_per_airflow_chart(airflow_df: DataFrame, output_file: str) 
     ).write_image(output_file)
 
 
+# noinspection PyUnresolvedReferences
 def create_airflow_operator_set_chart(airflow_df: DataFrame, output_file: str) -> None:
     vc = airflow_df["unique_operators"].explode(ignore_index=True).replace("", np.NaN).dropna().value_counts()
     prettify_bar_chart(
         px.bar(
             vc,
             title="Unique Operator Set (Operator Counted Once Per Airflow)",
-            color_discrete_sequence=COLORS,
+            color_discrete_sequence=px.colors.qualitative.Prism,
             x=vc.index,
             y=vc.values,
             labels={"y": "Num Airflow Containing", "index": "Operator"},
@@ -101,13 +111,14 @@ def create_airflow_operator_set_chart(airflow_df: DataFrame, output_file: str) -
     ).write_image(output_file)
 
 
+# noinspection PyUnresolvedReferences
 def create_dag_operator_set_chart(dag_df: DataFrame, output_file: str) -> None:
     vc = dag_df["operators"].str.split(",").explode(ignore_index=True).replace("", np.NaN).dropna().value_counts()
     prettify_bar_chart(
         px.bar(
             vc,
             title="Unique Operator Set (Operator Counted Once Per DAG, Log Scale)",
-            color_discrete_sequence=COLORS,
+            color_discrete_sequence=px.colors.qualitative.Prism,
             x=vc.index,
             y=vc.values,
             labels={"y": "Num DAGs Containing", "index": "Operator"},

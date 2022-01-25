@@ -97,7 +97,7 @@ def cli(
 
                 # Add special method calls, don't know a better way to do this
                 if should_cluster_info:
-                    report["cluster_info"] = cluster_info(KubernetesGetter())
+                    report["cluster_info"] = cluster_info()
 
                 if should_precheck:
                     report["precheck"] = precheck(KubernetesGetter())

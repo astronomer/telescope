@@ -618,7 +618,7 @@ MigrationBackup/
 
 cookiecutter-config-file.yml
 report.json
-!tests/telescope/resources
+!tests/resources
 airflow_debug_report.md
 output.yaml
 .env

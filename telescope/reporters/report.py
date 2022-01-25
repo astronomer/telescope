@@ -6,16 +6,24 @@ from dataclasses import asdict
 from importlib.resources import path
 
 import humanize
-import pandas as pd
 from jinja2 import Template
+from lazyimport import lazyimport
 
 from telescope import reporters
 from telescope.reporters import AirflowReport, DAGReport, InfrastructureReport, SummaryReport
 from telescope.reporters.charts import AIRFLOW_CHARTS
 
+lazyimport(
+    globals(),
+    """
+import pandas as pd
+""",
+)
+
 log = logging.getLogger(__name__)
 
 
+# noinspection PyUnresolvedReferences
 def save_xlsx(output_filepath: str, **kwargs) -> None:
     with pd.ExcelWriter(output_filepath) as writer:
         for k, v in kwargs.items():
@@ -95,6 +103,7 @@ def zip_outputs():
     return NotImplementedError
 
 
+# noinspection PyUnresolvedReferences
 def assemble(input_report: dict, output_filepath: str, report_type: str):
     output_reports = {
         "Summary Report": pd.DataFrame(),
