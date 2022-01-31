@@ -628,6 +628,11 @@ out.xlsx
 report.*
 airflow_report.pyz
 
+report_output.xlsx
+report_summary.txt
+
+charts
+
 dist
 requirements.txt
 !airflow_report/requirements.txt
