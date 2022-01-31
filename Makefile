@@ -90,9 +90,10 @@ build-remove:
 .PHONY: clean-all
 clean-all: pycache-remove build-remove docker-remove
 
-package_report: build-remove install
+package_report: build-remove
 	mkdir -p build
 	python -m pip install -r airflow_report/requirements.txt --target build
+	cp -r airflow_report build
 	rm -f build/*.dist-info/*
 	rmdir build/*.dist-info
 	python -m zipapp \
@@ -102,6 +103,36 @@ package_report: build-remove install
 		--output airflow_report.pyz \
 		build
 
-package:
-	echo "hi"
-	# pyoxidizer
+package_pyoxidizer: build-remove install
+	pyoxidizer build
+
+package_nuitka: build-remove install
+	python -m nuitka \
+		--enable-plugin=multiprocessing \
+		--enable-plugin=numpy \
+		--standalone \
+		--assume-yes-for-downloads \
+		--include-package-data=telescope \
+		--include-module=telescope.getters.kubernetes_client \
+		--include-module=telescope.getters.docker_client \
+		--include-package=plotly \
+		--include-package-data=plotly \
+		--include-package=kaleido \
+		--output-dir build \
+		telescope/__main__.py
+
+
+#		--onefile \
+#		--enable-plugin=anti-bloat \
+#		--noinclude-pytest-mode=nofollow \
+#		--noinclude-setuptools-mode=nofollow \
+#		--warn-implicit-exceptions \
+#		--warn-unusual-code \
+#		--show-memory \
+#		--show-modules \
+#		--show-progress \
+# standalone implies --follow-imports
+# You may also want to use "--python- flag=no_site" to avoid the "site.py" module, which can save a lot of code dependencies.
+# Nuitka-Options:INFO: Detected static libpython to exist, consider '--static-libpython=yes' for better performance, but errors may happen.
+
+# FileNotFoundError: [Errno 2] No such file or directory: '/Users/mac/telescope/build/__main__.dist/plotly/package_data/templates/plotly.json'
