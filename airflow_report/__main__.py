@@ -368,6 +368,20 @@ def usage_stats_report(session) -> Any:
     )
     return [dict(r) for r in session.execute(sql)]
 
+# noinspection SqlResolve
+@provide_session
+def user_report(session) -> Any:
+
+
+    sql = text(
+        f"""
+        SELECT id, username, active, last_login, login_count, fail_login_count, created_on
+	        FROM ab_user;
+    """
+    )
+    return [dict(r) for r in session.execute(sql)]
+
+
 
 reports = [
     airflow_version_report,
@@ -381,6 +395,7 @@ reports = [
     usage_stats_report,
     connections_report,
     variables_report,
+    user_report
 ]
 
 
