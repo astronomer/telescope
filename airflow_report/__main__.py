@@ -368,10 +368,10 @@ def usage_stats_report(session) -> Any:
     )
     return [dict(r) for r in session.execute(sql)]
 
+
 # noinspection SqlResolve
 @provide_session
 def user_report(session) -> Any:
-
 
     sql = text(
         f"""
@@ -381,7 +381,6 @@ def user_report(session) -> Any:
         """
     )
     return [dict(r) for r in session.execute(sql)]
-
 
 
 reports = [
@@ -396,7 +395,7 @@ reports = [
     usage_stats_report,
     connections_report,
     variables_report,
-    user_report
+    user_report,
 ]
 
 
