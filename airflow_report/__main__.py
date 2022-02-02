@@ -375,9 +375,10 @@ def user_report(session) -> Any:
 
     sql = text(
         f"""
-        SELECT id, username, active, last_login, login_count, fail_login_count, created_on
-	        FROM ab_user;
-    """
+        SELECT
+            (SELECT COUNT(id) FROM ab_user WHERE last_login>'2022-01-01 09:39:23.897179') AS active_users,
+            (SELECT COUNT(id) FROM ab_user) AS total_users;
+        """
     )
     return [dict(r) for r in session.execute(sql)]
 
