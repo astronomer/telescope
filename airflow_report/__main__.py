@@ -338,7 +338,6 @@ def variables_report(session) -> List[str]:
 # noinspection SqlResolve
 @provide_session
 def usage_stats_report(session) -> Any:
-    # Task instance stats
     def days_ago(days: int) -> str:
         if session.bind.dialect.name == "sqlite":
             return f"DATE('now', '-{days} days')"
@@ -372,11 +371,19 @@ def usage_stats_report(session) -> Any:
 # noinspection SqlResolve
 @provide_session
 def user_report(session) -> Any:
+    def days_ago(days: int) -> str:
+        if session.bind.dialect.name == "sqlite":
+            return f"DATE('now', '-{days} days')"
+        elif session.bind.dialect.name == "mysql":
+            return f"DATE_SUB(NOW(), INTERVAL {days} day)"
+        else:
+            # postgresql
+            return f"now() - interval '{days} days'"
 
     sql = text(
         f"""
         SELECT
-            (SELECT COUNT(id) FROM ab_user WHERE last_login>'2022-01-01 09:39:23.897179') AS active_users,
+            (SELECT COUNT(id) FROM ab_user WHERE last_logi n> {days_ago(30)}) AS active_users,
             (SELECT COUNT(id) FROM ab_user) AS total_users;
         """
     )
