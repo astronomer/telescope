@@ -17,7 +17,13 @@ from telescope.functions.cluster_info import cluster_info
 from telescope.getter_util import gather_getters, get_from_getter
 from telescope.getters.kubernetes import KubernetesGetter
 from telescope.getters.local import LocalGetter
-from telescope.reporters.report import REPORT_TYPES, assemble, assemble_from_file
+from telescope.reporters.report import (
+    REPORT_TYPES,
+    generate_charts,
+    generate_output_reports,
+    generate_report,
+    generate_report_summary_text,
+)
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +73,10 @@ fd = {"show_default": True, "show_envvar": True, "is_flag": True}
     "--gather/--no-gather", "should_gather", **fd, default=True, help="Gather data about Airflow environments"
 )
 @click.option(
-    "--report/--no-report", "should_report", **fd, default=True, help="Generate report summary of gathered data"
+    "--report/--no-report", "should_report", **fd, default=False, help="Generate report summary of gathered data"
+)
+@click.option(
+    "--charts/--no-charts", "should_charts", **fd, default=False, help="Generate charts of summary of gathered data"
 )
 @click.option("--report-type", type=Choice(REPORT_TYPES.keys()), default="xlsx", help="What report type to generate")
 def cli(
@@ -82,6 +91,7 @@ def cli(
     output_file: str,
     parallelism: int,
     should_gather: bool,
+    should_charts: bool,
     should_report: bool,
     report_type: str,
 ) -> None:
@@ -100,7 +110,7 @@ def cli(
                     report["cluster_info"] = cluster_info()
 
                 if should_precheck:
-                    report["precheck"] = precheck(KubernetesGetter())
+                    report["precheck"] = precheck()
 
                 if should_verify:
                     report["verify"] = verify(LocalGetter())
@@ -149,13 +159,36 @@ def cli(
                         "--report", f"There is no data generated to report on at {output_file}, failing to report"
                     )
 
-                assemble_from_file(output_file, output_filepath=report_output_file, report_type=report_type)
+                with open(output_file) as input_file:
+                    report = json.load(input_file)
+                    generate_outputs(
+                        report, output_filepath=report_output_file, report_type=report_type, should_charts=should_charts
+                    )
             else:
                 if not len(report):
                     raise BadOptionUsage(
                         "--report", "There is no data to generate a report on without --gather, failing to report"
                     )
-                assemble(report, output_filepath=report_output_file, report_type=report_type)
+                generate_outputs(
+                    report, output_filepath=report_output_file, report_type=report_type, should_charts=should_charts
+                )
+
+
+def generate_outputs(report: dict, report_type: str, output_filepath: str, should_charts: bool):
+    log.info(f"Aggregating Raw Data...")
+    output_reports = generate_output_reports(report)
+
+    log.info(f"Generating Report of type {report_type} at {output_filepath} ...")
+    generate_report(output_reports, report_type, output_filepath)
+    if should_charts:
+        try:
+            log.info("Generating Charts ...")
+            generate_charts(output_reports)
+        except ImportError as e:
+            log.error(f"Attempted to generate charts but failed with error, skipping... - {e}")
+
+    log.info("Generating Summary Report at default filepath [report_summary.txt] ...")
+    generate_report_summary_text(output_reports)
 
 
 if __name__ == "__main__":
