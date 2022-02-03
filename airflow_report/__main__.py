@@ -285,12 +285,12 @@ def dags_report(session) -> Any:
 var_patterns = [
     re.compile(r"{{[\s]*var.value.([a-zA-Z-_]+)[\s]*}}"),  # "{{ var.value.<> }}"
     re.compile(r"{{[\s]*var.json.([a-zA-Z-_]+)[\s]*}}"),  # "{{ var.json.<> }}"
-    re.compile(r"Variable.get\(([a-zA-Z-_]+)\)"),  # "Variable.get(<>)"
+    re.compile(r"""Variable.get[(]["']([a-zA-Z-_]+)["'][)]"""),  # "Variable.get(<>)"
 ]
 
 conn_patterns = [
-    re.compile(r"conn_id=([a-zA-Z-_]+)"),  # "conn_id=<>"
-    re.compile(r"{{[\s]*conn.([a-zA-Z-_]+)[\s]*}}"),  # "{{ conn.<> }}"
+    re.compile(r"""(?=[\w]*[_])conn_id=["']([a-zA-Z-_]+)["']"""),  # "conn_id=<>"
+    re.compile(r"[{]{2}[\s]*conn[.]([a-zA-Z-_]+)[.]?"),  # "{{ conn.<> }}"
 ]
 
 
@@ -301,9 +301,10 @@ def dag_varconn_usage(dag_path: str):
         dag_contents = f.read()
         for (results, patterns) in [(conn_results, conn_patterns), (var_results, var_patterns)]:
             for pattern in patterns:
-                search_results = pattern.search(dag_contents)
+                search_results = pattern.findall(dag_contents)
                 if search_results:
-                    results.add(search_results.groups())
+                    for result in search_results:
+                        results.add(result)
     return (var_results or None), (conn_results or None)
 
 

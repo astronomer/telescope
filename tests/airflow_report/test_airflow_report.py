@@ -9,12 +9,21 @@ from docker.models.containers import Container
 
 import airflow_report
 import docker
+import tests
+from airflow_report.__main__ import dag_varconn_usage
 from telescope.util import clean_airflow_report_output
+from tests import resources
 
 
 @pytest.fixture
 def docker_client():
     return docker.from_env()
+
+
+@pytest.fixture()
+def example_dag_path():
+    with path(resources, "example-dag.py") as p:
+        return str(p.resolve())
 
 
 @pytest.fixture(params=["2.2.1", "2.1.3", "1.10.15", "1.10.10"])
@@ -107,3 +116,12 @@ def test_airflow_report(docker_scheduler):
 
     assert "variables_report" in report
     assert type(report["variables_report"]) == list
+
+
+def test_dag_varconn_usage(example_dag_path: str):
+    actual = dag_varconn_usage(example_dag_path)
+    expected_conns = {"easy_-conn", "harder_-conn", "macro_-conn"}
+    expected_vars = {"easy_-var", "value_macro-var", "json_macro-var"}
+    expected = (expected_vars, expected_conns)
+    assert actual[0] == expected[0]
+    assert actual[1] == expected[1]
