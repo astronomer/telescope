@@ -10,8 +10,12 @@ import jmespath
 log = logging.getLogger(__name__)
 
 
+class Report:
+    pass
+
+
 @dataclass
-class SummaryReport:
+class SummaryReport(Report):
     num_airflows: int
     num_dags_active: int
     num_dags_inactive: int
@@ -20,7 +24,7 @@ class SummaryReport:
 
 
 @dataclass
-class InfrastructureReport:
+class InfrastructureReport(Report):
     type: str  # VM or K8s
     provider: str
     version: str
@@ -107,7 +111,7 @@ def dag_is_active(dag: dict) -> bool:
 
 
 @dataclass
-class AirflowReport:
+class AirflowReport(Report):
     name: str
     version: str
     executor: str
@@ -134,7 +138,39 @@ class AirflowReport:
     num_dags_inactive: int
 
     @staticmethod
+    def error_airflow_report(name: str, error_message: str):
+        return AirflowReport(
+            name=name,
+            version="Unknown",
+            executor=error_message,
+            num_schedulers=-1,
+            num_webservers=-1,
+            num_workers=-1,
+            providers={},
+            num_providers=-1,
+            packages={},
+            non_default_configurations={},
+            parallelism=-1,
+            pools={},
+            default_pool_slots=-1,
+            num_pools=-1,
+            env={},
+            connections=[],
+            num_connections=-1,
+            unique_operators=[],
+            task_run_info={},
+            task_runs_monthly_success=-1,
+            num_dags=-1,
+            num_tasks=-1,
+            num_dags_active=-1,
+            num_dags_inactive=-1,
+        )
+
+    @staticmethod
     def from_input_report_row(name: str, input_row: dict, verify: dict = None):
+        if type(input_row) != dict:
+            # noinspection PyTypeChecker
+            return AirflowReport.error_airflow_report(name, error_message=input_row)
         task_run_info = sum_usage_stats_report_summary(input_row.get("usage_stats_report", []))
         connections = input_row.get("env_vars_report", {}).get("connections", []) + input_row.get(
             "connections_report", []
@@ -188,7 +224,7 @@ class AirflowReport:
 
 
 @dataclass
-class DAGReport:
+class DAGReport(Report):
     airflow_name: str
     dag_id: str
     root_dag_id: Optional[str]  # dag_id if it's a subdag
