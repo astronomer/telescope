@@ -293,3 +293,7 @@ The spreadsheet, titled `report.xlsx` by default, contains the following:
 - owners: the owners, defined in the DAG
 - operators: the Task operators, counted once per DAG
 - num_tasks: the overall number of tasks
+
+#### User Report
+- active_users : users who have logged in in the last 30 days
+- total_users : users who have ever logged in
