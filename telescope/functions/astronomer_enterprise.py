@@ -1,6 +1,5 @@
 import logging
 
-from telescope.getters.kubernetes import KubernetesGetter
 from telescope.getters.local import LocalGetter
 from telescope.util import deep_clean
 
@@ -35,7 +34,8 @@ def verify(getter: LocalGetter):
     return {"helm": helm_installs}
 
 
-def precheck(getter: KubernetesGetter):
-    raise NotImplementedError
+def precheck():
+    pass
+
     #  database: rf"""kubectl run psql --rm -it --restart=Never -n {namespace} --image {image} --command -- psql {conn.out} -qtc "select 'healthy';" """
     #  certificate: ""
