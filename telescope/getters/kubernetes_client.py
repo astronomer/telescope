@@ -2,7 +2,8 @@ import logging
 from copy import deepcopy
 
 from kubernetes import client, config
-from kubernetes.client import VersionApi
+from kubernetes.client import ApiException, VersionApi
+from kubernetes.stream import stream
 
 log = logging.getLogger(__name__)
 
@@ -16,3 +17,6 @@ except Exception as e:
     log.exception(e)
     api_client = None
     kube_client = None
+
+stream = stream
+ApiException = ApiException

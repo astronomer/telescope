@@ -11,7 +11,7 @@ class LocalGetter(Getter):
         """Utilize invoke to run locally
         http://docs.pyinvoke.org/en/stable/api/runners.html#invoke.runners.Runner.run
         """
-        out = run(cmd, echo=True, hide=True, **kwargs).stdout  # other options: timeout, warn
+        out = run(cmd, hide=True, warn=True, **kwargs).stdout  # other options: timeout, warn
         return get_json_or_clean_str(out)
 
     def get_report_key(self):
