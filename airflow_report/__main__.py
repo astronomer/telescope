@@ -336,30 +336,32 @@ def variables_report(session) -> List[str]:
     return [key for (key,) in session.query(Variable.key)]
 
 
+def days_ago(dialect: str, days: int) -> str:
+    if dialect == "sqlite":
+        return f"DATE('now', '-{days} days')"
+    elif dialect == "mysql":
+        return f"DATE_SUB(NOW(), INTERVAL {days} day)"
+    else:
+        # postgresql
+        return f"now() - interval '{days} days'"
+
+
 # noinspection SqlResolve
 @provide_session
 def usage_stats_report(session) -> Any:
-    def days_ago(days: int) -> str:
-        if session.bind.dialect.name == "sqlite":
-            return f"DATE('now', '-{days} days')"
-        elif session.bind.dialect.name == "mysql":
-            return f"DATE_SUB(NOW(), INTERVAL {days} day)"
-        else:
-            # postgresql
-            return f"now() - interval '{days} days'"
-
+    dialect = session.bind.dialect.name
     sql = text(
         f"""
         SELECT
             dag_id,
-            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(1)} and dag_id = dag_id) as "1_days_success",
-            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(1)} and dag_id = dag_id) as "1_days_failed",
-            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(7)} and dag_id = dag_id) as "7_days_success",
-            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(7)} and dag_id = dag_id) as "7_days_failed",
-            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(30)} and dag_id = dag_id) as "30_days_success",
-            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(30)} and dag_id = dag_id) as "30_days_failed",
-            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(365)} and dag_id = dag_id) as "365_days_success",
-            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(365)} and dag_id = dag_id) as "365_days_failed",
+            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(dialect, 1)} and dag_id = dag_id) as "1_days_success",
+            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(dialect, 1)} and dag_id = dag_id) as "1_days_failed",
+            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(dialect, 7)} and dag_id = dag_id) as "7_days_success",
+            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(dialect, 7)} and dag_id = dag_id) as "7_days_failed",
+            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(dialect, 30)} and dag_id = dag_id) as "30_days_success",
+            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(dialect, 30)} and dag_id = dag_id) as "30_days_failed",
+            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(dialect, 365)} and dag_id = dag_id) as "365_days_success",
+            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(dialect, 365)} and dag_id = dag_id) as "365_days_failed",
             (select count(1) from task_instance where state = 'success' and dag_id = dag_id) as "all_days_success",
             (select count(1) from task_instance where state = 'failed' and dag_id = dag_id) as "all_days_failed"
         FROM task_instance
@@ -372,19 +374,14 @@ def usage_stats_report(session) -> Any:
 # noinspection SqlResolve
 @provide_session
 def user_report(session) -> Any:
-    def days_ago(days: int) -> str:
-        if session.bind.dialect.name == "sqlite":
-            return f"DATE('now', '-{days} days')"
-        elif session.bind.dialect.name == "mysql":
-            return f"DATE_SUB(NOW(), INTERVAL {days} day)"
-        else:
-            # postgresql
-            return f"now() - interval '{days} days'"
-
+    dialect = session.bind.dialect.name
     sql = text(
         f"""
         SELECT
-            (SELECT COUNT(id) FROM ab_user WHERE last_logi n> {days_ago(30)}) AS active_users,
+            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 1)}) AS 1_days_active_users,
+            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 7)}) AS 7_days_active_users,
+            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 30)}) AS 30_days_active_users,
+            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 365)}) AS 365_days_active_users,
             (SELECT COUNT(id) FROM ab_user) AS total_users;
         """
     )

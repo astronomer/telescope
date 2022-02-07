@@ -9,7 +9,6 @@ from docker.models.containers import Container
 
 import airflow_report
 import docker
-import tests
 from airflow_report.__main__ import dag_varconn_usage
 from telescope.util import clean_airflow_report_output
 from tests import resources
@@ -116,6 +115,17 @@ def test_airflow_report(docker_scheduler):
 
     assert "variables_report" in report
     assert type(report["variables_report"]) == list
+
+    assert "user_report" in report
+    assert type(report["user_report"]) == list
+    assert type(report["user_report"][0]) == dict
+    assert report["user_report"][0].keys() == [
+        "1_days_active_users",
+        "7_days_active_users",
+        "30_days_active_users",
+        "365_days_active_users",
+        "total_users",
+    ]
 
 
 def test_dag_varconn_usage(example_dag_path: str):
