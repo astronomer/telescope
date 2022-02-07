@@ -23,11 +23,9 @@ include = ["telescope/config.yaml"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-importlib_metadata = {version = "^4.5.0", python = "<3.8"}
-rich = "^10.7.0"
-kubernetes = "^19.15.0"
-#rich = "^11.1.0"
-#kubernetes = "^21.7"
+importlib_metadata = { version = "^4.5.0", python = "<3.8" }
+rich = "^11.1.0"
+kubernetes = "^21.7"
 fabric = "^2.6.0"
 docker = "^5.0.3"
 invoke = "^1.6.0"
