@@ -378,11 +378,11 @@ def user_report(session) -> Any:
     sql = text(
         f"""
         SELECT
-            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 1)}) AS 1_days_active_users,
-            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 7)}) AS 7_days_active_users,
-            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 30)}) AS 30_days_active_users,
-            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 365)}) AS 365_days_active_users,
-            (SELECT COUNT(id) FROM ab_user) AS total_users;
+            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 1)}) AS "1_days_active_users",
+            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 7)}) AS "7_days_active_users",
+            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 30)}) AS "30_days_active_users",
+            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 365)}) AS "365_days_active_users",
+            (SELECT COUNT(id) FROM ab_user) AS "total_users";
         """
     )
     return [dict(r) for r in session.execute(sql)]
