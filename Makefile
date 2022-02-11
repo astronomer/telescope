@@ -115,13 +115,10 @@ package_report: build-remove
 
 build: build-remove
 	poetry build
-	mv dist/telescope-$(TELESCOPE_VERSION)-py3-none-any.whl telescope.whl
+	mv dist/telescope*.whl .
 
 # clean-all package_report
 release:
 	git tag $(TELESCOPE_TAG)
 	git push origin $(TELESCOPE_TAG)
 #	gh release create --target dev -t v$(poetry version --short)
-
-main_release:
-	gh release create --target main -t v$(poetry version --short)
