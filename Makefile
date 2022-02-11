@@ -6,6 +6,11 @@ PYTHON := python3
 IMAGE := telescope
 VERSION := latest
 
+#* Build Variables
+BRANCH := $(shell git branch --show-current)
+TELESCOPE_VERSION := $(shell poetry version --short)
+TELESCOPE_TAG := "v$(TELESCOPE_VERSION)"
+
 #* Poetry
 .PHONY: poetry-download
 poetry-download:
@@ -94,9 +99,6 @@ outputs-remove:
 .PHONY: clean-all
 clean-all: outputs-remove pycache-remove build-remove docker-remove
 
-build: build-remove
-	poetry build
-
 package_report: build-remove
 	mkdir -p build
 	python -m pip install -r airflow_report/requirements.txt --target build
@@ -110,9 +112,11 @@ package_report: build-remove
 		--output airflow_report.pyz \
 		build
 
-BRANCH := $(shell git branch --show-current)
-TELESCOPE_VERSION := $(shell poetry version --short)
-TELESCOPE_TAG := "v$(TELESCOPE_VERSION)"
+
+build: build-remove
+	poetry build
+	mv dist/telescope-$(TELESCOPE_VERSION)-py3-none-any.whl telescope.whl
+
 # clean-all package_report
 release:
 	git tag $(TELESCOPE_TAG)
