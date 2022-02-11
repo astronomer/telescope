@@ -31,13 +31,13 @@ def verify():
     runs "helm ls -aA -o json" and "helm get values"
     :return {"helm": [<helm install details>, ...]}
     """
-    helm_installs = get_json_or_clean_str(run("helm ls -aA -o json").stdout)
+    helm_installs = get_json_or_clean_str(run("helm ls -aA -o json", hide=True, warn=True).stdout)
     for helm_install in helm_installs:
         install_name = helm_install.get("name", "")
         install_namespace = helm_install.get("namespace", "")
         # if install_name == 'astronomer' or install_namespace == 'astronomer':
         helm_values = get_json_or_clean_str(
-            run(f"helm get values {install_name} -n {install_namespace} -o json").stdout
+            run(f"helm get values {install_name} -n {install_namespace} -o json", hide=True, warn=True).stdout
         )
         try:
             for v in [
