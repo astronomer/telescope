@@ -62,27 +62,29 @@ You should now have a `report.json`, `report.xlsx`, and `charts/` directory.
 
 ```shell
 $ telescope --help                                                
-Usage: telescope [OPTIONS]
 
   Telescope - A tool to observe distant (or local!) Airflow installations, and
   gather usage metadata
 
 Options:
   --version                      Show the version and exit.
-  --local                        checks versions of locally installed tools
+  --local                        Airflow Reporting for local Airflow
                                  [default: False]
-  --docker                       autodiscovery and airflow reporting for local
-                                 docker  [default: False]
-  --kubernetes                   autodiscovery and airflow reporting for
-                                 kubernetes  [default: False]
+  --docker                       Autodiscovery and Airflow reporting for local
+                                 Docker  [default: False]
+  --kubernetes                   Autodiscovery and Airflow reporting for
+                                 Kubernetes  [default: False]
   -l, --label-selector TEXT      Label selector for Kubernetes Autodiscovery
                                  [default: component=scheduler]
-  --cluster-info                 get cluster size and allocation in kubernetes
+  --cluster-info                 Get cluster size and allocation in Kubernetes
                                  [default: False]
-  --verify                       introspect helm installation information  [default:
-                                 False]
-  --precheck                     runs Astronomer Enterprise pre-install
-                                 sanity-checks [default: False]
+  --verify                       Introspect Helm installation information for
+                                 Reporting and Verification purposes
+                                 [default: False]
+  --versions                     checks versions of locally installed tools
+                                 [default: False]
+  --precheck                     Runs Astronomer Enterprise pre-install
+                                 sanity-checks in the report  [default: False]
   -f, --hosts-file PATH          Hosts file to pass in various types of hosts
                                  (ssh, kubernetes, docker) - See README.md for
                                  sample
