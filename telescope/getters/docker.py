@@ -1,3 +1,5 @@
+from typing import List, Union
+
 import json
 import logging
 
@@ -21,7 +23,7 @@ class LocalDockerGetter(Getter):
     def __init__(self, container_id: str = None):
         self.container_id = container_id
 
-    def get(self, cmd: str):
+    def get(self, cmd: Union[List[str], str]):
         _container = docker_client.containers.get(self.container_id)
         exec_res = _container.exec_run(cmd)
         return json.loads(clean_airflow_report_output(exec_res.output.decode("utf-8")))

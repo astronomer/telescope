@@ -32,13 +32,13 @@ SAMPLE_HOSTS = {
 def test_cli_local_json():
     """https://click.palletsprojects.com/en/8.0.x/testing/#basic-testing"""
     runner = CliRunner()
-    result = runner.invoke(cli, "--local --no-report -o '-'")
+    result = runner.invoke(cli, "--versions -o '-'")
     assert result.exit_code == 0
     actual = json.loads(remove_initial_log_lines(result.output))
-    assert type(actual) == dict, "the --local flag (with -o -) gives a dict for output"
-    hostname = next(iter(actual["local"]))
+    assert type(actual) == dict, "the --versions flag (with -o -) gives a dict for output"
+    print(actual)
     assert (
-        "python" in actual["local"][hostname]
+        "python" in actual["versions"]
     ), "the --local flag retrieves the installed versions of things keyed by the hostname"
 
 
@@ -47,15 +47,14 @@ def test_cli_local_json():
 def test_cli_local_file():
     runner = CliRunner()
     with runner.isolated_filesystem():
-        result = runner.invoke(cli, "--local --no-report")
+        result = runner.invoke(cli, "--versions --no-report")
         assert result.exit_code == 0
         with open("report.json") as f:
             actual = json.load(f)
             assert type(actual) == dict, "we write a dict to report.json"
-            hostname = next(iter(actual["local"]))
             assert (
-                "python" in actual["local"][hostname]
-            ), "the --local flag retrieves the installed versions of things keyed by the hostname"
+                "python" in actual["versions"]
+            ), "the --versions flag retrieves the installed versions of things keyed by the hostname"
 
 
 # noinspection PyTypeChecker

@@ -10,23 +10,36 @@
 A tool to observe distant (or local!) Airflow installations, and gather metadata or other required data.
 
 # Installation
+
 (optionally, create a virtualenv)
+
 ```shell
 mkdir telescope_run_dir
 cd telescope_run_dir
 virtualenv venv
-. venv/bin/activate 
+source venv/bin/activate 
 ```
 
-Install telescope using pip from Github
+Install Telescope using Pip from Github
+
 ```shell
-pip install git+https://github.com/astronomer/telescope.git#egg=telescope
+python -m pip install 'telescope @ https://github.com/astronomer/telescope/blob/main/telescope-1.1.4-py3-none-any.whl?raw=true'
+```
+
+Or with the Charts extras (`pandas/plotly/kaleido`) for the `--charts` functionality:
+
+```shell
+python -m pip install 'telescope[charts] @ https://github.com/astronomer/telescope/blob/dist/telescope-1.1.4-py3-none-any.whl?raw=true'
 ```
 
 # Quickstart - Kubernetes Autodiscovery Assessment Mode
-This will work if your Airflows are in Kubernetes and were deployed with one of the major Helm charts (and `component=scheduler` is used to identify the schedulers). It will use Helm to interrogate the installation, and connect to the Airflow schedulers to gather metadata 
+
+This will work if your Airflows are in Kubernetes and were deployed with one of the major Helm charts (
+and `component=scheduler` is used to identify the schedulers). It will use Helm to interrogate the installation, and
+connect to the Airflow schedulers to gather metadata
+
 ```shell
-telescope --kubernetes --verify --cluster-info
+telescope --kubernetes --verify --cluster-info --report --charts
 ```
 You should now have a `report.json`, `report.xlsx`, and `charts/` directory.
 
@@ -41,11 +54,12 @@ ssh:
 ```
 
 ```shell
-telescope -f hosts.yaml
+telescope -f hosts.yaml --report --charts
 ```
 You should now have a `report.json`, `report.xlsx`, and `charts/` directory.
 
 # Usage
+
 ```shell
 $ telescope --help                                                
 Usage: telescope [OPTIONS]
@@ -54,38 +68,38 @@ Usage: telescope [OPTIONS]
   gather usage metadata
 
 Options:
-  --version                       Show the version and exit.
-  --local                         checks versions of locally installed tools
-                                  [default: False]
-  --docker                        autodiscovery and airflow reporting for
-                                  local docker  [default: False]
-  --kubernetes                    autodiscovery and airflow reporting for
-                                  kubernetes  [default: False]
-  -l, --label-selector TEXT       Label selector for Kubernetes Autodiscovery
-                                  [default: component=scheduler]
-  --cluster-info                  get cluster size and allocation in
-                                  kubernetes  [default: False]
-  --verify                        adds helm installations to report  [default:
-                                  False]
-  --precheck                      runs Astronomer Enterprise pre-install
-                                  sanity-checks in the report  [default:
-                                  False]
-  -f, --hosts-file PATH           Hosts file to pass in various types of hosts
-                                  (ssh, kubernetes, docker) - See README.md
-                                  for sample
-  -o, --output-file PATH          Output file to write intermediate gathered
-                                  data json, and report (with report_type as
-                                  file extension), can be '-' for stdout
-                                  [default: report.json]
-  -p, --parallelism INTEGER       How many cores to use for multiprocessing
-                                  [default: (Number CPU)]
-  --gather / --no-gather          gather data about Airflow environments
-                                  [default: gather]
-  --report / --no-report          generate report summary of gathered data
-                                  [default: report]
-  --report-type [html|json|csv|xlsx]
-                                  What report type to generate
-  --help                          Show this message and exit.
+  --version                      Show the version and exit.
+  --local                        checks versions of locally installed tools
+                                 [default: False]
+  --docker                       autodiscovery and airflow reporting for local
+                                 docker  [default: False]
+  --kubernetes                   autodiscovery and airflow reporting for
+                                 kubernetes  [default: False]
+  -l, --label-selector TEXT      Label selector for Kubernetes Autodiscovery
+                                 [default: component=scheduler]
+  --cluster-info                 get cluster size and allocation in kubernetes
+                                 [default: False]
+  --verify                       introspect helm installation information  [default:
+                                 False]
+  --precheck                     runs Astronomer Enterprise pre-install
+                                 sanity-checks [default: False]
+  -f, --hosts-file PATH          Hosts file to pass in various types of hosts
+                                 (ssh, kubernetes, docker) - See README.md for
+                                 sample
+  -o, --output-file PATH         Output file to write intermediate gathered
+                                 data json, and report (with report_type as
+                                 file extension), can be '-' for stdout
+                                 [default: report.json]
+  -p, --parallelism INTEGER      How many cores to use for multiprocessing
+                                 [default: (Number CPU)]
+  --gather / --no-gather         Gather data about Airflow environments
+                                 [default: gather]
+  --report / --no-report         Generate report summary of gathered data
+                                 [default: no-report]
+  --charts / --no-charts         Generate charts of summary of gathered data
+                                 [default: no-charts]
+  --report-type [json|csv|xlsx]  What report type to generate
+  --help                         Show this message and exit.
 ```
 
 # Requirements

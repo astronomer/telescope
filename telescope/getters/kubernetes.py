@@ -1,3 +1,5 @@
+from typing import List, Union
+
 import json
 import logging
 
@@ -25,7 +27,7 @@ class KubernetesGetter(Getter):
         self.namespace = namespace
         self.container = container
 
-    def get(self, cmd: str):
+    def get(self, cmd: Union[List[str], str]):
         """Utilize kubernetes python client to exec in a container
         https://github.com/kubernetes-client/python/blob/master/examples/pod_exec.py
         """

@@ -1,3 +1,5 @@
+from typing import List, Union
+
 from fabric import Connection
 
 from telescope.getters import Getter
@@ -7,7 +9,7 @@ class SSHGetter(Getter):
     def __init__(self, host):
         self.host = host
 
-    def get(self, cmd: str):
+    def get(self, cmd: Union[List[str], str]):
         """Utilize fabric to run over SSH
         https://docs.fabfile.org/en/2.6/getting-started.html#run-commands-via-connections-and-run
         """

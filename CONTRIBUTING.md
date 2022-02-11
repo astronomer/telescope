@@ -1,12 +1,23 @@
+# First Setup
+
+1) `brew install poetry` OR `make poetry-download`
+2) `make pre-commit-install`
+
+## Pycharm Setup
+
+1) download the `poetry` plugin
+2) add `poetry` as the python interpreter
+
 # How to contribute
 
 ## Development & CICD Overview
+
 ![CICD](resources/telescope_cicd.drawio.png)
 
 ## Dependencies
 
-We use `poetry` to manage the [dependencies](https://github.com/python-poetry/poetry).
-If you dont have `poetry`, you should install with `make poetry-download`.
+We use `poetry` to manage the [dependencies](https://github.com/python-poetry/poetry). If you dont have `poetry`, you
+should install with `make poetry-download`.
 
 To install dependencies and prepare [`pre-commit`](https://pre-commit.com/) hooks you would need to run `install` command:
 

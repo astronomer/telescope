@@ -30,15 +30,21 @@ def test_deep_clean_nested():
 @pytest.mark.parametrize(
     "in_str,expected",
     [
-        ("", ""),
-        ("a\nb\nc", "a\nb\nc"),
+        ("", [""]),
+        ("a\nb\nc", ["a", "b", "c"]),
         (
             "INFO 123 - xyz - abc\n\n\nERROR - 1234\n2019-02-17 12:40:14,798 : CRITICAL : __main__ : Fatal error. Cannot continue\n%%%%%%%\ne30=",
             "{}",
         ),
         (
             "INFO 123 - xyz - abc\n\n\nERROR - 1234\n2019-02-17 12:40:14,798 : CRITICAL : __main__ : Fatal error. Cannot continue",
-            "INFO 123 - xyz - abc\n\n\nERROR - 1234\n2019-02-17 12:40:14,798 : CRITICAL : __main__ : Fatal error. Cannot continue",
+            [
+                "INFO 123 - xyz - abc",
+                "",
+                "",
+                "ERROR - 1234",
+                "2019-02-17 12:40:14,798 : CRITICAL : __main__ : Fatal error. Cannot continue",
+            ],
         ),
     ],
 )

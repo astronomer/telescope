@@ -87,8 +87,15 @@ pycache-remove:
 build-remove:
 	rm -rf build/
 
+.PHONY: outputs-remove
+outputs-remove:
+	rm -rf report.json charts report_output.xlsx report_summary.txt
+
 .PHONY: clean-all
-clean-all: pycache-remove build-remove docker-remove
+clean-all: outputs-remove pycache-remove build-remove docker-remove
+
+build: build-remove
+	poetry build
 
 package_report: build-remove
 	mkdir -p build
@@ -103,36 +110,14 @@ package_report: build-remove
 		--output airflow_report.pyz \
 		build
 
-package_pyoxidizer: build-remove install
-	pyoxidizer build
+BRANCH := $(shell git branch --show-current)
+TELESCOPE_VERSION := $(shell poetry version --short)
+TELESCOPE_TAG := "v$(TELESCOPE_VERSION)"
+# clean-all package_report
+release:
+	git tag $(TELESCOPE_TAG)
+	git push origin $(TELESCOPE_TAG)
+#	gh release create --target dev -t v$(poetry version --short)
 
-package_nuitka: build-remove install
-	python -m nuitka \
-		--enable-plugin=multiprocessing \
-		--enable-plugin=numpy \
-		--standalone \
-		--assume-yes-for-downloads \
-		--include-package-data=telescope \
-		--include-module=telescope.getters.kubernetes_client \
-		--include-module=telescope.getters.docker_client \
-		--include-package=plotly \
-		--include-package-data=plotly \
-		--include-package=kaleido \
-		--output-dir build \
-		telescope/__main__.py
-
-
-#		--onefile \
-#		--enable-plugin=anti-bloat \
-#		--noinclude-pytest-mode=nofollow \
-#		--noinclude-setuptools-mode=nofollow \
-#		--warn-implicit-exceptions \
-#		--warn-unusual-code \
-#		--show-memory \
-#		--show-modules \
-#		--show-progress \
-# standalone implies --follow-imports
-# You may also want to use "--python- flag=no_site" to avoid the "site.py" module, which can save a lot of code dependencies.
-# Nuitka-Options:INFO: Detected static libpython to exist, consider '--static-libpython=yes' for better performance, but errors may happen.
-
-# FileNotFoundError: [Errno 2] No such file or directory: '/Users/mac/telescope/build/__main__.dist/plotly/package_data/templates/plotly.json'
+main_release:
+	gh release create --target main -t v$(poetry version --short)
