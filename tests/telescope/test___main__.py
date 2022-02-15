@@ -29,7 +29,7 @@ SAMPLE_HOSTS = {
 
 # noinspection PyTypeChecker
 @pytest.mark.slow_integration_test
-def test_cli_local_json():
+def test_cli_versions_json():
     """https://click.palletsprojects.com/en/8.0.x/testing/#basic-testing"""
     runner = CliRunner()
     result = runner.invoke(cli, "--versions -o '-'")
@@ -44,7 +44,7 @@ def test_cli_local_json():
 
 # noinspection PyTypeChecker
 @pytest.mark.slow_integration_test
-def test_cli_local_file():
+def test_cli_versions_file():
     runner = CliRunner()
     with runner.isolated_filesystem():
         result = runner.invoke(cli, "--versions --no-report")
@@ -80,6 +80,16 @@ def test_cli_kubernetes():
     actual = json.loads(remove_initial_log_lines(result.output))
     assert type(actual) == dict
     # TODO - fill out kube autodiscovery
+
+
+@manual_tests
+def test_cli_local():
+    runner = CliRunner()
+    result = runner.invoke(cli, "--local --no-report -o '-'")
+    print(result.output)
+    assert result.exit_code == 0
+    actual = json.loads(remove_initial_log_lines(result.output))
+    assert type(actual) == dict
 
 
 def test_gather_getters_local():

@@ -636,3 +636,7 @@ charts
 dist
 requirements.txt
 !airflow_report/requirements.txt
+
+withoutcharts
+withcharts
+venv

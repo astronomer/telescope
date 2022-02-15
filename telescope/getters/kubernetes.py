@@ -41,6 +41,7 @@ class KubernetesGetter(Getter):
             if e.status != 404:
                 raise RuntimeError(f"Unknown Kubernetes error: {e}")
 
+        log.debug(f"Running {cmd} on pod {self.name} in namespace {self.namespace} in container {self.container}")
         exec_res = stream(
             kube_client.connect_get_namespaced_pod_exec,
             name=self.name,
@@ -52,9 +53,14 @@ class KubernetesGetter(Getter):
             stdout=True,
             tty=False,
         )
+        log.debug(f"Got output: {exec_res}")
+
         # filter out any log lines
         try:
             exec_res = clean_airflow_report_output(exec_res)
+            if type(exec_res) == list:
+                # clean_airflow_report falls back to trimming and splitting strings - we probably got an error message
+                raise RuntimeError(" ".join(exec_res))
             return json.loads(exec_res)
         except Exception as e:
             log.exception(e)

@@ -14,15 +14,15 @@ from telescope.getters.local import LocalGetter
 
 log = logging.getLogger(__name__)
 
-BRANCH = os.getenv("TELESCOPE_AIRFLOW_REPORT_BRANCH", "main")
+VERSION = os.getenv("TELESCOPE_REPORT_RELEASE_VERSION", "1.1.4")
 AIRFLOW_REPORT_CMD = [
     "/bin/sh",
     "-c",
-    f"curl -ssl "
-    f"https://raw.githubusercontent.com/astronomer/telescope/{BRANCH}/airflow_report.pyz > "
-    f"airflow_report.pyz && chmod +x airflow_report.pyz && "
-    f"PYTHONWARNINGS=ignore ./airflow_report.pyz && "
-    f"rm -f ./airflow_report.pyz",
+    "curl -sslL "
+    f"https://github.com/astronomer/telescope/releases/download/v{VERSION}/airflow_report.pyz > "
+    "airflow_report.pyz && chmod +x airflow_report.pyz && "
+    "PYTHONWARNINGS=ignore ./airflow_report.pyz && "
+    "rm -f ./airflow_report.pyz",
 ]
 
 
