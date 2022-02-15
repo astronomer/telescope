@@ -18,6 +18,7 @@ from telescope.getters.kubernetes_client import ApiExcepton
 """,
 )
 log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
 
 # noinspection PyUnresolvedReferences

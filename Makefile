@@ -94,7 +94,7 @@ build-remove:
 
 .PHONY: outputs-remove
 outputs-remove:
-	rm -rf report.json charts report_output.xlsx report_summary.txt
+	rm -rf report.json charts report_output.xlsx report_summary.txt telescope-*.whl airflow_report.pyz
 
 .PHONY: clean-all
 clean-all: outputs-remove pycache-remove build-remove docker-remove
@@ -117,8 +117,19 @@ build: build-remove
 	poetry build
 	mv dist/telescope*.whl .
 
+delete_tag:
+	- git tag -d $(TELESCOPE_TAG)
+	- git push origin --delete $(TELESCOPE_TAG)
+
 # clean-all package_report
-release:
+release: clean-all delete_tag
+	$(MAKE) build
+	$(MAKE) package_report
+	- gh release delete -y $(TELESCOPE_TAG)
 	git tag $(TELESCOPE_TAG)
 	git push origin $(TELESCOPE_TAG)
-#	gh release create --target dev -t v$(poetry version --short)
+	gh release create $(TELESCOPE_TAG) \
+		./telescope-$(TELESCOPE_VERSION)-py3-none-any.whl \
+		airflow_report.pyz \
+		--draft --prerelease \
+		--generate-notes
