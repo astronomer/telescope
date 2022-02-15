@@ -9,8 +9,8 @@ import textwrap
 import humanize
 from xlsxwriter import Workbook
 
-from telescope.reporters import AirflowReport, DAGReport, InfrastructureReport, Report, SummaryReport
 from telescope.reporters.charts import AIRFLOW_CHARTS
+from telescope.reports import AirflowReport, DAGReport, InfrastructureReport, Report, SummaryReport
 
 log = logging.getLogger(__name__)
 

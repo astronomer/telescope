@@ -1,6 +1,6 @@
 import pytest
 
-from telescope.reporters import AirflowReport, DAGReport, InfrastructureReport, sum_usage_stats_report_summary
+from telescope.reports import AirflowReport, DAGReport, InfrastructureReport, sum_usage_stats_report_summary
 
 
 def test_infrastructure_report_from_input_report_row(sample_report):

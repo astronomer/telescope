@@ -4,7 +4,7 @@ import logging
 
 from lazyimport import lazyimport
 
-from telescope.reporters import AirflowReport, DAGReport
+from telescope.reports import AirflowReport, DAGReport
 
 lazyimport(
     globals(),
