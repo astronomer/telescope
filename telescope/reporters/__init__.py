@@ -132,6 +132,7 @@ class AirflowReport(Report):
     unique_operators: List[str]
     task_run_info: Dict[str, int]
     task_runs_monthly_success: int
+    users: Dict[str, int]
     num_dags: int
     num_tasks: int
     num_dags_active: int
@@ -160,6 +161,7 @@ class AirflowReport(Report):
             unique_operators=[],
             task_run_info={},
             task_runs_monthly_success=-1,
+            users={},
             num_dags=-1,
             num_tasks=-1,
             num_dags_active=-1,
@@ -213,6 +215,7 @@ class AirflowReport(Report):
                 ),
                 task_run_info=task_run_info,
                 task_runs_monthly_success=task_run_info.get("30_days_success", -1),
+                users=input_row.get("user_report"),
                 num_tasks=sum(dr.get("num_tasks", 0) for dr in input_row.get("dags_report", [])),
                 num_dags=len(input_row.get("dags_report", [])),
                 num_dags_active=len([0 for dag in input_row.get("dags_report", []) if dag_is_active(dag)]),
@@ -240,4 +243,4 @@ class DAGReport(Report):
     connections: Optional[str] = None
     cc_rank: Optional[str] = None
     mi_rank: Optional[str] = None
-    analysis: Optional[str] = None
+    analysis: Optional[Dict[str, int]] = None

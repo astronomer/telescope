@@ -385,7 +385,9 @@ def user_report(session) -> Any:
             (SELECT COUNT(id) FROM ab_user) AS "total_users";
         """
     )
-    return [dict(r) for r in session.execute(sql)]
+    for r in session.execute(sql):
+        return dict(r)
+    return {}
 
 
 reports = [

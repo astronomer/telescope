@@ -8,20 +8,18 @@ def test_infrastructure_report_from_input_report_row(sample_report):
     expected = InfrastructureReport(
         type="k8s",
         provider="eks",
-        version="v1.19.13-eks-8df270",
-        num_nodes=6,
-        allocatable_cpu=47.459999999999994,
-        allocatable_gb=178,
-        capacity_gb=184,
-        capacity_cpu=48,
+        version="v1.19.15-eks-9c63c4",
+        num_nodes=11,
+        allocatable_cpu=43.12000000000001,
+        allocatable_gb=157,
+        capacity_gb=167,
+        capacity_cpu=44,
     )
     assert actual == expected
 
 
 def test_airflow_report_from_input_report_row(sample_report):
-    # AirflowReport.from_input_report_row(name=key, input_row=airflow_dict["airflow_report"])
-    # "astronomer-amateur-cosmos-2865|amateur-cosmos-2865-scheduler-f55678947-fbn97": {
-    name = "astronomer-amateur-cosmos-2865|amateur-cosmos-2865-scheduler-f55678947-dvj8v"
+    name = "astronomer-amateur-cosmos-2865|amateur-cosmos-2865-scheduler-f55678947-hjhxw"
     actual = AirflowReport.from_input_report_row(
         name, sample_report["kubernetes"][name]["airflow_report"], sample_report["verify"]["helm"]
     )
@@ -394,25 +392,42 @@ def test_airflow_report_from_input_report_row(sample_report):
             "variables": [],
         },
         connections=["AIRFLOW_CONN_AIRFLOW_DB", "my-test-connection", "my-other-test-connection"],
-        task_run_info={},
+        task_run_info={
+            "1_days_success": 0,
+            "1_days_failed_pct": 0,
+            "7_days_success": 0,
+            "7_days_failed_pct": 0,
+            "30_days_success": 0,
+            "30_days_failed_pct": 0,
+            "365_days_success": 144,
+            "365_days_failed_pct": 0,
+            "all_days_success": 144,
+            "all_days_failed_pct": 0,
+        },
         num_providers=15,
         parallelism=32,
         default_pool_slots=128,
         num_pools=1,
         num_connections=3,
         unique_operators=["DummyOperator", "PythonOperator"],
-        task_runs_monthly_success=-1,
+        task_runs_monthly_success=0,
         num_dags=2,
         num_tasks=6,
         num_dags_active=1,
         num_dags_inactive=1,
+        users={
+            "1_days_active_users": 0,
+            "7_days_active_users": 0,
+            "30_days_active_users": 0,
+            "365_days_active_users": 0,
+            "total_users": 8,
+        },
     )
-    print(actual)
     assert actual == expected
 
 
 def test_dag_report_from_input_report_row(sample_report):
-    name = "astronomer-amateur-cosmos-2865|amateur-cosmos-2865-scheduler-f55678947-dvj8v"
+    name = "astronomer-amateur-cosmos-2865|amateur-cosmos-2865-scheduler-f55678947-hjhxw"
     actual = DAGReport(airflow_name=name, **sample_report["kubernetes"][name]["airflow_report"]["dags_report"][0])
     expected = DAGReport(
         airflow_name=name,
@@ -426,6 +441,11 @@ def test_dag_report_from_input_report_row(sample_report):
         owners="airflow",
         operators="DummyOperator,PythonOperator",
         num_tasks=3,
+        variables=None,
+        connections=None,
+        cc_rank="A",
+        mi_rank="A",
+        analysis={"loc": 27, "lloc": 12, "sloc": 20, "comments": 0, "multi": 0, "blank": 7, "single_comments": 0},
     )
     assert actual == expected
 
