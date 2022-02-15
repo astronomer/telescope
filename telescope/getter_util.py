@@ -14,7 +14,7 @@ from telescope.getters.local import LocalGetter
 
 log = logging.getLogger(__name__)
 
-VERSION = os.getenv("TELESCOPE_REPORT_RELEASE_VERSION", "1.1.4")
+VERSION = os.getenv("TELESCOPE_REPORT_RELEASE_VERSION", telescope.version)
 AIRFLOW_REPORT_CMD = [
     "/bin/sh",
     "-c",

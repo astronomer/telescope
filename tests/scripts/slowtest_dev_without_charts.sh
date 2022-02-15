@@ -1,10 +1,11 @@
-set -euxo pipefail
+set -euo pipefail
 
 rm -rf withoutcharts
 virtualenv withoutcharts
 source withoutcharts/bin/activate
-#python -m pip install "telescope @ git+https://github.com/astronomer/telescope.git@dev#egg=telescope"
+set -x
 python -m pip install telescope --find-links https://github.com/astronomer/telescope/releases/
-TELESCOPE_AIRFLOW_REPORT_BRANCH=dev telescope --kubernetes --cluster-info --docker --verify --report --charts --versions
+TELESCOPE_REPORT_RELEASE_VERSION=$(poetry version --short) telescope --kubernetes --cluster-info --docker --verify --local --report --charts --versions
+set +x
 deactivate
 rm -rf withoutcharts
