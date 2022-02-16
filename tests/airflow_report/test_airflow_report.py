@@ -117,9 +117,8 @@ def test_airflow_report(docker_scheduler):
     assert type(report["variables_report"]) == list
 
     assert "user_report" in report
-    assert type(report["user_report"]) == list
-    assert type(report["user_report"][0]) == dict
-    assert report["user_report"][0].keys() == [
+    assert type(report["user_report"]) == dict
+    assert list(report["user_report"].keys()) == [
         "1_days_active_users",
         "7_days_active_users",
         "30_days_active_users",
