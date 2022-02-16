@@ -143,7 +143,7 @@ def generate_report_summary_text(output_reports, output_file: str = "report_summ
             )
         )
 
-        for i, row in enumerate(sorted(airflow_reports, key=lambda _row: _row.task_runs_monthly_success)):
+        for i, row in enumerate(sorted(airflow_reports, key=lambda _row: _row.task_runs_monthly_success, reverse=True)):
             outf.write(
                 textwrap.dedent(
                     f"""
