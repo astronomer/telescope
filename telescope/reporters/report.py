@@ -155,7 +155,7 @@ def generate_report_summary_text(output_reports, output_file: str = "report_summ
             - Tasks: {humanize_num(row.num_tasks)} defined
             - Task Runs: {humanize_num(row.task_runs_monthly_success) if row.task_runs_monthly_success > 0 else "None"} Monthly
             - Parallelism: {row.parallelism}
-            - Pools: Default ({row.default_pool_slots} Slots), {row.num_pools} Other Pools
+            - Pools: Default ({row.default_pool_slots} Slots), {row.num_pools-1} Other Pools
             - Operators: {len(row.unique_operators)} defined
             - Connections: {row.num_connections} defined
             - Providers: {row.num_providers} defined
