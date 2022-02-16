@@ -79,6 +79,9 @@ def test_airflow_report(docker_scheduler):
     exit_code, output = docker_scheduler.exec_run("python __main__.py")
     print(output.decode("utf-8"))
     report = json.loads(clean_airflow_report_output(output.decode("utf-8")))
+
+    print(report)
+
     assert "airflow_version_report" in report  # '2.2.1'
     assert type(report["airflow_version_report"]) == str
     assert "." in report["airflow_version_report"]
@@ -117,14 +120,14 @@ def test_airflow_report(docker_scheduler):
     assert type(report["variables_report"]) == list
 
     assert "user_report" in report
-    assert type(report["user_report"]) == dict
-    assert list(report["user_report"].keys()) == [
-        "1_days_active_users",
-        "7_days_active_users",
-        "30_days_active_users",
-        "365_days_active_users",
-        "total_users",
-    ]
+    if type(report["user_report"]) == dict:
+        assert list(report["user_report"].keys()) == [
+            "1_days_active_users",
+            "7_days_active_users",
+            "30_days_active_users",
+            "365_days_active_users",
+            "total_users",
+        ]
 
 
 def test_dag_varconn_usage(example_dag_path: str):
