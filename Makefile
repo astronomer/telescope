@@ -131,5 +131,5 @@ release: clean-all delete_tag
 	gh release create $(TELESCOPE_TAG) \
 		./telescope-$(TELESCOPE_VERSION)-py3-none-any.whl \
 		airflow_report.pyz \
-		--draft --prerelease \
+		--prerelease \
 		--generate-notes
