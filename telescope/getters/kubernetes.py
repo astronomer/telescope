@@ -27,7 +27,7 @@ class KubernetesGetter(Getter):
         self.namespace = namespace
         self.container = container
 
-    def get(self, cmd: Union[List[str], str]):
+    def get(self, cmd: Union[List[str], str]) -> Union[dict, str]:
         """Utilize kubernetes python client to exec in a container
         https://github.com/kubernetes-client/python/blob/master/examples/pod_exec.py
         """
@@ -56,15 +56,7 @@ class KubernetesGetter(Getter):
         log.debug(f"Got output: {exec_res}")
 
         # filter out any log lines
-        try:
-            exec_res = clean_airflow_report_output(exec_res)
-            if type(exec_res) == list:
-                # clean_airflow_report falls back to trimming and splitting strings - we probably got an error message
-                raise RuntimeError(" ".join(exec_res))
-            return json.loads(exec_res)
-        except Exception as e:
-            log.exception(e)
-            log.exception(exec_res)
+        return clean_airflow_report_output(exec_res)
 
     def __eq__(self, other):
         return (

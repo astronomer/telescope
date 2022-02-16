@@ -5,7 +5,7 @@ from abc import abstractmethod
 
 class Getter:
     @abstractmethod
-    def get(self, cmd: Union[List[str], str]):
+    def get(self, cmd: Union[List[str], str]) -> Union[dict, str]:
         pass
 
     @abstractmethod

@@ -122,7 +122,7 @@ delete_tag:
 	- git push origin --delete $(TELESCOPE_TAG)
 
 # clean-all package_report
-release: test clean-all delete_tag
+release: clean-all delete_tag
 	$(MAKE) build
 	$(MAKE) package_report
 	- gh release delete -y $(TELESCOPE_TAG)

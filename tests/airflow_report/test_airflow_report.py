@@ -12,6 +12,7 @@ import docker
 from airflow_report.__main__ import dag_varconn_usage
 from telescope.util import clean_airflow_report_output
 from tests import resources
+from tests.conftest import manual_tests
 
 
 @pytest.fixture
@@ -69,7 +70,7 @@ def copy_to_container(container: Container, container_path: str, local_path: str
         container.put_archive(path=container_path, data=archive)
 
 
-@pytest.mark.slow_integration_test
+@manual_tests
 def test_airflow_report(docker_scheduler):
     with path(airflow_report, "__main__.py") as p:
         airflow_report_path = str(p.resolve())
@@ -78,7 +79,7 @@ def test_airflow_report(docker_scheduler):
 
     exit_code, output = docker_scheduler.exec_run("python __main__.py")
     print(output.decode("utf-8"))
-    report = json.loads(clean_airflow_report_output(output.decode("utf-8")))
+    report = clean_airflow_report_output(output.decode("utf-8"))
 
     print(report)
 
