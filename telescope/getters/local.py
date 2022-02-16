@@ -21,7 +21,14 @@ class LocalGetter(Getter):
         if type(cmd) == list:
             cmd = shlex.join(cmd)
         out = run(cmd, hide=True, warn=True).stdout  # other options: timeout, warn
-        return json.loads(clean_airflow_report_output(out))
+        try:
+            out = clean_airflow_report_output(out)
+            if type(out) == list:
+                raise RuntimeError(" ".join(out))
+            return json.loads(out)
+        except Exception as e:
+            log.exception(e)
+            log.exception(out)
 
     def get_report_key(self):
         return socket.gethostname()

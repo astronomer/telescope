@@ -26,7 +26,13 @@ class LocalDockerGetter(Getter):
     def get(self, cmd: Union[List[str], str]):
         _container = docker_client.containers.get(self.container_id)
         exec_res = _container.exec_run(cmd)
-        return json.loads(clean_airflow_report_output(exec_res.output.decode("utf-8")))
+        try:
+            if type(exec_res) == list:
+                raise RuntimeError(" ".join(exec_res))
+            return json.loads(clean_airflow_report_output(exec_res.output.decode("utf-8")))
+        except Exception as e:
+            log.exception(e)
+            log.exception(exec_res)
 
     def __eq__(self, other):
         return type(self) == type(other) and self.container_id == other.container_id
