@@ -33,7 +33,7 @@ python -m pip install telescope --find-links https://github.com/astronomer/teles
 Or with the Charts extras (`pandas/plotly/kaleido`) for the `--charts` functionality:
 
 ```shell
-python -m pip install telescope[charts] --find-links https://github.com/astronomer/telescope/releases/
+python -m pip install 'telescope[charts]' --find-links https://github.com/astronomer/telescope/releases/
 ```
 
 # Quickstart - Kubernetes Autodiscovery Assessment Mode
