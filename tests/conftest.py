@@ -1,5 +1,6 @@
 import json
 import os
+import pprint
 from importlib.resources import path
 
 import pytest
@@ -17,3 +18,9 @@ def sample_report():
         with open(report) as f:
             input_report = json.load(f)
             return input_report
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_assertrepr_compare(config, op, left, right):
+    if op in ("==", "!="):
+        return [f"{pprint.pformat(left, width=999)} {op} {pprint.pformat(right, width=999)}"]

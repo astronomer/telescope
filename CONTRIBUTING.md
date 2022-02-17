@@ -1,9 +1,25 @@
+# Contributing Quickstart (on a Mac)
+
+1) `brew install poetry` OR `make poetry-download`
+2) `make pre-commit-install`
+3) Make a new branch, from `dev`
+4) Code, test, PR, merge into `dev`
+
+## Pycharm Setup
+
+1) download the `poetry` plugin
+2) add `poetry` as the python interpreter
+
 # How to contribute
+
+## Development & CICD Overview
+
+![CICD](resources/telescope_cicd.drawio.png)
 
 ## Dependencies
 
-We use `poetry` to manage the [dependencies](https://github.com/python-poetry/poetry).
-If you dont have `poetry`, you should install with `make poetry-download`.
+We use `poetry` to manage the [dependencies](https://github.com/python-poetry/poetry). If you dont have `poetry`, you
+should install with `make poetry-download`.
 
 To install dependencies and prepare [`pre-commit`](https://pre-commit.com/) hooks you would need to run `install` command:
 
@@ -40,49 +56,7 @@ Before submitting your code please do the following steps:
 1. Run `make lint` to ensure that types, security and docstrings are okay.
 
 ---
-
-## Very first steps
-
-### Initialize your code
-
-1. Initialize `git` inside your repo:
-
-```bash
-cd telescope && git init
-```
-
-2. If you don't have `Poetry` installed run:
-
-```bash
-make poetry-download
-```
-
-3. Initialize poetry and install `pre-commit` hooks:
-
-```bash
-make install
-make pre-commit-install
-```
-
-4. Run the codestyle:
-
-```bash
-make codestyle
-```
-
-5. Upload initial code to GitHub:
-
-```bash
-git add .
-git commit -m ":tada: Initial commit"
-git branch -M main
-git remote add origin https://github.com/telescope/telescope.git
-git push -u origin main
-```
-
-### Set up bots
-
-- Set up [Dependabot](https://docs.github.com/en/github/administering-a-repository/enabling-and-disabling-version-updates#enabling-github-dependabot-version-updates) to ensure you have the latest dependencies.
+## First Steps 
 
 ### Poetry
 
@@ -234,9 +208,6 @@ This command launches `Poetry` integrity checks as well as identifies security i
 ```bash
 make check-safety
 ```
-
-</p>
-</details>
 
 </p>
 </details>

@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Set, Union
+from typing import Dict, List, Optional, Union
 
 import logging
 from collections.abc import MutableMapping
@@ -10,8 +10,12 @@ import jmespath
 log = logging.getLogger(__name__)
 
 
+class Report:
+    pass
+
+
 @dataclass
-class SummaryReport:
+class SummaryReport(Report):
     num_airflows: int
     num_dags_active: int
     num_dags_inactive: int
@@ -20,7 +24,7 @@ class SummaryReport:
 
 
 @dataclass
-class InfrastructureReport:
+class InfrastructureReport(Report):
     type: str  # VM or K8s
     provider: str
     version: str
@@ -107,7 +111,7 @@ def dag_is_active(dag: dict) -> bool:
 
 
 @dataclass
-class AirflowReport:
+class AirflowReport(Report):
     name: str
     version: str
     executor: str
@@ -128,59 +132,102 @@ class AirflowReport:
     unique_operators: List[str]
     task_run_info: Dict[str, int]
     task_runs_monthly_success: int
+    users: Dict[str, int]
     num_dags: int
     num_tasks: int
     num_dags_active: int
     num_dags_inactive: int
 
     @staticmethod
+    def error_airflow_report(name: str, error_message: str):
+        return AirflowReport(
+            name=name,
+            version="Unknown",
+            executor=error_message,
+            num_schedulers=-1,
+            num_webservers=-1,
+            num_workers=-1,
+            providers={},
+            num_providers=-1,
+            packages={},
+            non_default_configurations={},
+            parallelism=-1,
+            pools={},
+            default_pool_slots=-1,
+            num_pools=-1,
+            env={},
+            connections=[],
+            num_connections=-1,
+            unique_operators=[],
+            task_run_info={},
+            task_runs_monthly_success=-1,
+            users={},
+            num_dags=-1,
+            num_tasks=-1,
+            num_dags_active=-1,
+            num_dags_inactive=-1,
+        )
+
+    @staticmethod
     def from_input_report_row(name: str, input_row: dict, verify: dict = None):
+        if type(input_row) != dict:
+            # noinspection PyTypeChecker
+            return AirflowReport.error_airflow_report(name, error_message=input_row)
         task_run_info = sum_usage_stats_report_summary(input_row.get("usage_stats_report", []))
         connections = input_row.get("env_vars_report", {}).get("connections", []) + input_row.get(
             "connections_report", []
         )
-        return AirflowReport(
-            name=name,
-            version=input_row.get("airflow_version_report"),
-            executor=jmespath.search("configuration_report.core.executor | [0]", input_row),
-            num_schedulers=parse_replicas_from_helm(deployment_name=name, component="scheduler", helm_report=verify),
-            num_webservers=parse_replicas_from_helm(deployment_name=name, component="webserver", helm_report=verify),
-            num_workers=parse_replicas_from_helm(deployment_name=name, component="workers", helm_report=verify),
-            providers=input_row.get("providers_report", []),
-            num_providers=len(input_row.get("providers_report", []) or []),
-            packages=input_row.get("installed_packages_report"),
-            non_default_configurations=parse_non_default_configurations(
-                config_report=input_row.get("configuration_report", {})
-            ),
-            parallelism=int(
-                input_row.get("configuration_report", {}).get("core", {}).get("parallelism", ("-1", "-1"))[0]
-            ),
-            pools=input_row.get("pools_report"),
-            num_pools=len(input_row.get("pools_report")),
-            default_pool_slots=input_row.get("pools_report", {}).get("default_pool", {}).get("total", -1),
-            env=input_row.get("env_vars_report"),
-            connections=connections,
-            num_connections=len(connections),
-            unique_operators=list(
-                sorted(
-                    {
-                        op
-                        for dr in (input_row.get("dags_report", []) or [])
-                        for op in (dr.get("operators", "") or "").split(",")
-                    }
-                )
-            ),
-            task_run_info=task_run_info,
-            task_runs_monthly_success=task_run_info.get("30_days_success", -1),
-            num_tasks=sum(dr.get("num_tasks", 0) for dr in input_row.get("dags_report", [])),
-            num_dags=len(input_row.get("dags_report", [])),
-            num_dags_active=len([0 for dag in input_row.get("dags_report", []) if dag_is_active(dag)]),
-            num_dags_inactive=len([0 for dag in input_row.get("dags_report", []) if not dag_is_active(dag)]),
-        )
+        try:
+            return AirflowReport(
+                name=name,
+                version=input_row.get("airflow_version_report"),
+                executor=jmespath.search("configuration_report.core.executor | [0]", input_row),
+                num_schedulers=parse_replicas_from_helm(
+                    deployment_name=name, component="scheduler", helm_report=verify
+                ),
+                num_webservers=parse_replicas_from_helm(
+                    deployment_name=name, component="webserver", helm_report=verify
+                ),
+                num_workers=parse_replicas_from_helm(deployment_name=name, component="workers", helm_report=verify),
+                providers=input_row.get("providers_report", []),
+                num_providers=len(input_row.get("providers_report", []) or []),
+                packages=input_row.get("installed_packages_report"),
+                non_default_configurations=parse_non_default_configurations(
+                    config_report=input_row.get("configuration_report", {})
+                ),
+                parallelism=int(
+                    input_row.get("configuration_report", {}).get("core", {}).get("parallelism", ("-1", "-1"))[0]
+                ),
+                pools=input_row.get("pools_report"),
+                num_pools=len(input_row.get("pools_report")),
+                default_pool_slots=input_row.get("pools_report", {}).get("default_pool", {}).get("total", -1),
+                env=input_row.get("env_vars_report"),
+                connections=connections,
+                num_connections=len(connections),
+                unique_operators=list(
+                    sorted(
+                        {
+                            op
+                            for dr in (input_row.get("dags_report", []) or [])
+                            for op in (dr.get("operators", "") or "").split(",")
+                        }
+                    )
+                ),
+                task_run_info=task_run_info,
+                task_runs_monthly_success=task_run_info.get("30_days_success", -1),
+                users=input_row.get("user_report"),
+                num_tasks=sum(dr.get("num_tasks", 0) for dr in input_row.get("dags_report", [])),
+                num_dags=len(input_row.get("dags_report", [])),
+                num_dags_active=len([0 for dag in input_row.get("dags_report", []) if dag_is_active(dag)]),
+                num_dags_inactive=len([0 for dag in input_row.get("dags_report", []) if not dag_is_active(dag)]),
+            )
+        except Exception as e:
+            log.error(input_row)
+            log.exception(e)
 
 
 @dataclass
-class DAGReport:
+class DAGReport(Report):
     airflow_name: str
     dag_id: str
     root_dag_id: Optional[str]  # dag_id if it's a subdag
@@ -192,3 +239,8 @@ class DAGReport:
     owners: str
     operators: str
     num_tasks: int
+    variables: Optional[str] = None
+    connections: Optional[str] = None
+    cc_rank: Optional[str] = None
+    mi_rank: Optional[str] = None
+    analysis: Optional[Dict[str, int]] = None

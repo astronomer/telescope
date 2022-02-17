@@ -7,14 +7,23 @@ from time import sleep, time
 import pytest
 from docker.models.containers import Container
 
+import airflow_report
 import docker
-import telescope
+from airflow_report.__main__ import dag_varconn_usage
 from telescope.util import clean_airflow_report_output
+from tests import resources
+from tests.conftest import manual_tests
 
 
 @pytest.fixture
 def docker_client():
     return docker.from_env()
+
+
+@pytest.fixture()
+def example_dag_path():
+    with path(resources, "example-dag.py") as p:
+        return str(p.resolve())
 
 
 @pytest.fixture(params=["2.2.1", "2.1.3", "1.10.15", "1.10.10"])
@@ -61,16 +70,19 @@ def copy_to_container(container: Container, container_path: str, local_path: str
         container.put_archive(path=container_path, data=archive)
 
 
-@pytest.mark.slow_integration_test
+@manual_tests
 def test_airflow_report(docker_scheduler):
-    with path(telescope, "airflow_report.py") as p:
-        airflow_report = str(p.resolve())
+    with path(airflow_report, "__main__.py") as p:
+        airflow_report_path = str(p.resolve())
 
-    copy_to_container(docker_scheduler, "/opt/airflow/", local_path=airflow_report, name="airflow_report.py")
+    copy_to_container(docker_scheduler, "/opt/airflow/", local_path=airflow_report_path, name="__main__.py")
 
-    exit_code, output = docker_scheduler.exec_run("python airflow_report.py")
+    exit_code, output = docker_scheduler.exec_run("python __main__.py")
     print(output.decode("utf-8"))
-    report = json.loads(clean_airflow_report_output(output.decode("utf-8")))
+    report = clean_airflow_report_output(output.decode("utf-8"))
+
+    print(report)
+
     assert "airflow_version_report" in report  # '2.2.1'
     assert type(report["airflow_version_report"]) == str
     assert "." in report["airflow_version_report"]
@@ -107,3 +119,22 @@ def test_airflow_report(docker_scheduler):
 
     assert "variables_report" in report
     assert type(report["variables_report"]) == list
+
+    assert "user_report" in report
+    if type(report["user_report"]) == dict:
+        assert list(report["user_report"].keys()) == [
+            "1_days_active_users",
+            "7_days_active_users",
+            "30_days_active_users",
+            "365_days_active_users",
+            "total_users",
+        ]
+
+
+def test_dag_varconn_usage(example_dag_path: str):
+    actual = dag_varconn_usage(example_dag_path)
+    expected_conns = {"easy_-conn", "harder_-conn", "macro_-conn"}
+    expected_vars = {"easy_-var", "value_macro-var", "json_macro-var"}
+    expected = (expected_vars, expected_conns)
+    assert actual[0] == expected[0]
+    assert actual[1] == expected[1]

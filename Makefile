@@ -1,10 +1,15 @@
 #* Variables
 SHELL := /usr/bin/env bash
-PYTHON := python
+PYTHON := python3
 
 #* Docker variables
 IMAGE := telescope
 VERSION := latest
+
+#* Build Variables
+BRANCH := $(shell git branch --show-current)
+TELESCOPE_VERSION := $(shell poetry version --short)
+TELESCOPE_TAG := "v$(TELESCOPE_VERSION)"
 
 #* Poetry
 .PHONY: poetry-download
@@ -18,10 +23,8 @@ poetry-remove:
 #* Installation
 .PHONY: install
 install:
-	poetry lock -n && poetry export --without-hashes > requirements.txt
+	poetry lock -n
 	poetry install -n
-	echo "Skipping mypy..."
-	-# poetry run mypy --install-types --non-interactive ./
 
 .PHONY: pre-commit-install
 pre-commit-install:
@@ -89,5 +92,44 @@ pycache-remove:
 build-remove:
 	rm -rf build/
 
+.PHONY: outputs-remove
+outputs-remove:
+	rm -rf report.json charts report_output.xlsx report_summary.txt telescope-*.whl airflow_report.pyz
+
 .PHONY: clean-all
-clean-all: pycache-remove build-remove docker-remove
+clean-all: outputs-remove pycache-remove build-remove docker-remove
+
+package_report: build-remove
+	mkdir -p build
+	python -m pip install -r airflow_report/requirements.txt --target build
+	cp -r airflow_report build
+	rm -f build/*.dist-info/*
+	rmdir build/*.dist-info
+	python -m zipapp \
+		--compress \
+		--main airflow_report.__main__:main \
+		--python "/usr/bin/env python3" \
+		--output airflow_report.pyz \
+		build
+
+
+build: build-remove
+	poetry build
+	mv dist/telescope*.whl .
+
+delete_tag:
+	- git tag -d $(TELESCOPE_TAG)
+	- git push origin --delete $(TELESCOPE_TAG)
+
+# clean-all package_report
+release: clean-all delete_tag
+	$(MAKE) build
+	$(MAKE) package_report
+	- gh release delete -y $(TELESCOPE_TAG)
+	git tag $(TELESCOPE_TAG)
+	git push origin $(TELESCOPE_TAG)
+	gh release create $(TELESCOPE_TAG) \
+		./telescope-$(TELESCOPE_VERSION)-py3-none-any.whl \
+		airflow_report.pyz \
+		--prerelease \
+		--generate-notes

@@ -1,11 +1,11 @@
-from typing import Type, Union
+from typing import List, Type, Union
 
 from abc import abstractmethod
 
 
 class Getter:
     @abstractmethod
-    def get(self, cmd: str):
+    def get(self, cmd: Union[List[str], str]) -> Union[dict, str]:
         pass
 
     @abstractmethod

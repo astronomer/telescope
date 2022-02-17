@@ -1,6 +1,7 @@
 from typing import Dict
 
 import logging
+import os
 
 import yaml
 
@@ -12,6 +13,17 @@ from telescope.getters.kubernetes import KubernetesGetter
 from telescope.getters.local import LocalGetter
 
 log = logging.getLogger(__name__)
+
+VERSION = os.getenv("TELESCOPE_REPORT_RELEASE_VERSION", telescope.version)
+AIRFLOW_REPORT_CMD = [
+    "/bin/sh",
+    "-c",
+    "curl -sslL "
+    f"https://github.com/astronomer/telescope/releases/download/v{VERSION}/airflow_report.pyz > "
+    "airflow_report.pyz && chmod +x airflow_report.pyz && "
+    "PYTHONWARNINGS=ignore ./airflow_report.pyz && "
+    "rm -f ./airflow_report.pyz",
+]
 
 
 def parse_getters_from_hosts_file(hosts: dict, label_selector: str = "") -> Dict[str, list]:
@@ -79,16 +91,16 @@ def gather_getters(
     return _getters
 
 
-def get_from_getter(getter: Getter, config_inputs: dict) -> dict:
+def get_from_getter(getter: Getter) -> dict:
     getter_key = getter.get_report_key()
     host_type = getter.get_type()
     results = {}
-    for key in config_inputs[host_type]:
-        full_key = (host_type, getter_key, key)
-        log.debug(f"Fetching 'report[{full_key}]'...")
-        try:
-            results[full_key] = getter.get(config_inputs[host_type][key])
-        except Exception as e:
-            log.exception(e)
-            results[full_key] = str(e)
+    key = "airflow_report"
+    full_key = (host_type, getter_key, key)
+    log.debug(f"Fetching 'report[{full_key}]'...")
+    try:
+        results[full_key] = getter.get(AIRFLOW_REPORT_CMD)
+    except Exception as e:
+        log.exception(e)
+        results[full_key] = str(e)
     return results

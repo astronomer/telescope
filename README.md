@@ -1,5 +1,5 @@
 # Telescope
-![astronomer logo](astro.png)
+![astronomer logo](resources/astro.png)
 [![Build status](https://github.com/telescope/telescope/workflows/build/badge.svg?branch=main&event=push)](https://github.com/telescope/telescope/actions?query=workflow%3Abuild)
 [![Dependencies Status](https://img.shields.io/badge/dependencies-up%20to%20date-brightgreen.svg)](https://github.com/telescope/telescope/pulls?utf8=%E2%9C%93&q=is%3Apr%20author%3Aapp%2Fdependabot)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
@@ -10,25 +10,38 @@
 A tool to observe distant (or local!) Airflow installations, and gather metadata or other required data.
 
 # Installation
+
 (optionally, create a virtualenv)
+
 ```shell
 mkdir telescope_run_dir
 cd telescope_run_dir
 virtualenv venv
-. venv/bin/activate 
+source venv/bin/activate 
 ```
 
-Install telescope using pip from Github
+Install Telescope using Pip from Github
+
 ```shell
-pip install git+https://github.com/astronomer/telescope.git#egg=telescope
+python -m pip install telescope[charts] --find-links https://github.com/astronomer/telescope/releases/
+```
+
+Or with the Charts extras (`pandas/plotly/kaleido`) for the `--charts` functionality:
+
+```shell
+python -m pip install telescope[charts] --find-links https://github.com/astronomer/telescope/releases/
 ```
 
 # Quickstart - Kubernetes Autodiscovery Assessment Mode
-This will work if your Airflows are in Kubernetes and were deployed with one of the major Helm charts (and `component=scheduler` is used to identify the schedulers). It will use Helm to interrogate the installation, and connect to the Airflow schedulers to gather metadata 
+
+This will work if your Airflows are in Kubernetes and were deployed with one of the major Helm charts (
+and `component=scheduler` is used to identify the schedulers). It will use Helm to interrogate the installation, and
+connect to the Airflow schedulers to gather metadata
+
 ```shell
-telescope --kubernetes --verify --cluster-info
+telescope --kubernetes --verify --cluster-info --report --charts
 ```
-You should now have a `report.json`, `report.xlsx`, and `charts/` directory.
+You should now have a `report.json` (intermediate data payload), `report_summary.txt`, `report_output.xlsx`, and `charts/` directory.
 
 # Quickstart - SSH Assessment Mode
 This will work if your Airflow's are on hosts accessible via SSH and SSH is configured to connect to all of these hosts (e.g. you have `~/.ssh/config` with entries for all hosts)
@@ -41,71 +54,80 @@ ssh:
 ```
 
 ```shell
-telescope -f hosts.yaml
+telescope -f hosts.yaml --report --charts
 ```
-You should now have a `report.json`, `report.xlsx`, and `charts/` directory.
+You should now have a `report.json` (intermediate data payload), `report_summary.txt`, `report_output.xlsx`, and `charts/` directory.
 
 # Usage
+
 ```shell
 $ telescope --help                                                
-Usage: telescope [OPTIONS]
 
   Telescope - A tool to observe distant (or local!) Airflow installations, and
   gather usage metadata
 
 Options:
-  --version                       Show the version and exit.
-  --local                         checks versions of locally installed tools
-                                  [default: False]
-  --docker                        autodiscovery and airflow reporting for
-                                  local docker  [default: False]
-  --kubernetes                    autodiscovery and airflow reporting for
-                                  kubernetes  [default: False]
-  -l, --label-selector TEXT       Label selector for Kubernetes Autodiscovery
-                                  [default: component=scheduler]
-  --cluster-info                  get cluster size and allocation in
-                                  kubernetes  [default: False]
-  --verify                        adds helm installations to report  [default:
-                                  False]
-  --precheck                      runs Astronomer Enterprise pre-install
-                                  sanity-checks in the report  [default:
-                                  False]
-  -f, --hosts-file PATH           Hosts file to pass in various types of hosts
-                                  (ssh, kubernetes, docker) - See README.md
-                                  for sample
-  -o, --output-file PATH          Output file to write intermediate gathered
-                                  data json, and report (with report_type as
-                                  file extension), can be '-' for stdout
-                                  [default: report.json]
-  -p, --parallelism INTEGER       How many cores to use for multiprocessing
-                                  [default: (Number CPU)]
-  --gather / --no-gather          gather data about Airflow environments
-                                  [default: gather]
-  --report / --no-report          generate report summary of gathered data
-                                  [default: report]
-  --report-type [html|json|csv|xlsx]
-                                  What report type to generate
-  --help                          Show this message and exit.
+  --version                      Show the version and exit.
+  --local                        Airflow Reporting for local Airflow
+                                 [default: False]
+  --docker                       Autodiscovery and Airflow reporting for local
+                                 Docker  [default: False]
+  --kubernetes                   Autodiscovery and Airflow reporting for
+                                 Kubernetes  [default: False]
+  -l, --label-selector TEXT      Label selector for Kubernetes Autodiscovery
+                                 [default: component=scheduler]
+  --cluster-info                 Get cluster size and allocation in Kubernetes
+                                 [default: False]
+  --verify                       Introspect Helm installation information for
+                                 Reporting and Verification purposes
+                                 [default: False]
+  --versions                     checks versions of locally installed tools
+                                 [default: False]
+  --precheck                     Runs Astronomer Enterprise pre-install
+                                 sanity-checks in the report  [default: False]
+  -f, --hosts-file PATH          Hosts file to pass in various types of hosts
+                                 (ssh, kubernetes, docker) - See README.md for
+                                 sample
+  -o, --output-file PATH         Output file to write intermediate gathered
+                                 data json, and report (with report_type as
+                                 file extension), can be '-' for stdout
+                                 [default: report.json]
+  -p, --parallelism INTEGER      How many cores to use for multiprocessing
+                                 [default: (Number CPU)]
+  --gather / --no-gather         Gather data about Airflow environments
+                                 [default: gather]
+  --report / --no-report         Generate report summary of gathered data
+                                 [default: no-report]
+  --charts / --no-charts         Generate charts of summary of gathered data
+                                 [default: no-charts]
+  --report-type [json|csv|xlsx]  What report type to generate
+  --help                         Show this message and exit.
 ```
 
 # Requirements
 ## Locally - Python
-- Python >=3.9
+- Python >=3.8
 - `pip`
 
 ## Locally - Docker or Kubernetes or SSH Airflow Assessment modes
 - **Docker**: Permissions to Exec Containers, `docker.sock` Access locally
 - **Kubernetes**: Permission to List Nodes and Exec in Pods, `KUBECONFIG` set locally
 - **SSH**: Credentials to connect to all hosts, SSH Access configured locally
+- **Local**: Permission to execute Python locally
 
 ## Remote Airflow Requirements
 - Airflow Scheduler >1.10.5
-- Kubernetes Scheduler has label `component=scheduler` (or `--label-selector` specified)
 - Python 3
 - Curl
 - Postgresql/Mysql/Sqlite Metadata Database (support not guaranteed for other backing databases)
+- **Kubernetes**: Kubernetes Scheduler has label `component=scheduler` (or `--label-selector` specified)
 
 # Input
+## Local autodiscovery
+Either use `--local` or have an empty `local` key in your hosts file to enable autodiscovery.
+Autodiscovery simply runs the Airflow Report as a process, assuming that an Airflow Scheduler is being run
+on the current node.
+
 ## Docker autodiscovery
 Either use `--docker` or have an empty `docker` key in your hosts file to enable autodiscovery.
 Autodiscovery searches for containers running locally that contain "scheduler" in the name and returns
@@ -148,7 +170,7 @@ ssh:
 
 # Extra Functionality
 ## Local
-`--local` - checks installed versions of various tools, see [config.yaml](config.yaml) for more details.
+`--versions` - checks installed versions of various tools, see [config.yaml](config.yaml) for more details.
 
 ## Precheck
 `--precheck` - ensures the environment, useful before installing the Astronomer Enterprise chart
@@ -165,6 +187,12 @@ ssh:
 
 ## Report
 `--report` generate a report of type `--report-format` from the gathered data
+> Note: Required to generate `reports.xlsx` reporting
+
+## Charts
+`--charts` generate charts from the gathered data
+> Note: Required to generate `charts/` reporting
+
 
 ## Label Selection
 `--label-selector` allows Kubernetes Autodiscovery to locate Airflow Deployments with alternate key/values. 
@@ -202,7 +230,7 @@ This information is saved under the `helm` key
 #### Pre-Check
 This special mode runs a pod `bitnami/postgresql` and gets Kubernetes secrets (`astronomer-tls`, `astronomer-bootstrap`) to verify connectivity and information relating to Astronomer Enterprise installations.
 
-### Local Output
+### `--versions` Output
 See [here](https://github.com/astronomer/telescope/blob/main/telescope/config.yaml) for the most recent description of what is gathered with the local flag. Generally, versions are gathered for the following tools:
 - python
 - helm
@@ -235,7 +263,7 @@ Charts are created, by default in a directory called `/charts`. The following ch
 - "Operator Set by DAG"
 
 #### Spreadsheet
-The spreadsheet, titled `report.xlsx` by default, contains the following:
+The spreadsheet, titled `report_output.xlsx` by default, contains the following:
 
 #### Summary Report - an overall summary of the report
 - num_airflows: Number of Airflows
@@ -275,6 +303,7 @@ The spreadsheet, titled `report.xlsx` by default, contains the following:
 - unique_operators: operators used in this airflow
 - task_run_info: task run successes and percentage of failures for the last day, week, month, year, all time.
 - task_runs_monthly_success: successful task runs in the last 30 days
+- users: users active for the last day, week, month, year, all time. 
 - num_dags: number of DAGs
 - num_tasks: number of Tasks
 - num_dags_active: number of DAGs, active via `is_paused`/`is_active`
@@ -292,3 +321,8 @@ The spreadsheet, titled `report.xlsx` by default, contains the following:
 - owners: the owners, defined in the DAG
 - operators: the Task operators, counted once per DAG
 - num_tasks: the overall number of tasks
+- variables: Variables found in the source code file of the DAG, either with `Variable.get` or a macro with `{{ var.xyz }}`
+- connections: Connections found in the source code file of the DAG, either with `Variable.get` or a macro with `{{ var.xyz }}`
+- cc_rank: The letter grade given to the DAG code via [Cyclomatic Complexity](https://radon.readthedocs.io/en/latest/intro.html#cyclomatic-complexity) - A -> F, A is good.
+- mi_rank: The letter grade given to the DAG code via [Maintainability Index](https://radon.readthedocs.io/en/latest/intro.html#maintainability-index) - A -> F, A is good.
+- analysis: accessory statistics such as lines of code, lines of comments, etc

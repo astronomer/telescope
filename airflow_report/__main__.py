@@ -3,6 +3,7 @@ from typing import Any, List
 import base64
 import json
 import logging
+import re
 import sys
 from functools import reduce
 
@@ -261,7 +262,64 @@ def dags_report(session) -> Any:
         .group_by(*dag_model_fields)
         # .filter(DagModel.is_active == True)
     )
-    return [dict(zip([desc["name"] for desc in q.column_descriptions], res)) for res in q.all()]
+    dags = [dict(zip([desc["name"] for desc in q.column_descriptions], res)) for res in q.all()]
+    for dag in dags:
+        if dag["fileloc"]:
+            try:
+                dag["variables"], dag["connections"] = dag_varconn_usage(dag["fileloc"])
+            except:
+                dag["variables"] = None
+                dag["connections"] = None
+            try:
+                for dag_complexity_metric_name, dag_complexity_metric_value in dag_complexity_report(
+                    dag["fileloc"]
+                ).items():
+                    dag[dag_complexity_metric_name] = dag_complexity_metric_value
+            except:
+                dag["cc_rank"] = None
+                dag["mi_rank"] = None
+                dag["analysis"] = None
+    return dags
+
+
+var_patterns = [
+    re.compile(r"{{[\s]*var.value.([a-zA-Z-_]+)[\s]*}}"),  # "{{ var.value.<> }}"
+    re.compile(r"{{[\s]*var.json.([a-zA-Z-_]+)[\s]*}}"),  # "{{ var.json.<> }}"
+    re.compile(r"""Variable.get[(]["']([a-zA-Z-_]+)["'][)]"""),  # "Variable.get(<>)"
+]
+
+conn_patterns = [
+    re.compile(r"""(?=[\w]*[_])conn_id=["']([a-zA-Z-_]+)["']"""),  # "conn_id=<>"
+    re.compile(r"[{]{2}[\s]*conn[.]([a-zA-Z-_]+)[.]?"),  # "{{ conn.<> }}"
+]
+
+
+def dag_varconn_usage(dag_path: str):
+    var_results = set()
+    conn_results = set()
+    with open(dag_path) as f:
+        dag_contents = f.read()
+        for (results, patterns) in [(conn_results, conn_patterns), (var_results, var_patterns)]:
+            for pattern in patterns:
+                search_results = pattern.findall(dag_contents)
+                if search_results:
+                    for result in search_results:
+                        results.add(result)
+    return (var_results or None), (conn_results or None)
+
+
+def dag_complexity_report(dag_path: str):
+    from radon.complexity import average_complexity, cc_rank, cc_visit
+    from radon.metrics import mi_rank, mi_visit
+    from radon.raw import analyze
+
+    with open(dag_path) as f:
+        dag_contents = f.read()
+        return {
+            "cc_rank": cc_rank(average_complexity(cc_visit(dag_contents))),
+            "mi_rank": mi_rank(mi_visit(dag_contents, False)),
+            "analysis": analyze(dag_contents)._asdict(),
+        }
 
 
 @provide_session
@@ -278,31 +336,32 @@ def variables_report(session) -> List[str]:
     return [key for (key,) in session.query(Variable.key)]
 
 
+def days_ago(dialect: str, days: int) -> str:
+    if dialect == "sqlite":
+        return f"DATE('now', '-{days} days')"
+    elif dialect == "mysql":
+        return f"DATE_SUB(NOW(), INTERVAL {days} day)"
+    else:
+        # postgresql
+        return f"now() - interval '{days} days'"
+
+
 # noinspection SqlResolve
 @provide_session
 def usage_stats_report(session) -> Any:
-    # Task instance stats
-    def days_ago(days: int) -> str:
-        if session.bind.dialect.name == "sqlite":
-            return f"DATE('now', '-{days} days')"
-        elif session.bind.dialect.name == "mysql":
-            return f"DATE_SUB(NOW(), INTERVAL {days} day);"
-        else:
-            # postgresql
-            return f"now() - interval '{days} days'"
-
+    dialect = session.bind.dialect.name
     sql = text(
         f"""
         SELECT
             dag_id,
-            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(1)} and dag_id = dag_id) as "1_days_success",
-            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(1)} and dag_id = dag_id) as "1_days_failed",
-            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(7)} and dag_id = dag_id) as "7_days_success",
-            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(7)} and dag_id = dag_id) as "7_days_failed",
-            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(30)} and dag_id = dag_id) as "30_days_success",
-            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(30)} and dag_id = dag_id) as "30_days_failed",
-            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(365)} and dag_id = dag_id) as "365_days_success",
-            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(365)} and dag_id = dag_id) as "365_days_failed",
+            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(dialect, 1)} and dag_id = dag_id) as "1_days_success",
+            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(dialect, 1)} and dag_id = dag_id) as "1_days_failed",
+            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(dialect, 7)} and dag_id = dag_id) as "7_days_success",
+            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(dialect, 7)} and dag_id = dag_id) as "7_days_failed",
+            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(dialect, 30)} and dag_id = dag_id) as "30_days_success",
+            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(dialect, 30)} and dag_id = dag_id) as "30_days_failed",
+            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(dialect, 365)} and dag_id = dag_id) as "365_days_success",
+            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(dialect, 365)} and dag_id = dag_id) as "365_days_failed",
             (select count(1) from task_instance where state = 'success' and dag_id = dag_id) as "all_days_success",
             (select count(1) from task_instance where state = 'failed' and dag_id = dag_id) as "all_days_failed"
         FROM task_instance
@@ -310,6 +369,25 @@ def usage_stats_report(session) -> Any:
     """
     )
     return [dict(r) for r in session.execute(sql)]
+
+
+# noinspection SqlResolve
+@provide_session
+def user_report(session) -> Any:
+    dialect = session.bind.dialect.name
+    sql = text(
+        f"""
+        SELECT
+            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 1)}) AS "1_days_active_users",
+            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 7)}) AS "7_days_active_users",
+            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 30)}) AS "30_days_active_users",
+            (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 365)}) AS "365_days_active_users",
+            (SELECT COUNT(id) FROM ab_user) AS "total_users";
+        """
+    )
+    for r in session.execute(sql):
+        return dict(r)
+    return {}
 
 
 reports = [
@@ -324,10 +402,11 @@ reports = [
     usage_stats_report,
     connections_report,
     variables_report,
+    user_report,
 ]
 
-if __name__ == "__main__":
 
+def main():
     def try_reporter(r):
         try:
             return {r.__name__: r()}
@@ -343,3 +422,7 @@ if __name__ == "__main__":
             json.dumps(reduce(lambda x, y: {**x, **y}, collected_reports), default=str).encode("utf-8")
         ).decode("utf-8")
     )
+
+
+if __name__ == "__main__":
+    main()

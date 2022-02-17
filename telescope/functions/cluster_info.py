@@ -1,7 +1,16 @@
-from telescope.getters.kubernetes import KubernetesGetter
+from lazyimport import lazyimport
+
+lazyimport(
+    globals(),
+    """
+from telescope.getters.kubernetes_client import kube_client
+from telescope.getters.kubernetes_client import api_client
+""",
+)
 
 
-def cluster_info(getter: KubernetesGetter):
+# noinspection PyUnresolvedReferences
+def cluster_info():
     def cloud_provider(o):
         if "gke" in o:
             return "gke"
@@ -22,8 +31,8 @@ def cluster_info(getter: KubernetesGetter):
         # if 'Ki' in mem:
         return int(mem[:-2])
 
-    res = getter.api_client.get_code()
-    nodes_res = getter.kube_client.list_node()
+    res = api_client.get_code()
+    nodes_res = kube_client.list_node()
     return {
         "type": "k8s",
         "version": res.git_version,

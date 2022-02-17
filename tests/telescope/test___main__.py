@@ -1,5 +1,4 @@
 import json
-import os
 
 import pytest
 from click.testing import CliRunner
@@ -11,7 +10,7 @@ from telescope.getters.docker import LocalDockerGetter
 from telescope.getters.kubernetes import KubernetesGetter
 from telescope.getters.local import LocalGetter
 from telescope.getters.ssh import SSHGetter
-from telescope.util import clean_airflow_report_output, remove_initial_log_lines
+from telescope.util import remove_initial_log_lines
 from tests.conftest import manual_tests
 
 SAMPLE_HOSTS = {
@@ -30,33 +29,32 @@ SAMPLE_HOSTS = {
 
 # noinspection PyTypeChecker
 @pytest.mark.slow_integration_test
-def test_cli_local_json():
+def test_cli_versions_json():
     """https://click.palletsprojects.com/en/8.0.x/testing/#basic-testing"""
     runner = CliRunner()
-    result = runner.invoke(cli, "--local --no-report -o '-'")
+    result = runner.invoke(cli, "--versions -o '-'")
     assert result.exit_code == 0
     actual = json.loads(remove_initial_log_lines(result.output))
-    assert type(actual) == dict, "the --local flag (with -o -) gives a dict for output"
-    hostname = next(iter(actual["local"]))
+    assert type(actual) == dict, "the --versions flag (with -o -) gives a dict for output"
+    print(actual)
     assert (
-        "python" in actual["local"][hostname]
+        "python" in actual["versions"]
     ), "the --local flag retrieves the installed versions of things keyed by the hostname"
 
 
 # noinspection PyTypeChecker
 @pytest.mark.slow_integration_test
-def test_cli_local_file():
+def test_cli_versions_file():
     runner = CliRunner()
     with runner.isolated_filesystem():
-        result = runner.invoke(cli, "--local --no-report")
+        result = runner.invoke(cli, "--versions --no-report")
         assert result.exit_code == 0
         with open("report.json") as f:
             actual = json.load(f)
             assert type(actual) == dict, "we write a dict to report.json"
-            hostname = next(iter(actual["local"]))
             assert (
-                "python" in actual["local"][hostname]
-            ), "the --local flag retrieves the installed versions of things keyed by the hostname"
+                "python" in actual["versions"]
+            ), "the --versions flag retrieves the installed versions of things keyed by the hostname"
 
 
 # noinspection PyTypeChecker
@@ -82,6 +80,16 @@ def test_cli_kubernetes():
     actual = json.loads(remove_initial_log_lines(result.output))
     assert type(actual) == dict
     # TODO - fill out kube autodiscovery
+
+
+@manual_tests
+def test_cli_local():
+    runner = CliRunner()
+    result = runner.invoke(cli, "--local --no-report -o '-'")
+    print(result.output)
+    assert result.exit_code == 0
+    actual = json.loads(remove_initial_log_lines(result.output))
+    assert type(actual) == dict
 
 
 def test_gather_getters_local():

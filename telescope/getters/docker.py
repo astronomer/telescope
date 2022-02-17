@@ -1,26 +1,30 @@
+from typing import List, Union
+
+import json
 import logging
 
-from docker.errors import DockerException
+from lazyimport import lazyimport
 
-import docker
 from telescope.getters import Getter
 from telescope.util import clean_airflow_report_output
+
+lazyimport(
+    globals(),
+    """
+from telescope.getters.docker_client import docker_client
+""",
+)
 
 log = logging.getLogger(__name__)
 
 
+# noinspection PyUnresolvedReferences
 class LocalDockerGetter(Getter):
-    try:
-        docker_client = docker.from_env()
-    except DockerException as e:
-        log.warning("Unable to initialize docker!")
-        docker_client = None
-
     def __init__(self, container_id: str = None):
         self.container_id = container_id
 
-    def get(self, cmd: str):
-        _container = LocalDockerGetter.docker_client.containers.get(self.container_id)
+    def get(self, cmd: Union[List[str], str]) -> Union[dict, str]:
+        _container = docker_client.containers.get(self.container_id)
         exec_res = _container.exec_run(cmd)
         return clean_airflow_report_output(exec_res.output.decode("utf-8"))
 
