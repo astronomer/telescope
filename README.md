@@ -23,7 +23,7 @@ source venv/bin/activate
 Install Telescope using Pip from Github
 
 ```shell
-python -m pip install telescope[charts] --find-links https://github.com/astronomer/telescope/releases/
+python -m pip install telescope --find-links https://github.com/astronomer/telescope/releases/
 ```
 
 Or with the Charts extras (`pandas/plotly/kaleido`) for the `--charts` functionality:
