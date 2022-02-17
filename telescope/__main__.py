@@ -2,12 +2,14 @@ from typing import Any, Dict, List
 
 import json
 import logging
+import multiprocessing
 import os.path
 
 import click as click
-from click import BadOptionUsage, Choice, Path
+from click import BadOptionUsage, Choice, Path, echo
 from tqdm.contrib.concurrent import process_map
 
+import telescope
 from telescope.functions.astronomer_enterprise import verify, versions
 from telescope.functions.cluster_info import cluster_info
 from telescope.getter_util import gather_getters, get_from_getter
@@ -26,8 +28,18 @@ d = {"show_default": True, "show_envvar": True}
 fd = {"show_default": True, "show_envvar": True, "is_flag": True}
 
 
+def version(ctx, self, value):
+    if not value or ctx.resilient_parsing:
+        return
+    echo(f"Telescope, version {telescope.version}")
+    ctx.exit()
+
+
 @click.command()
 @click.version_option()
+@click.option(
+    "--version", is_flag=True, expose_value=False, is_eager=True, help="Show the version and exit.", callback=version
+)
 @click.option("--local", "use_local", **fd, help="Airflow Reporting for local Airflow")
 @click.option("--docker", "use_docker", **fd, help="Autodiscovery and Airflow reporting for local Docker")
 @click.option("--kubernetes", "use_kubernetes", **fd, help="Autodiscovery and Airflow reporting for Kubernetes")
@@ -184,4 +196,5 @@ def cli(
 
 
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     cli(auto_envvar_prefix="TELESCOPE")
