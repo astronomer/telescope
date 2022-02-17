@@ -23,13 +23,13 @@ source venv/bin/activate
 Install Telescope using Pip from Github
 
 ```shell
-python -m pip install 'telescope @ https://github.com/astronomer/telescope/blob/main/telescope-1.1.4-py3-none-any.whl?raw=true'
+python -m pip install telescope[charts] --find-links https://github.com/astronomer/telescope/releases/
 ```
 
 Or with the Charts extras (`pandas/plotly/kaleido`) for the `--charts` functionality:
 
 ```shell
-python -m pip install 'telescope[charts] @ https://github.com/astronomer/telescope/blob/dist/telescope-1.1.4-py3-none-any.whl?raw=true'
+python -m pip install telescope[charts] --find-links https://github.com/astronomer/telescope/releases/
 ```
 
 # Quickstart - Kubernetes Autodiscovery Assessment Mode
@@ -41,7 +41,7 @@ connect to the Airflow schedulers to gather metadata
 ```shell
 telescope --kubernetes --verify --cluster-info --report --charts
 ```
-You should now have a `report.json`, `report.xlsx`, and `charts/` directory.
+You should now have a `report.json` (intermediate data payload), `report_summary.txt`, `report_output.xlsx`, and `charts/` directory.
 
 # Quickstart - SSH Assessment Mode
 This will work if your Airflow's are on hosts accessible via SSH and SSH is configured to connect to all of these hosts (e.g. you have `~/.ssh/config` with entries for all hosts)
@@ -56,7 +56,7 @@ ssh:
 ```shell
 telescope -f hosts.yaml --report --charts
 ```
-You should now have a `report.json`, `report.xlsx`, and `charts/` directory.
+You should now have a `report.json` (intermediate data payload), `report_summary.txt`, `report_output.xlsx`, and `charts/` directory.
 
 # Usage
 
@@ -106,22 +106,28 @@ Options:
 
 # Requirements
 ## Locally - Python
-- Python >=3.9
+- Python >=3.8
 - `pip`
 
 ## Locally - Docker or Kubernetes or SSH Airflow Assessment modes
 - **Docker**: Permissions to Exec Containers, `docker.sock` Access locally
 - **Kubernetes**: Permission to List Nodes and Exec in Pods, `KUBECONFIG` set locally
 - **SSH**: Credentials to connect to all hosts, SSH Access configured locally
+- **Local**: Permission to execute Python locally
 
 ## Remote Airflow Requirements
 - Airflow Scheduler >1.10.5
-- Kubernetes Scheduler has label `component=scheduler` (or `--label-selector` specified)
 - Python 3
 - Curl
 - Postgresql/Mysql/Sqlite Metadata Database (support not guaranteed for other backing databases)
+- **Kubernetes**: Kubernetes Scheduler has label `component=scheduler` (or `--label-selector` specified)
 
 # Input
+## Local autodiscovery
+Either use `--local` or have an empty `local` key in your hosts file to enable autodiscovery.
+Autodiscovery simply runs the Airflow Report as a process, assuming that an Airflow Scheduler is being run
+on the current node.
+
 ## Docker autodiscovery
 Either use `--docker` or have an empty `docker` key in your hosts file to enable autodiscovery.
 Autodiscovery searches for containers running locally that contain "scheduler" in the name and returns
@@ -164,7 +170,7 @@ ssh:
 
 # Extra Functionality
 ## Local
-`--local` - checks installed versions of various tools, see [config.yaml](config.yaml) for more details.
+`--versions` - checks installed versions of various tools, see [config.yaml](config.yaml) for more details.
 
 ## Precheck
 `--precheck` - ensures the environment, useful before installing the Astronomer Enterprise chart
@@ -181,7 +187,12 @@ ssh:
 
 ## Report
 `--report` generate a report of type `--report-format` from the gathered data
-> Note: Required to generate `charts/` and `reports.xlsx` reporting
+> Note: Required to generate `reports.xlsx` reporting
+
+## Charts
+`--charts` generate charts from the gathered data
+> Note: Required to generate `charts/` reporting
+
 
 ## Label Selection
 `--label-selector` allows Kubernetes Autodiscovery to locate Airflow Deployments with alternate key/values. 
@@ -219,7 +230,7 @@ This information is saved under the `helm` key
 #### Pre-Check
 This special mode runs a pod `bitnami/postgresql` and gets Kubernetes secrets (`astronomer-tls`, `astronomer-bootstrap`) to verify connectivity and information relating to Astronomer Enterprise installations.
 
-### Local Output
+### `--versions` Output
 See [here](https://github.com/astronomer/telescope/blob/main/telescope/config.yaml) for the most recent description of what is gathered with the local flag. Generally, versions are gathered for the following tools:
 - python
 - helm
@@ -252,7 +263,7 @@ Charts are created, by default in a directory called `/charts`. The following ch
 - "Operator Set by DAG"
 
 #### Spreadsheet
-The spreadsheet, titled `report.xlsx` by default, contains the following:
+The spreadsheet, titled `report_output.xlsx` by default, contains the following:
 
 #### Summary Report - an overall summary of the report
 - num_airflows: Number of Airflows
@@ -292,6 +303,7 @@ The spreadsheet, titled `report.xlsx` by default, contains the following:
 - unique_operators: operators used in this airflow
 - task_run_info: task run successes and percentage of failures for the last day, week, month, year, all time.
 - task_runs_monthly_success: successful task runs in the last 30 days
+- users: users active for the last day, week, month, year, all time. 
 - num_dags: number of DAGs
 - num_tasks: number of Tasks
 - num_dags_active: number of DAGs, active via `is_paused`/`is_active`
@@ -309,7 +321,8 @@ The spreadsheet, titled `report.xlsx` by default, contains the following:
 - owners: the owners, defined in the DAG
 - operators: the Task operators, counted once per DAG
 - num_tasks: the overall number of tasks
-
-#### User Report
-- active_users : users who have logged in in the last 30 days
-- total_users : users who have ever logged in
+- variables: Variables found in the source code file of the DAG, either with `Variable.get` or a macro with `{{ var.xyz }}`
+- connections: Connections found in the source code file of the DAG, either with `Variable.get` or a macro with `{{ var.xyz }}`
+- cc_rank: The letter grade given to the DAG code via [Cyclomatic Complexity](https://radon.readthedocs.io/en/latest/intro.html#cyclomatic-complexity) - A -> F, A is good.
+- mi_rank: The letter grade given to the DAG code via [Maintainability Index](https://radon.readthedocs.io/en/latest/intro.html#maintainability-index) - A -> F, A is good.
+- analysis: accessory statistics such as lines of code, lines of comments, etc

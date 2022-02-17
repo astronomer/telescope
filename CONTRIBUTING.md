@@ -1,7 +1,9 @@
-# First Setup
+# Contributing Quickstart (on a Mac)
 
 1) `brew install poetry` OR `make poetry-download`
 2) `make pre-commit-install`
+3) Make a new branch, from `dev`
+4) Code, test, PR, merge into `dev`
 
 ## Pycharm Setup
 
@@ -54,49 +56,7 @@ Before submitting your code please do the following steps:
 1. Run `make lint` to ensure that types, security and docstrings are okay.
 
 ---
-
-## Very first steps
-
-### Initialize your code
-
-1. Initialize `git` inside your repo:
-
-```bash
-cd telescope && git init
-```
-
-2. If you don't have `Poetry` installed run:
-
-```bash
-make poetry-download
-```
-
-3. Initialize poetry and install `pre-commit` hooks:
-
-```bash
-make install
-make pre-commit-install
-```
-
-4. Run the codestyle:
-
-```bash
-make codestyle
-```
-
-5. Upload initial code to GitHub:
-
-```bash
-git add .
-git commit -m ":tada: Initial commit"
-git branch -M main
-git remote add origin https://github.com/telescope/telescope.git
-git push -u origin main
-```
-
-### Set up bots
-
-- Set up [Dependabot](https://docs.github.com/en/github/administering-a-repository/enabling-and-disabling-version-updates#enabling-github-dependabot-version-updates) to ensure you have the latest dependencies.
+## First Steps 
 
 ### Poetry
 
