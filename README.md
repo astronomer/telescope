@@ -143,7 +143,7 @@ docker:
 ```
 
 ## Kubernetes autodiscovery
-Either use `--kubernetes` or an empty `kubernets` in your hosts file to enable autodiscovery.
+Either use `--kubernetes` or an empty `kubernetes` in your hosts file to enable autodiscovery.
 Autodiscovery searches for pods running in the Kubernetes cluster defined by `KUBEPROFILE` 
 in any namespace, that contain the label `component=scheduler` (or another label defined by `--label-selector`), 
 and returns the namespace, name, and container (`scheduler`)
