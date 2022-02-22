@@ -354,17 +354,17 @@ def usage_stats_report(session) -> Any:
         f"""
         SELECT
             dag_id,
-            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(dialect, 1)} and dag_id = dag_id) as "1_days_success",
-            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(dialect, 1)} and dag_id = dag_id) as "1_days_failed",
-            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(dialect, 7)} and dag_id = dag_id) as "7_days_success",
-            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(dialect, 7)} and dag_id = dag_id) as "7_days_failed",
-            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(dialect, 30)} and dag_id = dag_id) as "30_days_success",
-            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(dialect, 30)} and dag_id = dag_id) as "30_days_failed",
-            (select count(1) from task_instance where state = 'success' AND start_date > {days_ago(dialect, 365)} and dag_id = dag_id) as "365_days_success",
-            (select count(1) from task_instance where state = 'failed' AND start_date > {days_ago(dialect, 365)} and dag_id = dag_id) as "365_days_failed",
-            (select count(1) from task_instance where state = 'success' and dag_id = dag_id) as "all_days_success",
-            (select count(1) from task_instance where state = 'failed' and dag_id = dag_id) as "all_days_failed"
-        FROM task_instance
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {days_ago(dialect, 1)} and sti.dag_id = ti.dag_id) as "1_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {days_ago(dialect, 1)} and sti.dag_id = ti.dag_id) as "1_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {days_ago(dialect, 7)} and sti.dag_id = ti.dag_id) as "7_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {days_ago(dialect, 7)} and sti.dag_id = ti.dag_id) as "7_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {days_ago(dialect, 30)} and sti.dag_id = ti.dag_id) as "30_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {days_ago(dialect, 30)} and sti.dag_id = ti.dag_id) as "30_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {days_ago(dialect, 365)} and sti.dag_id = ti.dag_id) as "365_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {days_ago(dialect, 365)} and sti.dag_id = ti.dag_id) as "365_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' and sti.dag_id = ti.dag_id) as "all_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' and sti.dag_id = ti.dag_id) as "all_days_failed"
+        FROM task_instance as ti
         GROUP BY 1;
     """
     )
