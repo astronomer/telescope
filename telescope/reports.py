@@ -15,7 +15,28 @@ class Report:
 
 
 @dataclass
+class AstronomerReport(Report):
+    report_ran_at: str
+    org_id: str
+
+    workspace_created_at: str
+    workspace_updated_at: str
+
+    workspace_id: str
+    workspace_created_at: str
+    workspace_updated_at: str
+    workspace_deleted_at: str
+
+    deployment_id: str
+    deployment_created_at: str
+    deployment_updated_at: str
+    deployment_deleted_at: str
+
+
+@dataclass
 class SummaryReport(Report):
+    report_ran_at: str
+    org_id: str
     num_airflows: int
     num_dags_active: int
     num_dags_inactive: int
@@ -25,6 +46,8 @@ class SummaryReport(Report):
 
 @dataclass
 class InfrastructureReport(Report):
+    report_ran_at: str
+    org_id: str
     type: str  # VM or K8s
     provider: str
     version: str
@@ -70,6 +93,28 @@ def parse_replicas_from_helm(deployment_name: str, component: str, helm_report: 
     return -1
 
 
+def parse_workspace_id_from_helm(deployment_name: str, helm_report: dict, default: str) -> str:
+    for k in helm_report:
+        if (
+            k.get("namespace") in deployment_name
+            and k.get("name") in deployment_name
+            and k.get("name") + k.get("namespace") != "astronomerastronomer"
+        ):
+            return k.get("values", {}).get("labels", {}).get("workspace", default)
+    return default
+
+
+def parse_deployment_id_from_helm(deployment_name: str, helm_report: dict, default: str) -> str:
+    for k in helm_report:
+        if (
+            k.get("namespace") in deployment_name
+            and k.get("name") in deployment_name
+            and k.get("name") + k.get("namespace") != "astronomerastronomer"
+        ):
+            return k.get("name", default)
+    return default
+
+
 # noinspection PyBroadException,TryExceptPass
 def sum_usage_stats_report_summary(usage_stats_report: Optional[List[Dict[str, int]]]) -> Dict[str, int]:
     """reduce the usage stats split out by dag, and reduce, and calc % of failures"""
@@ -111,7 +156,12 @@ def dag_is_active(dag: dict) -> bool:
 
 
 @dataclass
-class AirflowReport(Report):
+class DeploymentReport(Report):
+    report_ran_at: str  # addition
+    org_id: str  # addition
+    workspace_id: str  # addition # Airflow Name for noncustomers
+    deployment_id: str  # addition # Airflow Name for noncustomers
+
     name: str
     version: str
     executor: str
@@ -132,6 +182,7 @@ class AirflowReport(Report):
     unique_operators: List[str]
     task_run_info: Dict[str, int]
     task_runs_monthly_success: int
+    num_users: int
     users: Dict[str, int]
     num_dags: int
     num_tasks: int
@@ -140,7 +191,7 @@ class AirflowReport(Report):
 
     @staticmethod
     def error_airflow_report(name: str, error_message: str):
-        return AirflowReport(
+        return DeploymentReport(
             name=name,
             version="Unknown",
             executor=error_message,
@@ -152,7 +203,6 @@ class AirflowReport(Report):
             packages={},
             non_default_configurations={},
             parallelism=-1,
-            pools={},
             default_pool_slots=-1,
             num_pools=-1,
             env={},
@@ -161,24 +211,27 @@ class AirflowReport(Report):
             unique_operators=[],
             task_run_info={},
             task_runs_monthly_success=-1,
+            num_users=-1,
             users={},
             num_dags=-1,
             num_tasks=-1,
             num_dags_active=-1,
             num_dags_inactive=-1,
+            workspace_id="",
+            deployment_id="",
         )
 
     @staticmethod
     def from_input_report_row(name: str, input_row: dict, verify: dict = None):
         if type(input_row) != dict:
             # noinspection PyTypeChecker
-            return AirflowReport.error_airflow_report(name, error_message=input_row)
+            return DeploymentReport.error_airflow_report(name, error_message=input_row)
         task_run_info = sum_usage_stats_report_summary(input_row.get("usage_stats_report", []))
         connections = input_row.get("env_vars_report", {}).get("connections", []) + input_row.get(
             "connections_report", []
         )
         try:
-            return AirflowReport(
+            return DeploymentReport(
                 name=name,
                 version=input_row.get("airflow_version_report"),
                 executor=jmespath.search("configuration_report.core.executor | [0]", input_row),
@@ -215,11 +268,14 @@ class AirflowReport(Report):
                 ),
                 task_run_info=task_run_info,
                 task_runs_monthly_success=task_run_info.get("30_days_success", -1),
+                num_users=input_row.get("user_report").get("total_users", -1),
                 users=input_row.get("user_report"),
                 num_tasks=sum(dr.get("num_tasks", 0) for dr in input_row.get("dags_report", [])),
                 num_dags=len(input_row.get("dags_report", [])),
                 num_dags_active=len([0 for dag in input_row.get("dags_report", []) if dag_is_active(dag)]),
                 num_dags_inactive=len([0 for dag in input_row.get("dags_report", []) if not dag_is_active(dag)]),
+                workspace_id=parse_workspace_id_from_helm(deployment_name=name, helm_report=verify, default=name),
+                deployment_id=parse_deployment_id_from_helm(deployment_name=name, helm_report=verify, default=name),
             )
         except Exception as e:
             log.error(input_row)
@@ -228,6 +284,11 @@ class AirflowReport(Report):
 
 @dataclass
 class DAGReport(Report):
+    report_ran_at: str  # addition
+    org_id: str  # addition
+    workspace_id: str  # addition # Airflow Name for noncustomers
+    deployment_id: str  # addition # Airflow Name for noncustomers
+
     airflow_name: str
     dag_id: str
     root_dag_id: Optional[str]  # dag_id if it's a subdag

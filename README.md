@@ -35,7 +35,7 @@ connect to the Airflow schedulers to gather metadata
 ```shell
 telescope --kubernetes --verify --cluster-info
 ```
-You should now have a `report.json` - which is an intermediate data payload
+You should now have a `data.json` - which is an intermediate data payload
 
 # Quickstart - SSH Assessment Mode
 This will work if your Airflow's are on hosts accessible via SSH and SSH is configured to connect to all of these hosts (e.g. you have `~/.ssh/config` with entries for all hosts)
@@ -50,7 +50,7 @@ ssh:
 ```shell
 telescope -f hosts.yaml
 ```
-You should now have a `report.json` - which is an intermediate data payload
+You should now have a `data.json` - which is an intermediate data payload
 
 # Usage
 
@@ -85,7 +85,7 @@ Options:
   -o, --output-file PATH         Output file to write intermediate gathered
                                  data json, and report (with report_type as
                                  file extension), can be '-' for stdout
-                                 [default: report.json]
+                                 [default: data.json]
   -p, --parallelism INTEGER      How many cores to use for multiprocessing
                                  [default: (Number CPU)]
   --gather / --no-gather         Gather data about Airflow environments

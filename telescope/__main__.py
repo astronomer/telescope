@@ -8,7 +8,7 @@ import click as click
 from click import BadOptionUsage, Choice, Path
 from tqdm.contrib.concurrent import process_map
 
-from telescope.functions.astronomer_enterprise import precheck, verify, versions
+from telescope.functions.astronomer_enterprise import verify, versions
 from telescope.functions.cluster_info import cluster_info
 from telescope.getter_util import gather_getters, get_from_getter
 from telescope.reporters.report import (
@@ -18,6 +18,7 @@ from telescope.reporters.report import (
     generate_report,
     generate_report_summary_text,
 )
+from telescope.upload import upload_to_gcs
 
 log = logging.getLogger(__name__)
 
@@ -42,23 +43,12 @@ fd = {"show_default": True, "show_envvar": True, "is_flag": True}
 )
 @click.option("--versions", "should_versions", **fd, help="checks versions of locally installed tools")
 @click.option(
-    "--precheck", "should_precheck", **fd, help="Runs Astronomer Enterprise pre-install sanity-checks in the report"
-)
-@click.option(
     "-f",
     "--hosts-file",
     **d,
     default=None,
     type=Path(exists=True, readable=True),
     help="Hosts file to pass in various types of hosts (ssh, kubernetes, docker) - See README.md for sample",
-)
-@click.option(
-    "-o",
-    "--output-file",
-    **d,
-    type=Path(),
-    default="report.json",
-    help="Output file to write intermediate gathered data json, and report (with report_type as file extension), can be '-' for stdout",
 )
 @click.option(
     "-p",
@@ -77,6 +67,21 @@ fd = {"show_default": True, "show_envvar": True, "is_flag": True}
 @click.option(
     "--charts/--no-charts", "should_charts", **fd, default=False, help="Generate charts of summary of gathered data"
 )
+@click.option(
+    "--summary/--no-summary", "should_summary", **fd, default=False, help="Generate summary text file of gathered data"
+)
+@click.option(
+    "--upload/--no-upload", "should_upload", **fd, default=False, help="Upload charts to get access to rich reporting"
+)
+@click.option(
+    "-n",
+    "--organization-name",
+    "",
+    **d,
+    type=str,
+    prompt=True,
+    help="Denote who this report belongs to, e.g. a company name",
+)
 @click.option("--report-type", type=Choice(REPORT_TYPES.keys()), default="xlsx", help="What report type to generate")
 def cli(
     use_local: bool,
@@ -85,19 +90,20 @@ def cli(
     label_selector: str,
     should_verify: bool,
     should_versions: bool,
-    should_precheck: bool,
     should_cluster_info: bool,
     hosts_file: str,
-    output_file: str,
     parallelism: int,
     should_gather: bool,
-    should_charts: bool,
     should_report: bool,
+    should_charts: bool,
+    should_summary: bool,
+    should_upload: bool,
+    organization_name: str,
     report_type: str,
 ) -> None:
     """Telescope - A tool to observe distant (or local!) Airflow installations, and gather usage metadata"""
-    # noinspection PyTypeChecker
-    report = {}
+    data = {}
+    output_file = f"{organization_name}.data.json"
 
     if should_gather:
         with click.open_file(output_file, "w") as output:
@@ -105,16 +111,13 @@ def cli(
 
             # Add special method calls, don't know a better way to do this
             if should_cluster_info:
-                report["cluster_info"] = cluster_info()
-
-            if should_precheck:
-                report["precheck"] = precheck()
+                data["cluster_info"] = cluster_info()
 
             if should_verify:
-                report["verify"] = verify()
+                data["verify"] = verify()
 
             if should_versions:
-                report["versions"] = versions()
+                data["versions"] = versions()
 
             # flatten getters - for multiproc
             all_getters = [
@@ -131,63 +134,53 @@ def cli(
             # unflatten and assemble into report
             for result in results:
                 for (host_type, getter_key, key), value in result.items():
-                    if host_type not in report:
-                        report[host_type] = {}
+                    if host_type not in data:
+                        data[host_type] = {}
 
-                    if getter_key not in report[host_type]:
-                        report[host_type][getter_key] = {}
+                    if getter_key not in data[host_type]:
+                        data[host_type][getter_key] = {}
 
-                    report[host_type][getter_key][key] = value
+                    data[host_type][getter_key][key] = value
 
-            log.info(f"Writing report to {output_file} ...")
-            output.write(json.dumps(report, default=str))
+            log.info(f"Writing data to {output_file} ...")
+            output.write(json.dumps(data, default=str))
+    elif any([should_report, should_charts, should_summary, should_upload]):
+        # We didn't have a "gather" step, so there's filled "report" object. Hope there's a file
+        if not os.path.exists(output_file):
+            raise BadOptionUsage("--report", f"There is no data to aggregate at {output_file}, failing to report")
 
-    if should_report:
-        report_output_file = output_file
-        if ".json" in output_file:
-            if report_type == "json":
-                report_output_file = report_output_file.replace(".json", f"_output.json")
-            else:
-                report_output_file = report_output_file.replace(".json", f"_output.{report_type}")
-        log.info(f"Generating report to {report_output_file} ...")
+        with open(output_file) as input_file:
+            data = json.load(input_file)
 
-        if not should_gather:
-            # We didn't have a "gather" step, so there's filled "report" object. Hope there's a file
-            if not os.path.exists(output_file):
-                raise BadOptionUsage(
-                    "--report", f"There is no data generated to report on at {output_file}, failing to report"
-                )
-
-            with open(output_file) as input_file:
-                report = json.load(input_file)
-                generate_outputs(
-                    report, output_filepath=report_output_file, report_type=report_type, should_charts=should_charts
-                )
-        else:
-            if not len(report):
-                raise BadOptionUsage(
-                    "--report", "There is no data to generate a report on without --gather, failing to report"
-                )
-            generate_outputs(
-                report, output_filepath=report_output_file, report_type=report_type, should_charts=should_charts
+    if any([should_report, should_charts, should_summary, should_upload]):
+        if not len(data):
+            raise BadOptionUsage(
+                "--report",
+                f"There is no data to aggregate without --gather, or an existing {output_file}, failing to report",
             )
 
+        log.info(f"Aggregating Raw Data...")
+        output_reports = generate_output_reports(data)
 
-def generate_outputs(report: dict, report_type: str, output_filepath: str, should_charts: bool):
-    log.info(f"Aggregating Raw Data...")
-    output_reports = generate_output_reports(report)
+        if should_report:
+            output_filepath = f"report.{report_type}"
+            log.info(f"Generating Report of type {report_type} at {output_filepath} ...")
+            generate_report(output_reports, report_type, output_filepath)
 
-    log.info(f"Generating Report of type {report_type} at {output_filepath} ...")
-    generate_report(output_reports, report_type, output_filepath)
-    if should_charts:
-        try:
-            log.info("Generating Charts ...")
-            generate_charts(output_reports)
-        except ImportError as e:
-            log.error(f"Attempted to generate charts but failed with error, skipping... - {e}")
+        if should_charts:
+            try:
+                log.info("Generating Charts at default filepath: [/charts] ...")
+                generate_charts(output_reports)
+            except ImportError as e:
+                log.error(f"Attempted to generate charts but failed with error, skipping... - {e}")
 
-    log.info("Generating Summary Report at default filepath [report_summary.txt] ...")
-    generate_report_summary_text(output_reports)
+        if should_summary:
+            log.info("Generating Summary Report at default filepath: [report_summary.txt] ...")
+            generate_report_summary_text(output_reports)
+
+        if should_upload:
+            output_reports["raw"] = data
+            upload_to_gcs(output_reports=output_reports, organization_name=organization_name)
 
 
 if __name__ == "__main__":

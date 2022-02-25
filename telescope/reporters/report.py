@@ -10,7 +10,7 @@ import humanize
 from xlsxwriter import Workbook
 
 from telescope.reporters.charts import AIRFLOW_CHARTS
-from telescope.reports import AirflowReport, DAGReport, InfrastructureReport, Report, SummaryReport
+from telescope.reports import DeploymentReport, DAGReport, InfrastructureReport, Report, SummaryReport
 
 log = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ def generate_output_reports(input_report: dict) -> Dict[str, List[Report]]:
                     continue
 
                 airflows.add(key)
-                airflow_report = AirflowReport.from_input_report_row(
+                airflow_report = DeploymentReport.from_input_report_row(
                     name=key, input_row=value["airflow_report"], verify=maybe_verify
                 )
                 summary_dags_active += airflow_report.num_dags_active
@@ -142,7 +142,7 @@ def generate_charts(output_reports) -> None:
 
 def generate_report_summary_text(output_reports, output_file: str = "report_summary.txt") -> None:
     summary_reports: List[SummaryReport] = output_reports["Summary Report"]
-    airflow_reports: List[AirflowReport] = output_reports["Airflow Report"]
+    airflow_reports: List[DeploymentReport] = output_reports["Airflow Report"]
 
     def humanize_num(_i: int):
         humanized = humanize.intword(_i, format="%.0f")
