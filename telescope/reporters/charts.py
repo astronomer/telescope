@@ -12,14 +12,12 @@ lazyimport(
 import numpy as np
 import plotly.express as px
 from pandas import DataFrame
-import pandas as pd
 """,
 )
 
 log = logging.getLogger(__name__)
 
 
-# noinspection PyUnresolvedReferences
 def pretty_pie_chart(fig):
     fig.update_traces(
         textposition="outside",
@@ -31,10 +29,13 @@ def pretty_pie_chart(fig):
 
 # noinspection PyUnresolvedReferences
 def create_airflow_versions_chart(airflow_reports: List[AirflowReport], output_file: str) -> None:
-    airflow_df = pd.DataFrame(airflow_reports)
-    title = "Airflow Version"
+    airflow_df = DataFrame(airflow_reports)
+    title = "Airflow Versions"
     if "version" in airflow_df:
         vc = airflow_df["version"].value_counts()
+        if len(vc) > 10:
+            vc = vc.nlargest(10)
+            title += " (Top 10)"
         pretty_pie_chart(
             px.pie(
                 vc,
@@ -43,12 +44,11 @@ def create_airflow_versions_chart(airflow_reports: List[AirflowReport], output_f
                 names=vc.index,
                 values=vc.values,
             )
-        ).write_image(output_file)
+        ).write_image(output_file, width=750, height=500)
     else:
         log.warning(f"'version' not found in report - unable to create {title} chart")
 
 
-# noinspection PyUnresolvedReferences
 def prettify_bar_chart(fig):
     return (
         fig.update_layout(
@@ -61,12 +61,17 @@ def prettify_bar_chart(fig):
     )
 
 
-# noinspection PyUnresolvedReferences
 def create_dags_per_airflow_chart(airflow_reports: List[AirflowReport], output_file: str) -> None:
-    airflow_df = pd.DataFrame(airflow_reports)
+    # noinspection PyUnresolvedReferences
+    airflow_df = DataFrame(airflow_reports)
     title = "Active DAGs per Airflow"
     if "name" in airflow_df:
         airflow_df["name"] = airflow_df["name"].str.split("|").str[0]
+
+        if len(airflow_df) > 40:
+            airflow_df = airflow_df.nlargest(40, "num_dags_active")
+            title += " (Top 40)"
+        # noinspection PyUnresolvedReferences
         prettify_bar_chart(
             px.bar(
                 airflow_df,
@@ -77,17 +82,21 @@ def create_dags_per_airflow_chart(airflow_reports: List[AirflowReport], output_f
                 text="num_dags_active",
                 labels={"num_dags_active": "Active DAGs", "name": "Airflow"},
             )
-        ).write_image(output_file)
+        ).write_image(output_file, width=1500, height=1000)
     else:
         log.warning(f"'name' not found in report - unable to {title} chart")
 
 
 # noinspection PyUnresolvedReferences
 def create_tasks_per_airflow_chart(airflow_reports: List[AirflowReport], output_file: str) -> None:
-    airflow_df = pd.DataFrame(airflow_reports)
-    title = "Tasks per Airflow (Log Scale)"
+    airflow_df = DataFrame(airflow_reports)
+    title = "Defined Tasks per Airflow (Log Scale)"
     if "name" in airflow_df:
         airflow_df["name"] = airflow_df["name"].str.split("|").str[0]
+
+        if len(airflow_df) > 40:
+            airflow_df = airflow_df.nlargest(40, "num_tasks")
+            title += " (Top 40)"
         prettify_bar_chart(
             px.bar(
                 airflow_df,
@@ -99,20 +108,26 @@ def create_tasks_per_airflow_chart(airflow_reports: List[AirflowReport], output_
                 text="num_tasks",
                 labels={"num_tasks": "Defined Tasks", "name": "Airflow"},
             )
-        ).write_image(output_file)
+        ).write_image(output_file, width=1500, height=1000)
     else:
         log.warning(f"'name' not found in report - unable to create {title} chart")
 
 
 # noinspection PyUnresolvedReferences
 def create_task_runs_per_airflow_chart(airflow_reports: List[AirflowReport], output_file: str) -> None:
-    airflow_df = pd.DataFrame(airflow_reports)
+    airflow_df = DataFrame(airflow_reports)
     title = "Monthly Successful Task Runs per Airflow (Log Scale)"
     if "name" in airflow_df:
         airflow_df["name"] = airflow_df["name"].str.split("|").str[0]
+
+        airflow_df["task_runs_monthly_success"] = airflow_df["task_runs_monthly_success"].clip(lower=0)
+
+        if len(airflow_df) > 40:
+            airflow_df = airflow_df.nlargest(40, "task_runs_monthly_success")
+            title += " (Top 40)"
         prettify_bar_chart(
             px.bar(
-                airflow_df,
+                airflow_df.nlargest(40, "task_runs_monthly_success"),
                 title=title,
                 color_discrete_sequence=px.colors.qualitative.Prism,
                 x="name",
@@ -121,17 +136,21 @@ def create_task_runs_per_airflow_chart(airflow_reports: List[AirflowReport], out
                 log_y=True,
                 text="task_runs_monthly_success",
             )
-        ).write_image(output_file)
+        ).write_image(output_file, width=1500, height=1000)
     else:
         log.warning(f"'name' not found in report - unable to create {title} chart")
 
 
 # noinspection PyUnresolvedReferences
 def create_airflow_operator_set_chart(airflow_reports: List[AirflowReport], output_file: str) -> None:
-    airflow_df = pd.DataFrame(airflow_reports)
+    airflow_df = DataFrame(airflow_reports)
     title = "Unique Operator Set (Operator Counted Once Per Airflow)"
     if "unique_operators" in airflow_df:
         vc = airflow_df["unique_operators"].explode(ignore_index=True).replace("", np.NaN).dropna().value_counts()
+
+        if len(vc) > 40:
+            vc = vc.nlargest(40)
+            title += " (Top 40)"
         prettify_bar_chart(
             px.bar(
                 vc,
@@ -142,17 +161,21 @@ def create_airflow_operator_set_chart(airflow_reports: List[AirflowReport], outp
                 labels={"y": "Num Airflow Containing", "index": "Operator"},
                 text=vc.values,
             )
-        ).write_image(output_file)
+        ).write_image(output_file, width=1500, height=1000)
     else:
         log.warning(f"'unique_operators' not found in report - unable to create {title} chart")
 
 
 # noinspection PyUnresolvedReferences
 def create_dag_operator_set_chart(dag_report: List[DAGReport], output_file: str) -> None:
-    dag_df = pd.DataFrame(dag_report)
+    dag_df = DataFrame(dag_report)
     title = "Unique Operator Set (Operator Counted Once Per DAG, Log Scale)"
     if "operators" in dag_df:
         vc = dag_df["operators"].str.split(",").explode(ignore_index=True).replace("", np.NaN).dropna().value_counts()
+
+        if len(vc) > 40:
+            vc = vc.nlargest(40)
+            title += " (Top 40)"
         prettify_bar_chart(
             px.bar(
                 vc,
@@ -164,7 +187,7 @@ def create_dag_operator_set_chart(dag_report: List[DAGReport], output_file: str)
                 log_y=True,
                 text=vc.values,
             )
-        ).write_image(output_file)
+        ).write_image(output_file, width=1500, height=1000)
     else:
         log.warning(f"'operators' not found in report - unable to create {title} chart")
 
