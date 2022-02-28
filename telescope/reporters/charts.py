@@ -127,7 +127,7 @@ def create_task_runs_per_airflow_chart(airflow_reports: List[AirflowReport], out
             title += " (Top 40)"
         prettify_bar_chart(
             px.bar(
-                airflow_df.nlargest(40, "task_runs_monthly_success"),
+                airflow_df,
                 title=title,
                 color_discrete_sequence=px.colors.qualitative.Prism,
                 x="name",
