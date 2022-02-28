@@ -27,8 +27,8 @@ def pretty_pie_chart(fig):
     return fig
 
 
-# noinspection PyUnresolvedReferences
 def create_airflow_versions_chart(airflow_reports: List[AirflowReport], output_file: str) -> None:
+    # noinspection PyUnresolvedReferences
     airflow_df = DataFrame(airflow_reports)
     title = "Airflow Versions"
     if "version" in airflow_df:
@@ -36,6 +36,7 @@ def create_airflow_versions_chart(airflow_reports: List[AirflowReport], output_f
         if len(vc) > 10:
             vc = vc.nlargest(10)
             title += " (Top 10)"
+        # noinspection PyUnresolvedReferences
         pretty_pie_chart(
             px.pie(
                 vc,
@@ -87,8 +88,8 @@ def create_dags_per_airflow_chart(airflow_reports: List[AirflowReport], output_f
         log.warning(f"'name' not found in report - unable to {title} chart")
 
 
-# noinspection PyUnresolvedReferences
 def create_tasks_per_airflow_chart(airflow_reports: List[AirflowReport], output_file: str) -> None:
+    # noinspection PyUnresolvedReferences
     airflow_df = DataFrame(airflow_reports)
     title = "Defined Tasks per Airflow (Log Scale)"
     if "name" in airflow_df:
@@ -97,6 +98,7 @@ def create_tasks_per_airflow_chart(airflow_reports: List[AirflowReport], output_
         if len(airflow_df) > 40:
             airflow_df = airflow_df.nlargest(40, "num_tasks")
             title += " (Top 40)"
+        # noinspection PyUnresolvedReferences
         prettify_bar_chart(
             px.bar(
                 airflow_df,
@@ -113,8 +115,8 @@ def create_tasks_per_airflow_chart(airflow_reports: List[AirflowReport], output_
         log.warning(f"'name' not found in report - unable to create {title} chart")
 
 
-# noinspection PyUnresolvedReferences
 def create_task_runs_per_airflow_chart(airflow_reports: List[AirflowReport], output_file: str) -> None:
+    # noinspection PyUnresolvedReferences
     airflow_df = DataFrame(airflow_reports)
     title = "Monthly Successful Task Runs per Airflow (Log Scale)"
     if "name" in airflow_df:
@@ -125,6 +127,7 @@ def create_task_runs_per_airflow_chart(airflow_reports: List[AirflowReport], out
         if len(airflow_df) > 40:
             airflow_df = airflow_df.nlargest(40, "task_runs_monthly_success")
             title += " (Top 40)"
+        # noinspection PyUnresolvedReferences
         prettify_bar_chart(
             px.bar(
                 airflow_df,
@@ -141,16 +144,18 @@ def create_task_runs_per_airflow_chart(airflow_reports: List[AirflowReport], out
         log.warning(f"'name' not found in report - unable to create {title} chart")
 
 
-# noinspection PyUnresolvedReferences
 def create_airflow_operator_set_chart(airflow_reports: List[AirflowReport], output_file: str) -> None:
+    # noinspection PyUnresolvedReferences
     airflow_df = DataFrame(airflow_reports)
     title = "Unique Operator Set (Operator Counted Once Per Airflow)"
     if "unique_operators" in airflow_df:
+        # noinspection PyUnresolvedReferences
         vc = airflow_df["unique_operators"].explode(ignore_index=True).replace("", np.NaN).dropna().value_counts()
 
         if len(vc) > 40:
             vc = vc.nlargest(40)
             title += " (Top 40)"
+        # noinspection PyUnresolvedReferences
         prettify_bar_chart(
             px.bar(
                 vc,
@@ -166,16 +171,18 @@ def create_airflow_operator_set_chart(airflow_reports: List[AirflowReport], outp
         log.warning(f"'unique_operators' not found in report - unable to create {title} chart")
 
 
-# noinspection PyUnresolvedReferences
 def create_dag_operator_set_chart(dag_report: List[DAGReport], output_file: str) -> None:
+    # noinspection PyUnresolvedReferences
     dag_df = DataFrame(dag_report)
     title = "Unique Operator Set (Operator Counted Once Per DAG, Log Scale)"
     if "operators" in dag_df:
+        # noinspection PyUnresolvedReferences
         vc = dag_df["operators"].str.split(",").explode(ignore_index=True).replace("", np.NaN).dropna().value_counts()
 
         if len(vc) > 40:
             vc = vc.nlargest(40)
             title += " (Top 40)"
+        # noinspection PyUnresolvedReferences
         prettify_bar_chart(
             px.bar(
                 vc,
