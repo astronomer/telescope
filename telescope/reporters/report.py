@@ -52,6 +52,23 @@ def save_json(output_filepath: str, **kwargs) -> None:
 REPORT_TYPES = {"json": save_json, "csv": save_csv, "xlsx": save_xlsx}
 
 
+def should_skip(key, value, astro_seen) -> bool:
+    try:
+        # cheap dedup of dirty data that has multiple schedulers
+        if "astronomer" in key:
+            [_, pod] = key.split("|")
+            deduped = "-".join(pod.split("-")[:-2])
+            if deduped in astro_seen:
+                return True
+            else:
+                # If there was an ApiException or something, skip the dedupe
+                if value.get("airflow_report", {}).get("airflow_version_report") != "Unknown":
+                    astro_seen.add(deduped)
+    except Exception as e:
+        logging.debug(e)
+    return False
+
+
 def generate_output_reports(input_report: dict) -> Dict[str, List[Report]]:
     """Aggregates and parses the raw JSON data and assembles a summary "report" with structure"""
     output_reports = {"Summary Report": [], "Infrastructure Report": [], "Airflow Report": [], "DAG Report": []}
@@ -70,9 +87,14 @@ def generate_output_reports(input_report: dict) -> Dict[str, List[Report]]:
     summary_num_tasks = 0
     summary_num_successful_task_runs_monthly = 0
 
+    astro_seen = set()
     for host_type in ["kubernetes", "docker", "ssh"]:
         if host_type in input_report:
             for key, value in input_report[host_type].items():
+                # cheap dedup of dirty data that has multiple schedulers
+                if should_skip(key, value, astro_seen):
+                    continue
+
                 airflows.add(key)
                 airflow_report = AirflowReport.from_input_report_row(
                     name=key, input_row=value["airflow_report"], verify=maybe_verify
