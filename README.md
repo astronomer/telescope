@@ -14,13 +14,9 @@
 A tool to observe distant (or local!) Airflow installations, and gather metadata or other required data.
 
 # Installation
-
-(optionally, create a virtualenv)
-
+*optionally*, create a virtualenv called `venv` (or anything else ) in the current directory for easy cleanup
 ```shell
-mkdir telescope_run_dir
-cd telescope_run_dir
-virtualenv venv
+python -m venv venv
 source venv/bin/activate 
 ```
 
@@ -30,12 +26,6 @@ Install Telescope using Pip from Github
 python -m pip install telescope --find-links https://github.com/astronomer/telescope/releases/
 ```
 
-Or with the Charts extras (`pandas/plotly/kaleido`) for the `--charts` functionality:
-
-```shell
-python -m pip install 'telescope[charts]' --find-links https://github.com/astronomer/telescope/releases/
-```
-
 # Quickstart - Kubernetes Autodiscovery Assessment Mode
 
 This will work if your Airflows are in Kubernetes and were deployed with one of the major Helm charts (
@@ -43,9 +33,9 @@ and `component=scheduler` is used to identify the schedulers). It will use Helm 
 connect to the Airflow schedulers to gather metadata
 
 ```shell
-telescope --kubernetes --verify --cluster-info --report --charts
+telescope --kubernetes --verify --cluster-info
 ```
-You should now have a `report.json` (intermediate data payload), `report_summary.txt`, `report_output.xlsx`, and `charts/` directory.
+You should now have a `report.json` - which is an intermediate data payload
 
 # Quickstart - SSH Assessment Mode
 This will work if your Airflow's are on hosts accessible via SSH and SSH is configured to connect to all of these hosts (e.g. you have `~/.ssh/config` with entries for all hosts)
@@ -58,9 +48,9 @@ ssh:
 ```
 
 ```shell
-telescope -f hosts.yaml --report --charts
+telescope -f hosts.yaml
 ```
-You should now have a `report.json` (intermediate data payload), `report_summary.txt`, `report_output.xlsx`, and `charts/` directory.
+You should now have a `report.json` - which is an intermediate data payload
 
 # Usage
 
@@ -171,6 +161,11 @@ ssh:
   - host: foo.com
 ```
 
+# Install for Extra functionality
+Install with the Charts extras (`pandas/plotly/kaleido`) to enable the `--charts` functionality:
+```shell
+python -m pip install 'telescope[charts]' --find-links https://github.com/astronomer/telescope/releases/
+```
 
 # Extra Functionality
 ## Local
