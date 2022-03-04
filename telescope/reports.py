@@ -1,11 +1,20 @@
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 import logging
-from collections.abc import MutableMapping
 from dataclasses import dataclass
-from functools import partial, reduce
 
 import jmespath
+
+from telescope.reports_util import (
+    dag_is_active,
+    parse_chart_version_from_helm,
+    parse_deployment_id_from_helm,
+    parse_non_default_configurations,
+    parse_replicas_from_helm,
+    parse_updated_at_from_helm,
+    parse_workspace_id_from_helm,
+    sum_usage_stats_report_summary,
+)
 
 log = logging.getLogger(__name__)
 
@@ -15,39 +24,22 @@ class Report:
 
 
 @dataclass
-class AstronomerReport(Report):
-    report_ran_at: str
-    org_id: str
-
-    workspace_created_at: str
-    workspace_updated_at: str
-
-    workspace_id: str
-    workspace_created_at: str
-    workspace_updated_at: str
-    workspace_deleted_at: str
-
-    deployment_id: str
-    deployment_created_at: str
-    deployment_updated_at: str
-    deployment_deleted_at: str
-
-
-@dataclass
 class SummaryReport(Report):
-    report_ran_at: str
-    org_id: str
     num_airflows: int
     num_dags_active: int
     num_dags_inactive: int
     num_tasks: int
     num_successful_task_runs_monthly: int
 
+    # 1.3.0 additions
+    telescope_version: str
+    report_date: str
+    organization: str
+    product: Optional[str] = None
+
 
 @dataclass
 class InfrastructureReport(Report):
-    report_ran_at: str
-    org_id: str
     type: str  # VM or K8s
     provider: str
     version: str
@@ -57,111 +49,15 @@ class InfrastructureReport(Report):
     allocatable_gb: float
     capacity_gb: float
 
-    @staticmethod
-    def from_input_report_row(input_row):
-        return InfrastructureReport(**input_row)
-
-
-def parse_non_default_configurations(config_report: dict) -> Union[Dict[str, str], MutableMapping]:
-    def flatten_dict(d: MutableMapping, parent_key: str = "", sep: str = ".") -> MutableMapping:
-        items = []
-        for k, v in d.items():
-            new_key = parent_key + sep + k if parent_key else k
-            if isinstance(v, MutableMapping):
-                items.extend(flatten_dict(v, new_key, sep=sep).items())
-            else:
-                items.append((new_key, v))
-        return dict(items)
-
-    new = {k: {ik: iv for ik, iv in v.items() if iv[1] != "default"} for k, v in config_report.items()}
-    filtered = {k: v for k, v in new.items() if len(v)}
-    return flatten_dict(filtered)
-
-
-def parse_non_default_configurations_as_str(config_report: dict) -> str:
-    return ", ".join([f"{k}: {v[0]}" for k, v in parse_non_default_configurations(config_report).items()])
-
-
-def parse_replicas_from_helm(deployment_name: str, component: str, helm_report: dict) -> int:
-    for k in helm_report:
-        if (
-            k.get("namespace") in deployment_name
-            and k.get("name") in deployment_name
-            and k.get("name") + k.get("namespace") != "astronomerastronomer"
-        ):
-            return k.get("values", {}).get(component, {}).get("replicas", 1)
-    return -1
-
-
-def parse_workspace_id_from_helm(deployment_name: str, helm_report: dict, default: str) -> str:
-    for k in helm_report:
-        if (
-            k.get("namespace") in deployment_name
-            and k.get("name") in deployment_name
-            and k.get("name") + k.get("namespace") != "astronomerastronomer"
-        ):
-            return k.get("values", {}).get("labels", {}).get("workspace", default)
-    return default
-
-
-def parse_deployment_id_from_helm(deployment_name: str, helm_report: dict, default: str) -> str:
-    for k in helm_report:
-        if (
-            k.get("namespace") in deployment_name
-            and k.get("name") in deployment_name
-            and k.get("name") + k.get("namespace") != "astronomerastronomer"
-        ):
-            return k.get("name", default)
-    return default
-
-
-# noinspection PyBroadException,TryExceptPass
-def sum_usage_stats_report_summary(usage_stats_report: Optional[List[Dict[str, int]]]) -> Dict[str, int]:
-    """reduce the usage stats split out by dag, and reduce, and calc % of failures"""
-    sum_report = {}
-
-    def accumulate(key, accumulator, next_val):
-        return accumulator + next_val.get(key, 0)
-
-    # Take all the keys from the first record -
-    # keys = ['1_days_success', '1_days_failed', '7_days_success', '7_days_failed', '30_days_success',
-    #           '30_days_failed', '365_days_success', '365_days_failed', 'all_days_success', 'all_days_failed']
-    # Reduce them all down to a sum value, then further summarize to successes and percents
-    if type(usage_stats_report) == list and len(usage_stats_report):
-        reduced = {
-            key: reduce(partial(accumulate, key), usage_stats_report, 0)
-            for key in usage_stats_report[0].keys()
-            if key != "dag_id"
-        }
-        for key, value in reduced.items():
-            if "_failed" in key:
-                key_success = key.replace("_failed", "_success")
-                key_pct = key.replace("_failed", "_failed_pct")
-                try:
-                    value_all = reduced.get(key_success, 1) + value
-                    if value_all != 0:
-                        value_pct = int(value / value_all * 100)  # failed / success
-                        sum_report[key_pct] = value_pct
-                    else:
-                        sum_report[key_pct] = 0
-                except Exception:
-                    sum_report[key_pct] = -1
-            else:
-                sum_report[key] = value
-    return sum_report
-
-
-def dag_is_active(dag: dict) -> bool:
-    return dag.get("is_active", False) and not dag.get("is_paused", False)
+    # 1.3.0 additions
+    telescope_version: str
+    report_date: str
+    organization: str
+    product: Optional[str] = None
 
 
 @dataclass
 class DeploymentReport(Report):
-    report_ran_at: str  # addition
-    org_id: str  # addition
-    workspace_id: str  # addition # Airflow Name for noncustomers
-    deployment_id: str  # addition # Airflow Name for noncustomers
-
     name: str
     version: str
     executor: str
@@ -188,6 +84,16 @@ class DeploymentReport(Report):
     num_tasks: int
     num_dags_active: int
     num_dags_inactive: int
+
+    # 1.3.0 additions
+    workspace_id: Optional[str] = None
+    deployment_id: Optional[str] = None
+    chart_version: Optional[str] = None
+
+    telescope_version: Optional[str] = None
+    report_date: Optional[str] = None
+    organization: Optional[str] = None
+    product: Optional[str] = None
 
     @staticmethod
     def error_airflow_report(name: str, error_message: str):
@@ -217,12 +123,19 @@ class DeploymentReport(Report):
             num_tasks=-1,
             num_dags_active=-1,
             num_dags_inactive=-1,
-            workspace_id="",
-            deployment_id="",
+            pools={},
         )
 
     @staticmethod
-    def from_input_report_row(name: str, input_row: dict, verify: dict = None):
+    def from_input_report_row(
+        name: str,
+        input_row: dict,
+        product: str,
+        verify: dict = None,
+        organization: str = None,
+        report_date: str = None,
+        telescope_version: str = None,
+    ) -> "DeploymentReport":
         if type(input_row) != dict:
             # noinspection PyTypeChecker
             return DeploymentReport.error_airflow_report(name, error_message=input_row)
@@ -252,7 +165,7 @@ class DeploymentReport(Report):
                     input_row.get("configuration_report", {}).get("core", {}).get("parallelism", ("-1", "-1"))[0]
                 ),
                 pools=input_row.get("pools_report"),
-                num_pools=len(input_row.get("pools_report")),
+                num_pools=len(input_row.get("pools_report", {})),
                 default_pool_slots=input_row.get("pools_report", {}).get("default_pool", {}).get("total", -1),
                 env=input_row.get("env_vars_report"),
                 connections=connections,
@@ -268,14 +181,19 @@ class DeploymentReport(Report):
                 ),
                 task_run_info=task_run_info,
                 task_runs_monthly_success=task_run_info.get("30_days_success", -1),
-                num_users=input_row.get("user_report").get("total_users", -1),
-                users=input_row.get("user_report"),
+                num_users=input_row.get("user_report", {}).get("total_users", -1),
+                users=input_row.get("user_report", {}),
                 num_tasks=sum(dr.get("num_tasks", 0) for dr in input_row.get("dags_report", [])),
                 num_dags=len(input_row.get("dags_report", [])),
                 num_dags_active=len([0 for dag in input_row.get("dags_report", []) if dag_is_active(dag)]),
                 num_dags_inactive=len([0 for dag in input_row.get("dags_report", []) if not dag_is_active(dag)]),
+                report_date=report_date,
+                telescope_version=telescope_version,
+                organization=organization,
                 workspace_id=parse_workspace_id_from_helm(deployment_name=name, helm_report=verify, default=name),
                 deployment_id=parse_deployment_id_from_helm(deployment_name=name, helm_report=verify, default=name),
+                chart_version=parse_chart_version_from_helm(deployment_name=name, helm_report=verify),
+                product=product
             )
         except Exception as e:
             log.error(input_row)
@@ -283,12 +201,38 @@ class DeploymentReport(Report):
 
 
 @dataclass
-class DAGReport(Report):
-    report_ran_at: str  # addition
-    org_id: str  # addition
-    workspace_id: str  # addition # Airflow Name for noncustomers
-    deployment_id: str  # addition # Airflow Name for noncustomers
+class Deployment(Report):
+    # 1.3.0 addition
+    telescope_version: str
+    report_date: str
+    organization: str
 
+    workspace_id: str
+    deployment_id: str
+
+    workspace_created_at: Optional[str] = None
+    workspace_updated_at: Optional[str] = None
+
+    deployment_created_at: Optional[str] = None
+    deployment_updated_at: Optional[str] = None
+
+    product: Optional[str] = None
+
+    @staticmethod
+    def from_deployment_report(deployment_report: DeploymentReport, name, verify) -> "Deployment":
+        return Deployment(
+            telescope_version=deployment_report.telescope_version,
+            report_date=deployment_report.report_date,
+            organization=deployment_report.organization,
+            deployment_id=deployment_report.deployment_id,
+            workspace_id=deployment_report.workspace_id,
+            deployment_updated_at=parse_updated_at_from_helm(deployment_name=name, helm_report=verify),
+            product=deployment_report.product
+        )
+
+
+@dataclass
+class DAGReport(Report):
     airflow_name: str
     dag_id: str
     root_dag_id: Optional[str]  # dag_id if it's a subdag
@@ -305,3 +249,12 @@ class DAGReport(Report):
     cc_rank: Optional[str] = None
     mi_rank: Optional[str] = None
     analysis: Optional[Dict[str, int]] = None
+
+    # 1.3.0 additions
+    telescope_version: Optional[str] = None
+    report_date: Optional[str] = None
+    organization: Optional[str] = None
+    workspace_id: Optional[str] = None
+    deployment_id: Optional[str] = None
+
+    product: Optional[str] = None

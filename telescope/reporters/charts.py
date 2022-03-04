@@ -4,7 +4,7 @@ import logging
 
 from lazyimport import lazyimport
 
-from telescope.reports import DeploymentReport, DAGReport
+from telescope.reports import DAGReport, DeploymentReport
 
 lazyimport(
     globals(),
@@ -200,10 +200,10 @@ def create_dag_operator_set_chart(dag_report: List[DAGReport], output_file: str)
 
 
 AIRFLOW_CHARTS = {
-    "Airflow Versions": (create_airflow_versions_chart, "Airflow Report"),
-    "DAGs per Airflow": (create_dags_per_airflow_chart, "Airflow Report"),
-    "Tasks per Airflow": (create_tasks_per_airflow_chart, "Airflow Report"),
-    "Monthly Task Runs per Airflow": (create_task_runs_per_airflow_chart, "Airflow Report"),
-    "Operator Set by Airflow": (create_airflow_operator_set_chart, "Airflow Report"),
+    "Airflow Versions": (create_airflow_versions_chart, "Deployment Report"),
+    "DAGs per Airflow": (create_dags_per_airflow_chart, "Deployment Report"),
+    "Tasks per Airflow": (create_tasks_per_airflow_chart, "Deployment Report"),
+    "Monthly Task Runs per Airflow": (create_task_runs_per_airflow_chart, "Deployment Report"),
+    "Operator Set by Airflow": (create_airflow_operator_set_chart, "Deployment Report"),
     "Operator Set by DAG": (create_dag_operator_set_chart, "DAG Report"),
 }

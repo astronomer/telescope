@@ -618,6 +618,7 @@ MigrationBackup/
 
 cookiecutter-config-file.yml
 data.json
+*.data.json
 !tests/resources
 airflow_debug_report.md
 output.yaml
@@ -641,3 +642,6 @@ requirements.txt
 withoutcharts
 withcharts
 venv
+reports_to_ul
+.~lock*
+schemas
