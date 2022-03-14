@@ -3,8 +3,6 @@ from typing import Dict, List, Optional
 import logging
 from dataclasses import dataclass
 
-import jmespath
-
 from telescope.reports_util import (
     dag_is_active,
     parse_chart_version_from_helm,
@@ -145,7 +143,7 @@ class DeploymentReport(Report):
             return DeploymentReport(
                 name=name,
                 version=input_row.get("airflow_version_report"),
-                executor=jmespath.search("configuration_report.core.executor | [0]", input_row),
+                executor=input_row.get("configuration_report", {}).get("core", {}).get("executor", [])[0],
                 num_schedulers=parse_replicas_from_helm(
                     deployment_name=name, component="scheduler", helm_report=verify
                 ),

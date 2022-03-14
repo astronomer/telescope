@@ -3,26 +3,18 @@ from typing import Any, Dict, List
 import json
 import logging
 import multiprocessing
-import os.path
 from datetime import datetime
 
 import click as click
-from click import BadOptionUsage, Choice, Path, echo
+from click import Path, echo
 from click.exceptions import UsageError
-from tqdm.contrib.concurrent import process_map
+from halo import Halo
 
 import telescope
-from telescope.functions.astronomer_enterprise import verify, versions
+from telescope.functions.astronomer_enterprise import get_helm_info
 from telescope.functions.cluster_info import cluster_info
 from telescope.getter_util import gather_getters, get_from_getter
-from telescope.reporters.report import (
-    REPORT_TYPES,
-    generate_charts,
-    generate_output_reports,
-    generate_report,
-    generate_report_summary_text,
-)
-from telescope.upload import upload_to_gcs
+from telescope.getters.kubernetes import KubernetesGetter
 
 log = logging.getLogger(__name__)
 
@@ -48,14 +40,6 @@ def version(ctx, self, value):
 @click.option(
     "-l", "--label-selector", **d, default="component=scheduler", help="Label selector for Kubernetes Autodiscovery"
 )
-@click.option("--cluster-info", "should_cluster_info", **fd, help="Get cluster size and allocation in Kubernetes")
-@click.option(
-    "--verify",
-    "should_verify",
-    **fd,
-    help="Introspect Helm installation information for Reporting and Verification purposes",
-)
-@click.option("--versions", "should_versions", **fd, help="checks versions of locally installed tools")
 @click.option(
     "-f",
     "--hosts-file",
@@ -73,28 +57,12 @@ def version(ctx, self, value):
     help="How many cores to use for multiprocessing",
 )
 @click.option(
-    "--gather/--no-gather", "should_gather", **fd, default=True, help="Gather data about Airflow environments"
-)
-@click.option(
-    "--report/--no-report", "should_report", **fd, default=False, help="Generate report summary of gathered data"
-)
-@click.option(
-    "--charts/--no-charts", "should_charts", **fd, default=False, help="Generate charts of summary of gathered data"
-)
-@click.option(
-    "--summary/--no-summary", "should_summary", **fd, default=False, help="Generate summary text file of gathered data"
-)
-@click.option(
-    "--upload/--no-upload", "should_upload", **fd, default=False, help="Upload charts to get access to rich reporting"
-)
-@click.option(
     "-n",
     "--organization-name",
     **d,
     type=str,
     help="Denote who this report belongs to, e.g. a company name",
 )
-@click.option("--report-type", type=Choice(REPORT_TYPES.keys()), default="xlsx", help="What report type to generate")
 @click.option(
     "-o",
     "--data-file",
@@ -107,26 +75,14 @@ def cli(
     use_docker: bool,
     use_kubernetes: bool,
     label_selector: str,
-    should_verify: bool,
-    should_versions: bool,
-    should_cluster_info: bool,
     hosts_file: str,
     parallelism: int,
-    should_gather: bool,
-    should_report: bool,
-    should_charts: bool,
-    should_summary: bool,
-    should_upload: bool,
     organization_name: str,
-    report_type: str,
     data_file: str,
 ) -> None:
     """Telescope - A tool to observe distant (or local!) Airflow installations, and gather usage metadata"""
-    data = {}
-
     # date is today
     date = datetime.utcnow().isoformat()[:10]
-
     # or date is from the file parts, with organization name
     if data_file:
         try:
@@ -141,94 +97,60 @@ def cli(
     if not organization_name:
         organization_name = click.prompt("Organization Name", type=str)
 
+    # Initialize data with a few items
+    data = {"report_date": date, "telescope_version": telescope.version, "organization_name": organization_name}
+
     # if the data file name wasn't given - assemble it
     if not data_file:
-        data_file = f"{date}.{organization_name}.data.json"
+        data_file = f"{data['report_date']}.{data['organization_name']}.data.json"
 
-    if should_gather:
-        log.info(f"Gathering data and saving to {data_file} ...")
+    log.info(f"Gathering data and saving to {data_file} ...")
 
-        data["report_date"] = date
-        data["telescope_version"] = telescope.version
-        data["organization_name"] = organization_name
+    # flatten getters - for multiproc
+    all_getters = [
+        getter
+        for (_, getters) in gather_getters(use_local, use_docker, use_kubernetes, hosts_file, label_selector).items()
+        for getter in getters
+    ]
+    if not len(all_getters):
+        raise UsageError("No Airflow Deployments found, exiting...")
 
-        # Add special method calls, don't know a better way to do this
-        if should_cluster_info:
-            data["cluster_info"] = cluster_info()
+    # get all the Airflow Reports at once, in parallel
+    spinner = Halo(
+        text=f"Gathering Data from {len(all_getters)} Airflow Deployments...",
+        spinner="moon",  # dots12, growHorizontal, arc, moon
+    )
+    spinner.start()
 
-        if should_verify:
-            data["verify"] = verify()
+    # Check for helm secrets or get cluster info if we know we are running with Kubernetes
+    if any([type(g) == KubernetesGetter for g in all_getters]):
+        data["verify"] = get_helm_info()
+        data["cluster_info"] = cluster_info()
 
-        if should_versions:
-            data["versions"] = versions()
+    try:
+        with multiprocessing.Pool(parallelism) as p:
+            results: List[Dict[Any, Any]] = p.map(get_from_getter, all_getters)
+        spinner.succeed(text=f"Gathering Data from {len(all_getters)} Airflow Deployments!")
+    except (KeyboardInterrupt, SystemExit):
+        spinner.stop()
+        raise
+    except Exception as e:
+        spinner.fail(text=str(e))
 
-        # flatten getters - for multiproc
-        all_getters = [
-            getter
-            for (_, getters) in gather_getters(
-                use_local, use_docker, use_kubernetes, hosts_file, label_selector
-            ).items()
-            for getter in getters
-        ]
-        if not len(all_getters):
-            raise UsageError("No Airflow Deployments found, exiting...")
+    # unflatten and assemble into report
+    for result in results:
+        for (host_type, getter_key, key), value in result.items():
+            if host_type not in data:
+                data[host_type] = {}
 
-        # get all the Airflow Reports at once, in parallel
-        results: List[Dict[Any, Any]] = process_map(get_from_getter, all_getters, max_workers=parallelism)
+            if getter_key not in data[host_type]:
+                data[host_type][getter_key] = {}
 
-        # unflatten and assemble into report
-        for result in results:
-            for (host_type, getter_key, key), value in result.items():
-                if host_type not in data:
-                    data[host_type] = {}
+            data[host_type][getter_key][key] = value
 
-                if getter_key not in data[host_type]:
-                    data[host_type][getter_key] = {}
-
-                data[host_type][getter_key][key] = value
-
-        log.info(f"Writing data to {data_file} ...")
-        with click.open_file(data_file, "w") as output:
-            output.write(json.dumps(data, default=str))
-    elif any([should_report, should_charts, should_summary, should_upload]):
-        # We didn't have a "gather" step, so there's filled "report" object. Hope there's a file
-        if not os.path.exists(data_file):
-            raise BadOptionUsage("--report", f"There is no data to aggregate at {data_file}, failing to report")
-
-        with click.open_file(data_file, "r") as input_file:
-            data = json.load(input_file)
-
-    if any([should_report, should_charts, should_summary, should_upload]):
-        if not len(data):
-            raise BadOptionUsage(
-                "--report",
-                f"There is no data to aggregate without --gather, or an existing {data_file}, failing to report",
-            )
-
-        log.info(f"Aggregating Raw Data...")
-        output_reports = generate_output_reports(data, organization_name, date)
-
-        if should_report:
-            output_filepath = f"report.{report_type}"
-            log.info(f"Generating Report of type {report_type} at {output_filepath} ...")
-            generate_report(output_reports, report_type, output_filepath)
-
-        if should_charts:
-            try:
-                log.info("Generating Charts at default filepath: [/charts] ...")
-                generate_charts(output_reports)
-            except ImportError as e:
-                log.error(f"Attempted to generate charts but failed with error, skipping... - {e}")
-
-        if should_summary:
-            log.info("Generating Summary Report at default filepath: [report_summary.txt] ...")
-            generate_report_summary_text(output_reports)
-
-        if should_upload:
-            log.info("Generating Uploading Report Data to GCS...")
-            upload_to_gcs(
-                output_reports=output_reports, organization_name=organization_name, raw_filepath=data_file, date=date
-            )
+    log.info(f"Writing data to {data_file} ...")
+    with click.open_file(data_file, "w") as output:
+        output.write(json.dumps(data, default=str))
 
 
 if __name__ == "__main__":

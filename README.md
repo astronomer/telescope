@@ -33,7 +33,7 @@ and `component=scheduler` is used to identify the schedulers). It will use Helm 
 connect to the Airflow schedulers to gather metadata
 
 ```shell
-telescope --kubernetes --verify --cluster-info
+telescope --kubernetes
 ```
 You should now have a `data.json` - which is an intermediate data payload
 
@@ -179,37 +179,12 @@ ssh:
   - host: foo.com
 ```
 
-# Install for Extra functionality
-Install with the Charts extras (`pandas/plotly/kaleido`) to enable the `--charts` functionality:
-```shell
-python -m pip install 'telescope[charts]' --find-links https://github.com/astronomer/telescope/releases/
-```
-
 # Extra Functionality
-## Local
+## Versions
 `--versions` - checks installed versions of various tools, see [config.yaml](config.yaml) for more details.
 
 ## Precheck
 `--precheck` - ensures the environment, useful before installing the Astronomer Enterprise chart
-
-## Verify
-`--verify` - includes the details of installed helm charts in the cluster (airflow / astronomer)
-> Note: Required for some `Airflow Report` reporting functionality
-> Note: This mode requires `list node` and `api client get version` permissions in `kubernetes` mode
-
-
-## Cluster Info
-`--cluster-info` gathers information about the provider and size of the kubernetes cluster`
-> Note: Required for `Infrastructure Report` reporting functionality
-
-## Report
-`--report` generate a report of type `--report-format` from the gathered data
-> Note: Required to generate `reports.xlsx` reporting
-
-## Charts
-`--charts` generate charts from the gathered data
-> Note: Required to generate `charts/` reporting
-
 
 ## Label Selection
 `--label-selector` allows Kubernetes Autodiscovery to locate Airflow Deployments with alternate key/values. 
@@ -265,81 +240,3 @@ Additionally,
 
 ## Pre-requisites
 See [Requirements](#requirements) above.
-
-## Usage
-### Outputs
-The following items are created by Telescope (using default configurations):
-
-#### Charts
-Charts are created, by default in a directory called `/charts`. The following charts are created:
-- "Airflow Versions"
-- "DAGs per Airflow"
-- "Tasks per Airflow"
-- "Monthly Task Runs per Airflow
-- "Operator Set by Airflow"
-- "Operator Set by DAG"
-
-#### Spreadsheet
-The spreadsheet, titled `report_output.xlsx` by default, contains the following:
-
-#### Summary Report - an overall summary of the report
-- num_airflows: Number of Airflows
-- num_dags_active: Number of DAGs active, determined by "is_active" / "is_paused" in the metadata db from the `dag` table
-- num_dags_inactive: Number of DAGs inactive, determined by "is_active" / "is_paused" in the metadata db from the `dag` table
-- num_tasks: Number of Tasks, from the `task` table
-- num_successful_task_runs_monthly: Number of Task Runs, within last 30 days, marked as "successful" 
-
-#### Infrastructure Report - a summary of the infrastructure discovered during the assessment
-- type: VM or K8s
-- provider: if K8s, attempts to parse `eks`, `az`==`aks`, `gke`, from the Kubernetes Server Version string
-- version: Kubernetes Server Version string
-- num_nodes: number of nodes in the cluster
-- allocatable_cpu: vcpu available to be allocated, as whole vcpus
-- capacity_cpu: vcpu total, as whole vcpus
-- allocatable_gb: memory available to be allocated
-- capacity_gb: memory total
- 
-#### Deployment Report
-- name: - Name of the Airflow, as reported by the Gatherer. For Kubernetes mode this is `<namespace>|<pod name>`
-- version: Airflow version
-- executor: Airflow executor
-- num_schedulers: number of schedulers - needs to be parsed by helm / the `--verify` flag
-- num_webservers: number of schedulers - needs to be parsed by helm / the `--verify` flag
-- num_workers: number of celery workers, if available - needs to be parsed by helm / the `--verify` flag
-- providers: providers and versions installed. Airflow 2.x only. 
-- num_providers: number of providers installed. Airflow 2.x only.
-- packages: python packages and versions installed 
-- non_default_configurations: non-default Airflow configurations and the source of configuration
-- parallelism: global parallelism from Airflow configuration
-- pools: a list of pools
-- default_pool_slots: total slots in the Default pool
-- num_pools: number of pools
-- env: Environment variables
-- connections: Connection names
-- num_connections: number of connections
-- unique_operators: operators used in this airflow
-- task_run_info: task run successes and percentage of failures for the last day, week, month, year, all time.
-- task_runs_monthly_success: successful task runs in the last 30 days
-- users: users active for the last day, week, month, year, all time. 
-- num_dags: number of DAGs
-- num_tasks: number of Tasks
-- num_dags_active: number of DAGs, active via `is_paused`/`is_active`
-- num_dags_inactive: number of DAGs, inactive via `is_paused`/`is_active`
-
-#### DAG Report
-- airflow_name: Name of the Airflow, as reported by the Gatherer. For Kubernetes mode this is `<namespace>|<pod name>`
-- dag_id: dag_id 
-- root_dag_id: root dag_id if it's a subdag
-- is_active: whether the scheduler has recently seen it
-- is_paused: whether the DAG toggle is on/off
-- is_subdag: if it's a subdag
-- schedule_interval: the interval defined on the DAG 
-- fileloc: the file location of the DAG
-- owners: the owners, defined in the DAG
-- operators: the Task operators, counted once per DAG
-- num_tasks: the overall number of tasks
-- variables: Variables found in the source code file of the DAG, either with `Variable.get` or a macro with `{{ var.xyz }}`
-- connections: Connections found in the source code file of the DAG, either with `Variable.get` or a macro with `{{ var.xyz }}`
-- cc_rank: The letter grade given to the DAG code via [Cyclomatic Complexity](https://radon.readthedocs.io/en/latest/intro.html#cyclomatic-complexity) - A -> F, A is good.
-- mi_rank: The letter grade given to the DAG code via [Maintainability Index](https://radon.readthedocs.io/en/latest/intro.html#maintainability-index) - A -> F, A is good.
-- analysis: accessory statistics such as lines of code, lines of comments, etc
