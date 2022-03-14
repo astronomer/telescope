@@ -2,13 +2,17 @@ from typing import Any, Dict, List
 
 import json
 import logging
+import multiprocessing
 import os.path
+from datetime import datetime
 
 import click as click
-from click import BadOptionUsage, Choice, Path
+from click import BadOptionUsage, Choice, Path, echo
+from click.exceptions import UsageError
 from tqdm.contrib.concurrent import process_map
 
-from telescope.functions.astronomer_enterprise import precheck, verify, versions
+import telescope
+from telescope.functions.astronomer_enterprise import verify, versions
 from telescope.functions.cluster_info import cluster_info
 from telescope.getter_util import gather_getters, get_from_getter
 from telescope.reporters.report import (
@@ -18,6 +22,7 @@ from telescope.reporters.report import (
     generate_report,
     generate_report_summary_text,
 )
+from telescope.upload import upload_to_gcs
 
 log = logging.getLogger(__name__)
 
@@ -25,8 +30,18 @@ d = {"show_default": True, "show_envvar": True}
 fd = {"show_default": True, "show_envvar": True, "is_flag": True}
 
 
+# noinspection PyUnusedLocal
+def version(ctx, self, value):
+    if not value or ctx.resilient_parsing:
+        return
+    echo(f"Telescope, version {telescope.version}")
+    ctx.exit()
+
+
 @click.command()
-@click.version_option()
+@click.option(
+    "--version", is_flag=True, expose_value=False, is_eager=True, help="Show the version and exit.", callback=version
+)
 @click.option("--local", "use_local", **fd, help="Airflow Reporting for local Airflow")
 @click.option("--docker", "use_docker", **fd, help="Autodiscovery and Airflow reporting for local Docker")
 @click.option("--kubernetes", "use_kubernetes", **fd, help="Autodiscovery and Airflow reporting for Kubernetes")
@@ -42,23 +57,12 @@ fd = {"show_default": True, "show_envvar": True, "is_flag": True}
 )
 @click.option("--versions", "should_versions", **fd, help="checks versions of locally installed tools")
 @click.option(
-    "--precheck", "should_precheck", **fd, help="Runs Astronomer Enterprise pre-install sanity-checks in the report"
-)
-@click.option(
     "-f",
     "--hosts-file",
     **d,
     default=None,
     type=Path(exists=True, readable=True),
     help="Hosts file to pass in various types of hosts (ssh, kubernetes, docker) - See README.md for sample",
-)
-@click.option(
-    "-o",
-    "--output-file",
-    **d,
-    type=Path(),
-    default="report.json",
-    help="Output file to write intermediate gathered data json, and report (with report_type as file extension), can be '-' for stdout",
 )
 @click.option(
     "-p",
@@ -77,7 +81,27 @@ fd = {"show_default": True, "show_envvar": True, "is_flag": True}
 @click.option(
     "--charts/--no-charts", "should_charts", **fd, default=False, help="Generate charts of summary of gathered data"
 )
+@click.option(
+    "--summary/--no-summary", "should_summary", **fd, default=False, help="Generate summary text file of gathered data"
+)
+@click.option(
+    "--upload/--no-upload", "should_upload", **fd, default=False, help="Upload charts to get access to rich reporting"
+)
+@click.option(
+    "-n",
+    "--organization-name",
+    **d,
+    type=str,
+    help="Denote who this report belongs to, e.g. a company name",
+)
 @click.option("--report-type", type=Choice(REPORT_TYPES.keys()), default="xlsx", help="What report type to generate")
+@click.option(
+    "-o",
+    "--data-file",
+    **d,
+    type=Path(),
+    help="Data file to write intermediate gathered data, can be '-' for stdout",
+)
 def cli(
     use_local: bool,
     use_docker: bool,
@@ -85,110 +109,128 @@ def cli(
     label_selector: str,
     should_verify: bool,
     should_versions: bool,
-    should_precheck: bool,
     should_cluster_info: bool,
     hosts_file: str,
-    output_file: str,
     parallelism: int,
     should_gather: bool,
-    should_charts: bool,
     should_report: bool,
+    should_charts: bool,
+    should_summary: bool,
+    should_upload: bool,
+    organization_name: str,
     report_type: str,
+    data_file: str,
 ) -> None:
     """Telescope - A tool to observe distant (or local!) Airflow installations, and gather usage metadata"""
-    # noinspection PyTypeChecker
-    report = {}
+    data = {}
+
+    # date is today
+    date = datetime.utcnow().isoformat()[:10]
+
+    # or date is from the file parts, with organization name
+    if data_file:
+        try:
+            # TODO - add path validation here
+            # e.g. 1970-01-01.Astronomer.data.json
+            [date, org] = data_file.replace(".json", "").replace(".data", "").split(".")
+            organization_name = org
+        except Exception as e:
+            log.error(e)
+
+    # prompt for Org if not found and not passed in
+    if not organization_name:
+        organization_name = click.prompt("Organization Name", type=str)
+
+    # if the data file name wasn't given - assemble it
+    if not data_file:
+        data_file = f"{date}.{organization_name}.data.json"
 
     if should_gather:
-        with click.open_file(output_file, "w") as output:
-            log.info(f"Gathering data and saving to {output_file} ...")
+        log.info(f"Gathering data and saving to {data_file} ...")
 
-            # Add special method calls, don't know a better way to do this
-            if should_cluster_info:
-                report["cluster_info"] = cluster_info()
+        data["report_date"] = date
+        data["telescope_version"] = telescope.version
+        data["organization_name"] = organization_name
 
-            if should_precheck:
-                report["precheck"] = precheck()
+        # Add special method calls, don't know a better way to do this
+        if should_cluster_info:
+            data["cluster_info"] = cluster_info()
 
-            if should_verify:
-                report["verify"] = verify()
+        if should_verify:
+            data["verify"] = verify()
 
-            if should_versions:
-                report["versions"] = versions()
+        if should_versions:
+            data["versions"] = versions()
 
-            # flatten getters - for multiproc
-            all_getters = [
-                getter
-                for (_, getters) in gather_getters(
-                    use_local, use_docker, use_kubernetes, hosts_file, label_selector
-                ).items()
-                for getter in getters
-            ]
+        # flatten getters - for multiproc
+        all_getters = [
+            getter
+            for (_, getters) in gather_getters(
+                use_local, use_docker, use_kubernetes, hosts_file, label_selector
+            ).items()
+            for getter in getters
+        ]
+        if not len(all_getters):
+            raise UsageError("No Airflow Deployments found, exiting...")
 
-            # get all the Airflow Reports at once, in parallel
-            results: List[Dict[Any, Any]] = process_map(get_from_getter, all_getters, max_workers=parallelism)
+        # get all the Airflow Reports at once, in parallel
+        results: List[Dict[Any, Any]] = process_map(get_from_getter, all_getters, max_workers=parallelism)
 
-            # unflatten and assemble into report
-            for result in results:
-                for (host_type, getter_key, key), value in result.items():
-                    if host_type not in report:
-                        report[host_type] = {}
+        # unflatten and assemble into report
+        for result in results:
+            for (host_type, getter_key, key), value in result.items():
+                if host_type not in data:
+                    data[host_type] = {}
 
-                    if getter_key not in report[host_type]:
-                        report[host_type][getter_key] = {}
+                if getter_key not in data[host_type]:
+                    data[host_type][getter_key] = {}
 
-                    report[host_type][getter_key][key] = value
+                data[host_type][getter_key][key] = value
 
-            log.info(f"Writing report to {output_file} ...")
-            output.write(json.dumps(report, default=str))
+        log.info(f"Writing data to {data_file} ...")
+        with click.open_file(data_file, "w") as output:
+            output.write(json.dumps(data, default=str))
+    elif any([should_report, should_charts, should_summary, should_upload]):
+        # We didn't have a "gather" step, so there's filled "report" object. Hope there's a file
+        if not os.path.exists(data_file):
+            raise BadOptionUsage("--report", f"There is no data to aggregate at {data_file}, failing to report")
 
-    if should_report:
-        report_output_file = output_file
-        if ".json" in output_file:
-            if report_type == "json":
-                report_output_file = report_output_file.replace(".json", f"_output.json")
-            else:
-                report_output_file = report_output_file.replace(".json", f"_output.{report_type}")
-        log.info(f"Generating report to {report_output_file} ...")
+        with click.open_file(data_file, "r") as input_file:
+            data = json.load(input_file)
 
-        if not should_gather:
-            # We didn't have a "gather" step, so there's filled "report" object. Hope there's a file
-            if not os.path.exists(output_file):
-                raise BadOptionUsage(
-                    "--report", f"There is no data generated to report on at {output_file}, failing to report"
-                )
+    if any([should_report, should_charts, should_summary, should_upload]):
+        if not len(data):
+            raise BadOptionUsage(
+                "--report",
+                f"There is no data to aggregate without --gather, or an existing {data_file}, failing to report",
+            )
 
-            with open(output_file) as input_file:
-                report = json.load(input_file)
-                generate_outputs(
-                    report, output_filepath=report_output_file, report_type=report_type, should_charts=should_charts
-                )
-        else:
-            if not len(report):
-                raise BadOptionUsage(
-                    "--report", "There is no data to generate a report on without --gather, failing to report"
-                )
-            generate_outputs(
-                report, output_filepath=report_output_file, report_type=report_type, should_charts=should_charts
+        log.info(f"Aggregating Raw Data...")
+        output_reports = generate_output_reports(data, organization_name, date)
+
+        if should_report:
+            output_filepath = f"report.{report_type}"
+            log.info(f"Generating Report of type {report_type} at {output_filepath} ...")
+            generate_report(output_reports, report_type, output_filepath)
+
+        if should_charts:
+            try:
+                log.info("Generating Charts at default filepath: [/charts] ...")
+                generate_charts(output_reports)
+            except ImportError as e:
+                log.error(f"Attempted to generate charts but failed with error, skipping... - {e}")
+
+        if should_summary:
+            log.info("Generating Summary Report at default filepath: [report_summary.txt] ...")
+            generate_report_summary_text(output_reports)
+
+        if should_upload:
+            log.info("Generating Uploading Report Data to GCS...")
+            upload_to_gcs(
+                output_reports=output_reports, organization_name=organization_name, raw_filepath=data_file, date=date
             )
 
 
-def generate_outputs(report: dict, report_type: str, output_filepath: str, should_charts: bool):
-    log.info(f"Aggregating Raw Data...")
-    output_reports = generate_output_reports(report)
-
-    log.info(f"Generating Report of type {report_type} at {output_filepath} ...")
-    generate_report(output_reports, report_type, output_filepath)
-    if should_charts:
-        try:
-            log.info("Generating Charts ...")
-            generate_charts(output_reports)
-        except ImportError as e:
-            log.error(f"Attempted to generate charts but failed with error, skipping... - {e}")
-
-    log.info("Generating Summary Report at default filepath [report_summary.txt] ...")
-    generate_report_summary_text(output_reports)
-
-
 if __name__ == "__main__":
+    multiprocessing.freeze_support()
     cli(auto_envvar_prefix="TELESCOPE")

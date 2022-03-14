@@ -27,6 +27,8 @@ def versions():
 
 
 def verify():
+    # k get secrets --all-namespaces --field-selector type=helm.sh/release.v1
+    # kubectl get secrets  -n astronomer-amateur-cosmos-2865 sh.helm.release.v1.amateur-cosmos-2865.v7 -o jsonpath='{.data.release}' | base64 -D | base64 -D | gzip -d
     """Uses invoke.run directly, runs Helm locally, which connects to a kube cluster
     runs "helm ls -aA -o json" and "helm get values"
     :return {"helm": [<helm install details>, ...]}

@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import csv
 import json
@@ -10,7 +10,7 @@ import humanize
 from xlsxwriter import Workbook
 
 from telescope.reporters.charts import AIRFLOW_CHARTS
-from telescope.reports import AirflowReport, DAGReport, InfrastructureReport, Report, SummaryReport
+from telescope.reports import DAGReport, Deployment, DeploymentReport, InfrastructureReport, Report, SummaryReport
 
 log = logging.getLogger(__name__)
 
@@ -44,6 +44,7 @@ def save_csv(output_filepath: str, **kwargs) -> None:
             dw.writerows(report_rows)
 
 
+# TODO - serialize correctly
 def save_json(output_filepath: str, **kwargs) -> None:
     with open(output_filepath, "w") as output:
         json.dump(kwargs, output)
@@ -65,22 +66,55 @@ def should_skip(key, value, astro_seen) -> bool:
                 if value.get("airflow_report", {}).get("airflow_version_report") != "Unknown":
                     astro_seen.add(deduped)
     except Exception as e:
-        logging.debug(e)
+        log.debug(e)
     return False
 
 
-def generate_output_reports(input_report: dict) -> Dict[str, List[Report]]:
-    """Aggregates and parses the raw JSON data and assembles a summary "report" with structure"""
-    output_reports = {"Summary Report": [], "Infrastructure Report": [], "Airflow Report": [], "DAG Report": []}
-    if "cluster_info" in input_report:
-        output_reports["Infrastructure Report"] = [
-            InfrastructureReport.from_input_report_row(input_row=input_report["cluster_info"])
-        ]
+def get_product(
+    installed_packages_report: dict, configuration_report: dict, helm: Optional[dict], attempt: bool = False
+) -> Optional[str]:
+    """one of software | core | oss
+    astronomer astronomer in verify (won't always have)
+    astronomer-certified in airflow_report.installed_packages_report (core/software)
+    astronomer in airflow_report.configuration_report (software)
+    astronomer_airflow_scripts (? + runtime)
+    astro in airflow version - ISN'T ALWAYS TRUE
+    """
+    if "astronomer-certified" in installed_packages_report:
+        if "astronomer" in configuration_report:
+            return "software"
+        else:
+            return "core"
+    else:
+        return "oss"
 
-    maybe_verify: dict = input_report.get("verify", {}).get("helm", {})
+
+def generate_output_reports(
+    input_data: dict, filename_organization: str = None, filename_date: str = None
+) -> Dict[str, List[Report]]:
+    """Aggregates and parses the raw JSON data and assembles various reports on the data"""
+    output_reports = {
+        "Summary Report": [],
+        "Infrastructure Report": [],
+        "Deployment Report": [],
+        "DAG Report": [],
+        "Deployments": [],
+    }
+
+    common_fields = {
+        "telescope_version": input_data.get("telescope_version"),
+        "report_date": input_data.get("report_date", filename_date),
+        "organization": input_data.get("organization_name", filename_organization),
+    }
+
+    if "cluster_info" in input_data:
+        output_reports["Infrastructure Report"] = [InfrastructureReport(**input_data["cluster_info"], **common_fields)]
+
+    maybe_verify: dict = input_data.get("verify", {}).get("helm", {})
 
     airflows = set()
-    airflow_reports = []
+    deployment_reports = []
+    deployments = []
     dag_reports = []
     summary_dags_active = 0
     summary_dags_inactive = 0
@@ -88,28 +122,48 @@ def generate_output_reports(input_report: dict) -> Dict[str, List[Report]]:
     summary_num_successful_task_runs_monthly = 0
 
     astro_seen = set()
-    for host_type in ["kubernetes", "docker", "ssh"]:
-        if host_type in input_report:
-            for key, value in input_report[host_type].items():
-                # cheap dedup of dirty data that has multiple schedulers
-                if should_skip(key, value, astro_seen):
+    for host_type in ["kubernetes", "docker", "ssh", "local"]:
+        if host_type in input_data:
+            for key, value in input_data[host_type].items():
+
+                # cheap dedup of dirty data that has multiple schedulers, and sanity check for the report we want
+                if should_skip(key, value, astro_seen) or not value["airflow_report"]:
                     continue
 
                 airflows.add(key)
-                airflow_report = AirflowReport.from_input_report_row(
-                    name=key, input_row=value["airflow_report"], verify=maybe_verify
+
+                product = get_product(
+                    installed_packages_report=value["airflow_report"].get("installed_packages_report"),
+                    configuration_report=value["airflow_report"].get("configuration_report"),
+                    helm=maybe_verify,
                 )
-                summary_dags_active += airflow_report.num_dags_active
-                summary_dags_inactive += airflow_report.num_dags_inactive
-                summary_num_tasks += airflow_report.num_tasks
-                summary_num_successful_task_runs_monthly += airflow_report.task_runs_monthly_success
-                airflow_reports.append(airflow_report)
+                deployment_report = DeploymentReport.from_input_report_row(
+                    name=key, input_row=value["airflow_report"], verify=maybe_verify, product=product, **common_fields
+                )
+
+                summary_dags_active += deployment_report.num_dags_active
+                summary_dags_inactive += deployment_report.num_dags_inactive
+                summary_num_tasks += deployment_report.num_tasks
+                summary_num_successful_task_runs_monthly += deployment_report.task_runs_monthly_success
+                deployment_reports.append(deployment_report)
+
+                deployments.append(Deployment.from_deployment_report(deployment_report, key, maybe_verify))
 
                 if type(value["airflow_report"]) == dict and "dags_report" in value["airflow_report"]:
                     for dag_report in value["airflow_report"].get("dags_report"):
-                        dag_reports.append(DAGReport(airflow_name=key, **dag_report))
+                        dag_reports.append(
+                            DAGReport(
+                                workspace_id=deployment_report.workspace_id,
+                                deployment_id=deployment_report.deployment_id,
+                                airflow_name=key,
+                                product=product,
+                                **dag_report,
+                                **common_fields,
+                            )
+                        )
 
-            output_reports["Airflow Report"] = airflow_reports
+            output_reports["Deployments"] = deployments
+            output_reports["Deployment Report"] = deployment_reports
             output_reports["DAG Report"] = dag_reports
         else:
             log.debug(f"Skipping host type {host_type}, not found in input report")
@@ -121,6 +175,7 @@ def generate_output_reports(input_report: dict) -> Dict[str, List[Report]]:
             num_dags_inactive=summary_dags_inactive,
             num_tasks=summary_num_tasks,
             num_successful_task_runs_monthly=summary_num_successful_task_runs_monthly,
+            **common_fields,
         )
     ]
     return output_reports
@@ -142,7 +197,7 @@ def generate_charts(output_reports) -> None:
 
 def generate_report_summary_text(output_reports, output_file: str = "report_summary.txt") -> None:
     summary_reports: List[SummaryReport] = output_reports["Summary Report"]
-    airflow_reports: List[AirflowReport] = output_reports["Airflow Report"]
+    airflow_reports: List[DeploymentReport] = output_reports["Deployment Report"]
 
     def humanize_num(_i: int):
         humanized = humanize.intword(_i, format="%.0f")
@@ -177,7 +232,7 @@ def generate_report_summary_text(output_reports, output_file: str = "report_summ
             - Tasks: {humanize_num(row.num_tasks)} defined
             - Task Runs: {humanize_num(row.task_runs_monthly_success) if row.task_runs_monthly_success > 0 else "None"} Monthly
             - Parallelism: {row.parallelism}
-            - Pools: Default ({row.default_pool_slots} Slots), {row.num_pools-1} Other Pools
+            - Pools: Default ({row.default_pool_slots} Slots), {row.num_pools - 1} Other Pools
             - Operators: {len(row.unique_operators)} defined
             - Connections: {row.num_connections} defined
             - Providers: {row.num_providers} defined

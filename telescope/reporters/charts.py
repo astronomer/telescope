@@ -4,7 +4,7 @@ import logging
 
 from lazyimport import lazyimport
 
-from telescope.reports import AirflowReport, DAGReport
+from telescope.reports import DAGReport, DeploymentReport
 
 lazyimport(
     globals(),
@@ -27,9 +27,9 @@ def pretty_pie_chart(fig):
     return fig
 
 
-def create_airflow_versions_chart(airflow_reports: List[AirflowReport], output_file: str) -> None:
+def create_airflow_versions_chart(deployment_report: List[DeploymentReport], output_file: str) -> None:
     # noinspection PyUnresolvedReferences
-    airflow_df = DataFrame(airflow_reports)
+    airflow_df = DataFrame(deployment_report)
     title = "Airflow Versions"
     if "version" in airflow_df:
         vc = airflow_df["version"].value_counts()
@@ -62,9 +62,9 @@ def prettify_bar_chart(fig):
     )
 
 
-def create_dags_per_airflow_chart(airflow_reports: List[AirflowReport], output_file: str) -> None:
+def create_dags_per_airflow_chart(deployment_report: List[DeploymentReport], output_file: str) -> None:
     # noinspection PyUnresolvedReferences
-    airflow_df = DataFrame(airflow_reports)
+    airflow_df = DataFrame(deployment_report)
     title = "Active DAGs per Airflow"
     if "name" in airflow_df:
         airflow_df["name"] = airflow_df["name"].str.split("|").str[0]
@@ -88,9 +88,9 @@ def create_dags_per_airflow_chart(airflow_reports: List[AirflowReport], output_f
         log.warning(f"'name' not found in report - unable to {title} chart")
 
 
-def create_tasks_per_airflow_chart(airflow_reports: List[AirflowReport], output_file: str) -> None:
+def create_tasks_per_airflow_chart(deployment_report: List[DeploymentReport], output_file: str) -> None:
     # noinspection PyUnresolvedReferences
-    airflow_df = DataFrame(airflow_reports)
+    airflow_df = DataFrame(deployment_report)
     title = "Defined Tasks per Airflow (Log Scale)"
     if "name" in airflow_df:
         airflow_df["name"] = airflow_df["name"].str.split("|").str[0]
@@ -115,9 +115,9 @@ def create_tasks_per_airflow_chart(airflow_reports: List[AirflowReport], output_
         log.warning(f"'name' not found in report - unable to create {title} chart")
 
 
-def create_task_runs_per_airflow_chart(airflow_reports: List[AirflowReport], output_file: str) -> None:
+def create_task_runs_per_airflow_chart(deployment_report: List[DeploymentReport], output_file: str) -> None:
     # noinspection PyUnresolvedReferences
-    airflow_df = DataFrame(airflow_reports)
+    airflow_df = DataFrame(deployment_report)
     title = "Monthly Successful Task Runs per Airflow (Log Scale)"
     if "name" in airflow_df:
         airflow_df["name"] = airflow_df["name"].str.split("|").str[0]
@@ -144,9 +144,9 @@ def create_task_runs_per_airflow_chart(airflow_reports: List[AirflowReport], out
         log.warning(f"'name' not found in report - unable to create {title} chart")
 
 
-def create_airflow_operator_set_chart(airflow_reports: List[AirflowReport], output_file: str) -> None:
+def create_airflow_operator_set_chart(deployment_report: List[DeploymentReport], output_file: str) -> None:
     # noinspection PyUnresolvedReferences
-    airflow_df = DataFrame(airflow_reports)
+    airflow_df = DataFrame(deployment_report)
     title = "Unique Operator Set (Operator Counted Once Per Airflow)"
     if "unique_operators" in airflow_df:
         # noinspection PyUnresolvedReferences
@@ -200,10 +200,10 @@ def create_dag_operator_set_chart(dag_report: List[DAGReport], output_file: str)
 
 
 AIRFLOW_CHARTS = {
-    "Airflow Versions": (create_airflow_versions_chart, "Airflow Report"),
-    "DAGs per Airflow": (create_dags_per_airflow_chart, "Airflow Report"),
-    "Tasks per Airflow": (create_tasks_per_airflow_chart, "Airflow Report"),
-    "Monthly Task Runs per Airflow": (create_task_runs_per_airflow_chart, "Airflow Report"),
-    "Operator Set by Airflow": (create_airflow_operator_set_chart, "Airflow Report"),
+    "Airflow Versions": (create_airflow_versions_chart, "Deployment Report"),
+    "DAGs per Airflow": (create_dags_per_airflow_chart, "Deployment Report"),
+    "Tasks per Airflow": (create_tasks_per_airflow_chart, "Deployment Report"),
+    "Monthly Task Runs per Airflow": (create_task_runs_per_airflow_chart, "Deployment Report"),
+    "Operator Set by Airflow": (create_airflow_operator_set_chart, "Deployment Report"),
     "Operator Set by DAG": (create_dag_operator_set_chart, "DAG Report"),
 }

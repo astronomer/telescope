@@ -1,6 +1,6 @@
 import pytest
 
-from telescope.reports import AirflowReport, DAGReport, InfrastructureReport, sum_usage_stats_report_summary
+from telescope.reports import DAGReport, DeploymentReport, InfrastructureReport, sum_usage_stats_report_summary
 
 
 def test_infrastructure_report_from_input_report_row(sample_report):
@@ -20,10 +20,10 @@ def test_infrastructure_report_from_input_report_row(sample_report):
 
 def test_airflow_report_from_input_report_row(sample_report):
     name = "astronomer-amateur-cosmos-2865|amateur-cosmos-2865-scheduler-f55678947-hjhxw"
-    actual = AirflowReport.from_input_report_row(
+    actual = DeploymentReport.from_input_report_row(
         name, sample_report["kubernetes"][name]["airflow_report"], sample_report["verify"]["helm"]
     )
-    expected = AirflowReport(
+    expected = DeploymentReport(
         name=name,
         version="2.1.3+astro.1",
         executor="CeleryExecutor",

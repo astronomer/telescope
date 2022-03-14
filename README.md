@@ -35,7 +35,7 @@ connect to the Airflow schedulers to gather metadata
 ```shell
 telescope --kubernetes --verify --cluster-info
 ```
-You should now have a `report.json` - which is an intermediate data payload
+You should now have a `data.json` - which is an intermediate data payload
 
 # Quickstart - SSH Assessment Mode
 This will work if your Airflow's are on hosts accessible via SSH and SSH is configured to connect to all of these hosts (e.g. you have `~/.ssh/config` with entries for all hosts)
@@ -50,12 +50,28 @@ ssh:
 ```shell
 telescope -f hosts.yaml
 ```
-You should now have a `report.json` - which is an intermediate data payload
+You should now have a `data.json` - which is an intermediate data payload
+
+# Compatability Matrix
+Telescope is been tested against the following Airflow versions:
+- "2.2.1", "2.1.3", "1.10.15", "1.10.10"
+
+Telescope is tested with the following Metadata Database Backends:
+- (automated) PostgreSQL, SQLite
+- (manually) MySQL, SQLServer
+
+Telescope is tested on the following versions of Python:
+- 3.9
+
+Telescope is tested on the following Operating Systems:
+- Ubuntu
+- Mac (arm64)
 
 # Usage
 
 ```shell
 $ telescope --help                                                
+Usage: telescope [OPTIONS]
 
   Telescope - A tool to observe distant (or local!) Airflow installations, and
   gather usage metadata
@@ -77,15 +93,9 @@ Options:
                                  [default: False]
   --versions                     checks versions of locally installed tools
                                  [default: False]
-  --precheck                     Runs Astronomer Enterprise pre-install
-                                 sanity-checks in the report  [default: False]
   -f, --hosts-file PATH          Hosts file to pass in various types of hosts
                                  (ssh, kubernetes, docker) - See README.md for
                                  sample
-  -o, --output-file PATH         Output file to write intermediate gathered
-                                 data json, and report (with report_type as
-                                 file extension), can be '-' for stdout
-                                 [default: report.json]
   -p, --parallelism INTEGER      How many cores to use for multiprocessing
                                  [default: (Number CPU)]
   --gather / --no-gather         Gather data about Airflow environments
@@ -94,7 +104,15 @@ Options:
                                  [default: no-report]
   --charts / --no-charts         Generate charts of summary of gathered data
                                  [default: no-charts]
+  --summary / --no-summary       Generate summary text file of gathered data
+                                 [default: no-summary]
+  --upload / --no-upload         Upload charts to get access to rich reporting
+                                 [default: no-upload]
+  -n, --organization-name TEXT   Denote who this report belongs to, e.g. a
+                                 company name
   --report-type [json|csv|xlsx]  What report type to generate
+  -o, --data-file PATH           Data file to write intermediate gathered
+                                 data, can be '-' for stdout
   --help                         Show this message and exit.
 ```
 
@@ -281,7 +299,7 @@ The spreadsheet, titled `report_output.xlsx` by default, contains the following:
 - allocatable_gb: memory available to be allocated
 - capacity_gb: memory total
  
-#### Airflow Report
+#### Deployment Report
 - name: - Name of the Airflow, as reported by the Gatherer. For Kubernetes mode this is `<namespace>|<pod name>`
 - version: Airflow version
 - executor: Airflow executor
