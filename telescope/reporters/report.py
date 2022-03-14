@@ -70,21 +70,21 @@ def should_skip(key, value, astro_seen) -> bool:
     return False
 
 
-def get_product(airflow_version: str, helm: Optional[dict], attempt: bool = False) -> Optional[str]:
+def get_product(
+    installed_packages_report: dict, configuration_report: dict, helm: Optional[dict], attempt: bool = False
+) -> Optional[str]:
     """one of software | core | oss
-    astronomer astronomer in verify
-    astronomer-certified in airflow_report.installed_packages_report
-    astronomer in airflow_report.configuration_report
+    astronomer astronomer in verify (won't always have)
+    astronomer-certified in airflow_report.installed_packages_report (core/software)
+    astronomer in airflow_report.configuration_report (software)
+    astronomer_airflow_scripts (? + runtime)
+    astro in airflow version - ISN'T ALWAYS TRUE
     """
-    if not attempt:
-        return None
-
-    if "astro" in airflow_version:
-        if not attempt:
-            return "core"
-        else:
-            # TODO
+    if "astronomer-certified" in installed_packages_report:
+        if "astronomer" in configuration_report:
             return "software"
+        else:
+            return "core"
     else:
         return "oss"
 
@@ -132,7 +132,11 @@ def generate_output_reports(
 
                 airflows.add(key)
 
-                product = get_product(airflow_version=value["airflow_report"].get("airflow_version_report"), helm=maybe_verify)
+                product = get_product(
+                    installed_packages_report=value["airflow_report"].get("installed_packages_report"),
+                    configuration_report=value["airflow_report"].get("configuration_report"),
+                    helm=maybe_verify,
+                )
                 deployment_report = DeploymentReport.from_input_report_row(
                     name=key, input_row=value["airflow_report"], verify=maybe_verify, product=product, **common_fields
                 )
@@ -152,6 +156,7 @@ def generate_output_reports(
                                 workspace_id=deployment_report.workspace_id,
                                 deployment_id=deployment_report.deployment_id,
                                 airflow_name=key,
+                                product=product,
                                 **dag_report,
                                 **common_fields,
                             )

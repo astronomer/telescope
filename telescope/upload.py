@@ -47,8 +47,9 @@ def get_gcs_report_path(report_type: str, organization_name: str, date: str, env
         raise RuntimeError(f"Report Type {report_type} not found in {REPORT_STUBS.keys()}")
 
 
-def upload_to_gcs(output_reports: Dict[str, Union[dict, List[Report]]], organization_name: str,
-                  raw_filepath: str, date: str) -> None:
+def upload_to_gcs(
+    output_reports: Dict[str, Union[dict, List[Report]]], organization_name: str, raw_filepath: str, date: str
+) -> None:
     log.debug(
         textwrap.dedent(
             """

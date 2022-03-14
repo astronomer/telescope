@@ -35,7 +35,6 @@ class SummaryReport(Report):
     telescope_version: str
     report_date: str
     organization: str
-    product: Optional[str] = None
 
 
 @dataclass
@@ -53,7 +52,6 @@ class InfrastructureReport(Report):
     telescope_version: str
     report_date: str
     organization: str
-    product: Optional[str] = None
 
 
 @dataclass
@@ -193,7 +191,7 @@ class DeploymentReport(Report):
                 workspace_id=parse_workspace_id_from_helm(deployment_name=name, helm_report=verify, default=name),
                 deployment_id=parse_deployment_id_from_helm(deployment_name=name, helm_report=verify, default=name),
                 chart_version=parse_chart_version_from_helm(deployment_name=name, helm_report=verify),
-                product=product
+                product=product,
             )
         except Exception as e:
             log.error(input_row)
@@ -227,7 +225,7 @@ class Deployment(Report):
             deployment_id=deployment_report.deployment_id,
             workspace_id=deployment_report.workspace_id,
             deployment_updated_at=parse_updated_at_from_helm(deployment_name=name, helm_report=verify),
-            product=deployment_report.product
+            product=deployment_report.product,
         )
 
 
