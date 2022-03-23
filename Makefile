@@ -78,11 +78,11 @@ clean-all: outputs-remove pycache-remove build-remove dist-remove
 .PHONY: package-report
 package-report: build-remove
 	mkdir -p build
-	python -m pip install -r airflow_report/requirements.txt --target build
+	poetry run python -m pip install -r airflow_report/requirements.txt --target build
 	cp -r airflow_report build
 	rm -f build/*.dist-info/*
 	rmdir build/*.dist-info
-	python -m zipapp \
+	poetry run python -m zipapp \
 		--compress \
 		--main airflow_report.__main__:main \
 		--python "/usr/bin/env python3" \
@@ -91,7 +91,7 @@ package-report: build-remove
 
 .PHONY: package-pyinstaller
 package-pyinstaller: dist-remove
-	poetry run PyInstaller --onefile --noconfirm --clean --specpath dist --name telescope \
+	poetry run python -m PyInstaller --onefile --noconfirm --clean --specpath dist --name telescope \
 		--hidden-import telescope.getters.kubernetes_client \
 		--hidden-import telescope.getters.docker_client \
 		--recursive-copy-metadata telescope \
@@ -108,8 +108,23 @@ delete-tag:
 	- git tag -d $(TELESCOPE_TAG)
 	- git push origin --delete $(TELESCOPE_TAG)
 
-# clean-all package_report
+
 .PHONY: release
 release: clean-all delete-tag
 	git tag $(TELESCOPE_TAG)
 	git push origin $(TELESCOPE_TAG)
+
+
+.PHONY: local_release
+local_release: clean-all delete-tag
+	$(MAKE) build
+	$(MAKE) package-report
+	$(MAKE) package-pyinstaller
+	- gh release delete -y $(TELESCOPE_TAG)
+	git tag $(TELESCOPE_TAG)
+	git push origin $(TELESCOPE_TAG)
+	gh release create $(TELESCOPE_TAG) \
+		./telescope-$(TELESCOPE_VERSION)-py3-none-any.whl \
+		airflow_report.pyz \
+		--prerelease \
+		--generate-notes

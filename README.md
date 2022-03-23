@@ -7,7 +7,7 @@
 
 # Telescope
 <p align="center">
-  <img src="resources/astro.png" alt="Astronomer Telescope Logo" />
+  <img src="astro.png" alt="Astronomer Telescope Logo" />
 </p>
 
 

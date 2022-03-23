@@ -124,8 +124,14 @@ def cli(
 
     # Check for helm secrets or get cluster info if we know we are running with Kubernetes
     if any([type(g) == KubernetesGetter for g in all_getters]):
-        data["verify"] = get_helm_info()
-        data["cluster_info"] = cluster_info()
+        try:
+            data["verify"] = get_helm_info()
+        except:
+            pass
+        try:
+            data["cluster_info"] = cluster_info()
+        except:
+            pass
 
     try:
         with multiprocessing.Pool(parallelism) as p:
