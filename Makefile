@@ -2,10 +2,6 @@
 SHELL := /usr/bin/env bash
 PYTHON := python3
 
-#* Docker variables
-IMAGE := telescope
-VERSION := latest
-
 #* Build Variables
 BRANCH := $(shell git branch --show-current)
 TELESCOPE_VERSION := $(shell poetry version --short)
@@ -49,13 +45,6 @@ test:
 check-codestyle:
 	poetry run isort --diff --check-only --settings-path pyproject.toml ./
 	poetry run black --diff --check --config pyproject.toml ./
-	-echo "Skipping darglint..."
-	-# poetry run darglint --verbosity 2 telescope tests
-
-.PHONY: mypy
-mypy:
-	-echo "Skipping mypy..."
-	-# poetry run mypy --config-file pyproject.toml ./
 
 .PHONY: check-safety
 check-safety:
@@ -65,23 +54,6 @@ check-safety:
 
 .PHONY: lint
 lint: test check-codestyle mypy check-safety
-
-#* Docker
-# Example: make docker VERSION=latest
-# Example: make docker IMAGE=some_name VERSION=0.1.0
-.PHONY: docker-build
-docker-build:
-	@echo Building docker $(IMAGE):$(VERSION) ...
-	docker build \
-		-t $(IMAGE):$(VERSION) . \
-		-f ./docker/Dockerfile --no-cache
-
-# Example: make clean_docker VERSION=latest
-# Example: make clean_docker IMAGE=some_name VERSION=0.1.0
-.PHONY: docker-remove
-docker-remove:
-	@echo Removing docker $(IMAGE):$(VERSION) ...
-	docker rmi -f $(IMAGE):$(VERSION)
 
 #* Cleaning
 .PHONY: pycache-remove
@@ -101,7 +73,7 @@ outputs-remove:
 	rm -rf report.json charts report_output.xlsx report_summary.txt telescope-*.whl airflow_report.pyz telescope-*
 
 .PHONY: clean-all
-clean-all: outputs-remove pycache-remove build-remove dist-remove docker-remove
+clean-all: outputs-remove pycache-remove build-remove dist-remove
 
 .PHONY: package-report
 package-report: build-remove
@@ -119,12 +91,12 @@ package-report: build-remove
 
 .PHONY: package-pyinstaller
 package-pyinstaller: dist-remove
-	pyinstaller --onefile --noconfirm --clean --specpath dist --name telescope \
+	poetry run PyInstaller --onefile --noconfirm --clean --specpath dist --name telescope \
 		--hidden-import telescope.getters.kubernetes_client \
 		--hidden-import telescope.getters.docker_client \
 		--recursive-copy-metadata telescope \
 		telescope/__main__.py
-		cp dist/telescope telescope-$(shell uname -s | awk '{print tolower($$0)}' )-$(shell uname -m)
+	cp dist/telescope telescope-$(shell uname -s | awk '{print tolower($$0)}' )-$(shell uname -m)
 
 .PHONY: build
 build: build-remove
@@ -139,14 +111,5 @@ delete-tag:
 # clean-all package_report
 .PHONY: release
 release: clean-all delete-tag
-	$(MAKE) build
-	$(MAKE) package-report
-	$(MAKE) package-pyinstaller
-	- gh release delete -y $(TELESCOPE_TAG)
 	git tag $(TELESCOPE_TAG)
 	git push origin $(TELESCOPE_TAG)
-	gh release create $(TELESCOPE_TAG) \
-		./telescope-$(TELESCOPE_VERSION)-py3-none-any.whl \
-		airflow_report.pyz \
-		--prerelease \
-		--generate-notes

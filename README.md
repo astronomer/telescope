@@ -68,7 +68,6 @@ Telescope is tested on the following Operating Systems:
 - Mac (arm64)
 
 # Usage
-
 ```shell
 $ telescope --help                                                
 Usage: telescope [OPTIONS]
@@ -77,44 +76,30 @@ Usage: telescope [OPTIONS]
   gather usage metadata
 
 Options:
-  --version                      Show the version and exit.
-  --local                        Airflow Reporting for local Airflow
-                                 [default: False]
-  --docker                       Autodiscovery and Airflow reporting for local
-                                 Docker  [default: False]
-  --kubernetes                   Autodiscovery and Airflow reporting for
-                                 Kubernetes  [default: False]
-  -l, --label-selector TEXT      Label selector for Kubernetes Autodiscovery
-                                 [default: component=scheduler]
-  --cluster-info                 Get cluster size and allocation in Kubernetes
-                                 [default: False]
-  --verify                       Introspect Helm installation information for
-                                 Reporting and Verification purposes
-                                 [default: False]
-  --versions                     checks versions of locally installed tools
-                                 [default: False]
-  -f, --hosts-file PATH          Hosts file to pass in various types of hosts
-                                 (ssh, kubernetes, docker) - See README.md for
-                                 sample
-  -p, --parallelism INTEGER      How many cores to use for multiprocessing
-                                 [default: (Number CPU)]
-  --gather / --no-gather         Gather data about Airflow environments
-                                 [default: gather]
-  --report / --no-report         Generate report summary of gathered data
-                                 [default: no-report]
-  --charts / --no-charts         Generate charts of summary of gathered data
-                                 [default: no-charts]
-  --summary / --no-summary       Generate summary text file of gathered data
-                                 [default: no-summary]
-  --upload / --no-upload         Upload charts to get access to rich reporting
-                                 [default: no-upload]
-  -n, --organization-name TEXT   Denote who this report belongs to, e.g. a
-                                 company name
-  --report-type [json|csv|xlsx]  What report type to generate
-  -o, --data-file PATH           Data file to write intermediate gathered
-                                 data, can be '-' for stdout
-  --help                         Show this message and exit.
+  --version                     Show the version and exit.
+  --local                       Airflow Reporting for local Airflow  [default:
+                                False]
+  --docker                      Autodiscovery and Airflow reporting for local
+                                Docker  [default: False]
+  --kubernetes                  Autodiscovery and Airflow reporting for
+                                Kubernetes  [default: False]
+  -l, --label-selector TEXT     Label selector for Kubernetes Autodiscovery
+                                [default: component=scheduler]
+  -f, --hosts-file PATH         Hosts file to pass in various types of hosts
+                                (ssh, kubernetes, docker) - See README.md for
+                                sample
+  -p, --parallelism INTEGER     How many cores to use for multiprocessing
+                                [default: (Number CPU)]
+  -n, --organization-name TEXT  Denote who this report belongs to, e.g. a
+                                company name
+  -o, --data-file PATH          Data file to write intermediate gathered data,
+                                can be '-' for stdout
+  --help                        Show this message and exit.
 ```
+
+# Environmental Variables
+- `TELESCOPE_KUBERNETES_METHOD` - can be `kubectl` to run with kubectl instead of the python SDK for compatability reasons
+- `TELESCOPE_REPORT_RELEASE_VERSION` - can be a separate telescope semver release number, to control which report gets run
 
 # Requirements
 ## Locally - Python
@@ -180,12 +165,6 @@ ssh:
 ```
 
 # Extra Functionality
-## Versions
-`--versions` - checks installed versions of various tools, see [config.yaml](config.yaml) for more details.
-
-## Precheck
-`--precheck` - ensures the environment, useful before installing the Astronomer Enterprise chart
-
 ## Label Selection
 `--label-selector` allows Kubernetes Autodiscovery to locate Airflow Deployments with alternate key/values. 
 The default is `component=scheduler`, however, if your Airflows contain `role=scheduler` instead, you would 
@@ -213,30 +192,6 @@ Using `curl`, `airflow_report.py` is piped and executed on the remote host (the 
 - the `dag` table is inspected from the Airflow metadata db
 - the `connection` table is fetched from the Airflow metadata db
 - the `task_instance` table is analyzed from the Airflow metadata db
-
-
-#### Verify
-This information is saved under the `helm` key
-- `helm ls -aA -o json` and `helm get values` are run. The latter redacts sensitive information.
-
-#### Pre-Check
-This special mode runs a pod `bitnami/postgresql` and gets Kubernetes secrets (`astronomer-tls`, `astronomer-bootstrap`) to verify connectivity and information relating to Astronomer Enterprise installations.
-
-### `--versions` Output
-See [here](https://github.com/astronomer/telescope/blob/main/telescope/config.yaml) for the most recent description of what is gathered with the local flag. Generally, versions are gathered for the following tools:
-- python
-- helm
-- kubectl
-- docker
-- astro
-- docker-compose
-- os
-- aws
-- gcp
-- az
-
-Additionally, 
-- `aws_id` checks `aws sts get-caller-identity`
 
 ## Pre-requisites
 See [Requirements](#requirements) above.

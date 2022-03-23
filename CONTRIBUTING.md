@@ -2,8 +2,9 @@
 
 1) `brew install poetry` OR `make poetry-download`
 2) `make pre-commit-install`
-3) Make a new branch, from `dev`
-4) Code, test, PR, merge into `dev`
+3) Make a new branch, from `main`
+4) Code, test, PR, merge into `main`
+5) Create a release 
 
 ## Pycharm Setup
 
@@ -11,10 +12,6 @@
 2) add `poetry` as the python interpreter
 
 # How to contribute
-
-## Development & CICD Overview
-
-![CICD](resources/telescope_cicd.drawio.png)
 
 ## Dependencies
 
@@ -40,7 +37,7 @@ make codestyle
 
 ### Checks
 
-Many checks are configured for this project. Command `make check-codestyle` will check black, isort and darglint.
+Many checks are configured for this project. Command `make check-codestyle` will check black and isort.
 The `make check-safety` command will look at the security of your code.
 
 Comand `make lint` applies all checks.
@@ -91,7 +88,6 @@ Building a new version of the application contains steps:
 - [`Poetry`](https://python-poetry.org/) as the dependencies manager. See configuration in [`pyproject.toml`](https://github.com/telescope/telescope/blob/main/pyproject.toml) and [`setup.cfg`](https://github.com/telescope/telescope/blob/master/setup.cfg).
 - Automatic codestyle with [`black`](https://github.com/psf/black), [`isort`](https://github.com/timothycrosley/isort) and [`pyupgrade`](https://github.com/asottile/pyupgrade).
 - Ready-to-use [`pre-commit`](https://pre-commit.com/) hooks with code-formatting.
-- Type checks with [`mypy`](https://mypy.readthedocs.io); docstring checks with [`darglint`](https://github.com/terrencepreilly/darglint); security checks with [`safety`](https://github.com/pyupio/safety) and [`bandit`](https://github.com/PyCQA/bandit)
 - Testing with [`pytest`](https://docs.pytest.org/en/latest/).
 - Ready-to-use [`.editorconfig`](https://github.com/telescope/telescope/blob/main/.editorconfig), [`.dockerignore`](https://github.com/telescope/telescope/blob/main/.dockerignore), and [`.gitignore`](https://github.com/telescope/telescope/blob/master/.gitignore). You don't have to worry about those things.
 
@@ -193,7 +189,7 @@ Codestyle checks only, without rewriting files:
 make check-codestyle
 ```
 
-> Note: `check-codestyle` uses `isort`, `black` and `darglint` library
+> Note: `check-codestyle` uses `isort` and `black` library
 
 <details>
 <summary>4. Code security</summary>
@@ -213,20 +209,7 @@ make check-safety
 </details>
 
 <details>
-<summary>5. Type checks</summary>
-<p>
-
-Run `mypy` static type checker
-
-```bash
-make mypy
-```
-
-</p>
-</details>
-
-<details>
-<summary>6. Tests</summary>
+<summary>5. Tests</summary>
 <p>
 
 Run `pytest`
@@ -239,7 +222,7 @@ make test
 </details>
 
 <details>
-<summary>7. All linters</summary>
+<summary>6. All linters</summary>
 <p>
 
 Of course there is a command to ~~rule~~ run all linters in one:
@@ -251,14 +234,14 @@ make lint
 the same as:
 
 ```bash
-make test && make check-codestyle && make mypy && make check-safety
+make test && make check-codestyle && make check-safety
 ```
 
 </p>
 </details>
 
 <details>
-<summary>8. Docker</summary>
+<summary>7. Docker</summary>
 <p>
 
 ```bash
@@ -283,7 +266,7 @@ More information [about docker](https://github.com/telescope/telescope/tree/mast
 </details>
 
 <details>
-<summary>9. Cleanup</summary>
+<summary>8. Cleanup</summary>
 <p>
 Delete pycache files
 
@@ -311,23 +294,6 @@ make clean-all
 You can see the list of available releases on the [GitHub Releases](https://github.com/telescope/telescope/releases) page.
 
 We follow [Semantic Versions](https://semver.org/) specification.
-
-We use [`Release Drafter`](https://github.com/marketplace/actions/release-drafter). As pull requests are merged, a draft release is kept up-to-date listing the changes, ready to publish when you’re ready. With the categories option, you can categorize pull requests in release notes using labels.
-
-### List of labels and corresponding titles
-
-|               **Label**               |  **Title in Releases**  |
-| :-----------------------------------: | :---------------------: |
-|       `enhancement`, `feature`        |       🚀 Features       |
-| `bug`, `refactoring`, `bugfix`, `fix` | 🔧 Fixes & Refactoring  |
-|       `build`, `ci`, `testing`        | 📦 Build System & CI/CD |
-|              `breaking`               |   💥 Breaking Changes   |
-|            `documentation`            |    📝 Documentation     |
-|            `dependencies`             | ⬆️ Dependencies updates |
-
-You can update it in [`release-drafter.yml`](https://github.com/telescope/telescope/blob/main/.github/release-drafter.yml).
-
-GitHub creates the `bug`, `enhancement`, and `documentation` labels for you. Dependabot creates the `dependencies` label. Create the remaining labels on the Issues tab of your GitHub repository, when you need them.
 
 ## Credits [![🚀 Your next Python package needs a bleeding-edge project structure.](https://img.shields.io/badge/python--package--template-%F0%9F%9A%80-brightgreen)](https://github.com/TezRomacH/python-package-template)
 
