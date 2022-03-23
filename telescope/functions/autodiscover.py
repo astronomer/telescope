@@ -5,6 +5,7 @@ import os
 
 from invoke import run
 from lazyimport import lazyimport
+from retrying import retry
 
 from telescope.getters.docker import LocalDockerGetter
 from telescope.getters.kubernetes import KubernetesGetter
@@ -51,6 +52,7 @@ def get_kubernetes_uniqueness(r: "kubernetes.clients.models.V1Pod"):
     return uniqueness
 
 
+@retry(wait_random_min=1000, wait_random_max=2000, stop_max_attempt_number=3)
 def kube_autodiscover(label_selector, **kwargs) -> List[Dict[str, str]]:
     """:returns List of Tuple containing - pod name, pod namespace, container name"""
     seen_uniqueness = set()
@@ -60,9 +62,9 @@ def kube_autodiscover(label_selector, **kwargs) -> List[Dict[str, str]]:
             """'{range .items[*]}{.metadata.name}{","}{.metadata.namespace}{","}{.metadata.generate_name}{"||"}{end}'"""
         )
         cmd = "kubectl get pod -l " + label_selector + " -A -o=jsonpath=" + jp
-        logging.debug(f"Getting Kubernetes pods via kubectl with {cmd}")
+        log.debug(f"Getting Kubernetes pods via kubectl with {cmd}")
         out = run(cmd, hide=True, warn=True).stdout
-        logging.debug(f"Got Kubernetes pods: {out}")
+        log.debug(f"Got Kubernetes pods: {out}")
         for line in out.split("||"):
             if line:
                 [name, namespace, uniqueness] = line.split(",")

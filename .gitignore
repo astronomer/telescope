@@ -629,6 +629,7 @@ out.xlsx
 report.*
 airflow_report.pyz
 telescope*.whl
+telescope-*
 
 report_output.xlsx
 report_summary.txt

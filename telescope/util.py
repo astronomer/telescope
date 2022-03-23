@@ -27,14 +27,10 @@ def deep_clean(cleaning_keys: List[Any], dirty_dict: Dict[Any, Any]) -> None:
         [cleaning_key, *cleaning_keys] = cleaning_keys
         if cleaning_key in dirty_dict:
             deep_clean(cleaning_keys, dirty_dict[cleaning_key])
-        else:
-            return
     else:
         [cleaning_key] = cleaning_keys
         if cleaning_key in dirty_dict:
             dirty_dict[cleaning_key] = "***"
-        else:
-            return
 
 
 def clean_airflow_report_output(log_string: str) -> Union[dict, str]:

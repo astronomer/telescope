@@ -6,6 +6,7 @@ import shlex
 
 from invoke import run
 from lazyimport import lazyimport
+from retrying import retry
 
 from telescope.getters import Getter
 from telescope.util import clean_airflow_report_output
@@ -28,6 +29,7 @@ class KubernetesGetter(Getter):
         self.namespace = namespace
         self.container = container
 
+    @retry(wait_random_min=1000, wait_random_max=2000, stop_max_attempt_number=3)
     def get(self, cmd: Union[List[str], str]) -> Union[dict, str]:
         """Utilize kubernetes python client to exec in a container
         https://github.com/kubernetes-client/python/blob/master/examples/pod_exec.py
@@ -37,10 +39,8 @@ class KubernetesGetter(Getter):
                 cmd = shlex.join(cmd)
 
             cmd = f"kubectl exec -it -n {self.namespace} {self.name} -c {self.container} -- {cmd}"
-            print(cmd)
-            out = run(cmd, hide=True, warn=True).stdout  # other options: timeout, warn
-            out = clean_airflow_report_output(out)
-            return out
+            log.debug(f"Running {cmd}")
+            result = clean_airflow_report_output(run(cmd, hide=True, warn=True).stdout)
         else:
             # noinspection PyUnresolvedReferences
             try:
@@ -71,8 +71,8 @@ class KubernetesGetter(Getter):
             log.debug(f"Got output: {exec_res}")
 
             # filter out any log lines
-            return clean_airflow_report_output(exec_res)
-            # TODO - return verify as well {"airflow_report", ..., "helm": ...}
+            result = clean_airflow_report_output(exec_res)
+        return result
 
     def __eq__(self, other):
         return (

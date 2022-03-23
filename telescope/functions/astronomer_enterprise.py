@@ -1,3 +1,5 @@
+from typing import Optional
+
 import base64
 import gzip
 import json
@@ -72,10 +74,18 @@ def verify():
     return {"helm": helm_installs}
 
 
-def get_helm_info():
+def get_helm_info(namespace: Optional[str] = None):
     output = {}
-    # noinspection PyUnresolvedReferences
-    secrets = kube_client.list_secret_for_all_namespaces(field_selector="type=helm.sh/release.v1").items
+
+    if not namespace:
+        # noinspection PyUnresolvedReferences
+        secrets = kube_client.list_secret_for_all_namespaces(field_selector="type=helm.sh/release.v1").items
+    else:
+        # noinspection PyUnresolvedReferences
+        secrets = kube_client.list_namespaced_secret(
+            namespace=namespace, field_selector="type=helm.sh/release.v1"
+        ).items
+
     for secret in secrets:
         try:
             namespace = secret.metadata.namespace

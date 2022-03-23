@@ -122,8 +122,6 @@ package-pyinstaller: dist-remove
 	pyinstaller --onefile --noconfirm --clean --specpath dist --name telescope \
 		--hidden-import telescope.getters.kubernetes_client \
 		--hidden-import telescope.getters.docker_client \
-		--exclude-module pandas --exclude-module numpy --exclude-module matplotlib \
-		--exclude-module plotly --exclude-module kaleido \
 		--recursive-copy-metadata telescope \
 		telescope/__main__.py
 		cp dist/telescope telescope-$(shell uname -s | awk '{print tolower($$0)}' )-$(shell uname -m)
