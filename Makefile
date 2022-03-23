@@ -92,14 +92,19 @@ pycache-remove:
 build-remove:
 	rm -rf build/
 
+.PHONY: dist-remove
+dist-remove:
+	rm -rf dist/
+
 .PHONY: outputs-remove
 outputs-remove:
-	rm -rf report.json charts report_output.xlsx report_summary.txt telescope-*.whl airflow_report.pyz
+	rm -rf report.json charts report_output.xlsx report_summary.txt telescope-*.whl airflow_report.pyz telescope-*
 
 .PHONY: clean-all
-clean-all: outputs-remove pycache-remove build-remove docker-remove
+clean-all: outputs-remove pycache-remove build-remove dist-remove docker-remove
 
-package_report: build-remove
+.PHONY: package-report
+package-report: build-remove
 	mkdir -p build
 	python -m pip install -r airflow_report/requirements.txt --target build
 	cp -r airflow_report build
@@ -112,19 +117,33 @@ package_report: build-remove
 		--output airflow_report.pyz \
 		build
 
+.PHONY: package-pyinstaller
+package-pyinstaller: dist-remove
+	pyinstaller --onefile --noconfirm --clean --specpath dist --name telescope \
+		--hidden-import telescope.getters.kubernetes_client \
+		--hidden-import telescope.getters.docker_client \
+		--exclude-module pandas --exclude-module numpy --exclude-module matplotlib \
+		--exclude-module plotly --exclude-module kaleido \
+		--recursive-copy-metadata telescope \
+		telescope/__main__.py
+		cp dist/telescope telescope-$(shell uname -s | awk '{print tolower($$0)}' )-$(shell uname -m)
 
+.PHONY: build
 build: build-remove
 	poetry build
 	mv dist/telescope*.whl .
 
-delete_tag:
+.PHONY: delete_tag
+delete-tag:
 	- git tag -d $(TELESCOPE_TAG)
 	- git push origin --delete $(TELESCOPE_TAG)
 
 # clean-all package_report
-release: clean-all delete_tag
+.PHONY: release
+release: clean-all delete-tag
 	$(MAKE) build
-	$(MAKE) package_report
+	$(MAKE) package-report
+	$(MAKE) package-pyinstaller
 	- gh release delete -y $(TELESCOPE_TAG)
 	git tag $(TELESCOPE_TAG)
 	git push origin $(TELESCOPE_TAG)

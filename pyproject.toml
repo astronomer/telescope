@@ -124,6 +124,7 @@ doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAI
 # Extra options:
 addopts = [
   "--ignore=tests/resources/example-dag.py",
+  "--ignore=resources/fix.py",
   "--strict-markers",
   "--tb=short",
   "--disable-warnings",
