@@ -1,8 +1,10 @@
 from typing import List, Union
 
-import json
 import logging
+import os
+import shlex
 
+from invoke import run
 from lazyimport import lazyimport
 
 from telescope.getters import Getter
@@ -14,13 +16,12 @@ lazyimport(
 from telescope.getters.kubernetes_client import kube_client
 from telescope.getters.kubernetes_client import api_client
 from telescope.getters.kubernetes_client import stream
-from telescope.getters.kubernetes_client import ApiExcepton
+from kubernetes.client import ApiException
 """,
 )
 log = logging.getLogger(__name__)
 
 
-# noinspection PyUnresolvedReferences
 class KubernetesGetter(Getter):
     def __init__(self, name: str = None, namespace: str = None, container: str = "scheduler"):
         self.name = name
@@ -31,32 +32,47 @@ class KubernetesGetter(Getter):
         """Utilize kubernetes python client to exec in a container
         https://github.com/kubernetes-client/python/blob/master/examples/pod_exec.py
         """
-        try:
-            pod_res = kube_client.read_namespaced_pod(name=self.name, namespace=self.namespace)
-            if not pod_res or pod_res.status.phase == "Pending":
-                raise RuntimeError(
-                    f"Kubernetes pod {self.name} in namespace {self.namespace} does not exist or is pending..."
-                )
-        except ApiException as e:
-            if e.status != 404:
-                raise RuntimeError(f"Unknown Kubernetes error: {e}")
+        if os.getenv("TELESCOPE_KUBERNETES_METHOD", "") == "kubectl":
+            if type(cmd) == list:
+                cmd = shlex.join(cmd)
 
-        log.debug(f"Running {cmd} on pod {self.name} in namespace {self.namespace} in container {self.container}")
-        exec_res = stream(
-            kube_client.connect_get_namespaced_pod_exec,
-            name=self.name,
-            namespace=self.namespace,
-            command=cmd,
-            container=self.container,
-            stderr=True,
-            stdin=False,
-            stdout=True,
-            tty=False,
-        )
-        log.debug(f"Got output: {exec_res}")
+            cmd = f"kubectl exec -it -n {self.namespace} {self.name} -c {self.container} -- {cmd}"
+            print(cmd)
+            out = run(cmd, hide=True, warn=True).stdout  # other options: timeout, warn
+            out = clean_airflow_report_output(out)
+            return out
+        else:
+            # noinspection PyUnresolvedReferences
+            try:
+                # noinspection PyUnresolvedReferences
+                pod_res = kube_client.read_namespaced_pod(name=self.name, namespace=self.namespace)
+                if not pod_res or pod_res.status.phase == "Pending":
+                    raise RuntimeError(
+                        f"Kubernetes pod {self.name} in namespace {self.namespace} does not exist or is pending..."
+                    )
+            except ApiException as e:
+                if e.status != 404:
+                    raise RuntimeError(f"Unknown Kubernetes error: {e}")
 
-        # filter out any log lines
-        return clean_airflow_report_output(exec_res)
+            log.debug(f"Running {cmd} on pod {self.name} in namespace {self.namespace} in container {self.container}")
+            # noinspection PyUnresolvedReferences
+            exec_res = stream(
+                # noinspection PyUnresolvedReferences
+                kube_client.connect_get_namespaced_pod_exec,
+                name=self.name,
+                namespace=self.namespace,
+                command=cmd,
+                container=self.container,
+                stderr=True,
+                stdin=False,
+                stdout=True,
+                tty=False,
+            )
+            log.debug(f"Got output: {exec_res}")
+
+            # filter out any log lines
+            return clean_airflow_report_output(exec_res)
+            # TODO - return verify as well {"airflow_report", ..., "helm": ...}
 
     def __eq__(self, other):
         return (

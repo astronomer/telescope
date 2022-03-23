@@ -1,5 +1,9 @@
 from typing import Dict, List
 
+import logging
+import os
+
+from invoke import run
 from lazyimport import lazyimport
 
 from telescope.getters.docker import LocalDockerGetter
@@ -14,6 +18,8 @@ from telescope.getters.kubernetes_client import api_client
 """,
 )
 
+log = logging.getLogger(__name__)
+
 
 # noinspection PyUnresolvedReferences
 def docker_autodiscover(**kwargs) -> List[Dict[str, str]]:
@@ -26,16 +32,65 @@ def docker_autodiscover(**kwargs) -> List[Dict[str, str]]:
         return []
 
 
-# noinspection PyUnresolvedReferences
+def get_kubernetes_uniqueness(r: "kubernetes.clients.models.V1Pod"):
+    # Attempt to get at least one (they should be ~equivalent, so both doesn't matter)
+    # piece of unique identifying matter, to cover the case of "multiple airflow schedulers"
+    uniqueness = ""
+    try:
+        # Try to get "generate_name", for: bitter-supernova-1993-scheduler-57678b77d-qh8zm
+        # this should be: bitter-supernova-1993-scheduler-57678b77d-
+        uniqueness += r.metadata.generate_name
+    except Exception as e:
+        log.debug(f"Unable to catch '.metadata.generate_name' - {e}")
+    try:
+        # Try to get the name of the owner reference, for:  bitter-supernova-1993-scheduler-57678b77d-qh8zm
+        # this should be bitter-supernova-1993-scheduler-57678b77d
+        uniqueness += r.metadata.owner_references[0].name
+    except Exception as e:
+        log.debug(f"Unable to catch '.metadata.owner_references[0].name' - {e}")
+    return uniqueness
+
+
 def kube_autodiscover(label_selector, **kwargs) -> List[Dict[str, str]]:
     """:returns List of Tuple containing - pod name, pod namespace, container name"""
-    if kube_client is not None:
-        return [
-            {"name": r.metadata.name, "namespace": r.metadata.namespace, "container": "scheduler"}
-            for r in kube_client.list_pod_for_all_namespaces(label_selector=label_selector).items
-        ]
+    seen_uniqueness = set()
+    results = []
+    if os.getenv("TELESCOPE_KUBERNETES_METHOD", "") == "kubectl":
+        jp = (
+            """'{range .items[*]}{.metadata.name}{","}{.metadata.namespace}{","}{.metadata.generate_name}{"||"}{end}'"""
+        )
+        cmd = "kubectl get pod -l " + label_selector + " -A -o=jsonpath=" + jp
+        logging.debug(f"Getting Kubernetes pods via kubectl with {cmd}")
+        out = run(cmd, hide=True, warn=True).stdout
+        logging.debug(f"Got Kubernetes pods: {out}")
+        for line in out.split("||"):
+            if line:
+                [name, namespace, uniqueness] = line.split(",")
+                if uniqueness:
+                    if uniqueness not in seen_uniqueness:
+                        seen_uniqueness.add(uniqueness)
+                        results.append({"name": name, "namespace": namespace, "container": "scheduler"})
+                else:
+                    results.append({"name": name, "namespace": namespace, "container": "scheduler"})
     else:
-        return []
+        # noinspection PyUnresolvedReferences
+        if kube_client is not None:
+            seen_uniqueness = set()
+            results = []
+            # noinspection PyUnresolvedReferences
+            for r in kube_client.list_pod_for_all_namespaces(label_selector=label_selector).items:
+                uniqueness = get_kubernetes_uniqueness(r)
+                if uniqueness:
+                    if uniqueness not in seen_uniqueness:
+                        seen_uniqueness.add(uniqueness)
+                        results.append(
+                            {"name": r.metadata.name, "namespace": r.metadata.namespace, "container": "scheduler"}
+                        )
+                else:
+                    results.append(
+                        {"name": r.metadata.name, "namespace": r.metadata.namespace, "container": "scheduler"}
+                    )
+    return results
 
 
 AUTODISCOVERERS = {

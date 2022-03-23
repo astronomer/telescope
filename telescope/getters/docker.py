@@ -1,6 +1,5 @@
 from typing import List, Union
 
-import json
 import logging
 
 from lazyimport import lazyimport
