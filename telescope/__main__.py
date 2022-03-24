@@ -126,12 +126,13 @@ def cli(
     if any([type(g) == KubernetesGetter for g in all_getters]):
         try:
             data["verify"] = get_helm_info()
-        except:
-            pass
+        except Exception as e:
+            logging.warning(f"Failure getting helm information - {e}")
+
         try:
             data["cluster_info"] = cluster_info()
-        except:
-            pass
+        except Exception as e:
+            logging.warning(f"Failure getting cluster info - {e}")
 
     try:
         with multiprocessing.Pool(parallelism) as p:

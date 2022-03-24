@@ -58,9 +58,7 @@ def kube_autodiscover(label_selector, **kwargs) -> List[Dict[str, str]]:
     seen_uniqueness = set()
     results = []
     if os.getenv("TELESCOPE_KUBERNETES_METHOD", "") == "kubectl":
-        jp = (
-            """'{range .items[*]}{.metadata.name}{","}{.metadata.namespace}{","}{.metadata.generate_name}{"||"}{end}'"""
-        )
+        jp = """'{range .items[*]}{.metadata.name}{","}{.metadata.namespace}{","}{.metadata.generateName}{"||"}{end}'"""
         cmd = "kubectl get pod -l " + label_selector + " -A -o=jsonpath=" + jp
         log.debug(f"Getting Kubernetes pods via kubectl with {cmd}")
         out = run(cmd, hide=True, warn=True).stdout
