@@ -3,8 +3,10 @@
 1) `brew install poetry` OR `make poetry-download`
 2) `make pre-commit-install`
 3) Make a new branch, from `main`
-4) Code, test, PR, merge into `main`
-5) Create a release 
+4) Code, test, PR
+5) Bump version with `poetry version x.y.z` according to [semantic versioning](https://semver.org/)
+6) Merge into `main`
+7) run `make tag` to Create a release
 
 ## Pycharm Setup
 
@@ -89,20 +91,13 @@ Building a new version of the application contains steps:
 - Automatic codestyle with [`black`](https://github.com/psf/black), [`isort`](https://github.com/timothycrosley/isort) and [`pyupgrade`](https://github.com/asottile/pyupgrade).
 - Ready-to-use [`pre-commit`](https://pre-commit.com/) hooks with code-formatting.
 - Testing with [`pytest`](https://docs.pytest.org/en/latest/).
-- Ready-to-use [`.editorconfig`](https://github.com/telescope/telescope/blob/main/.editorconfig), [`.dockerignore`](https://github.com/telescope/telescope/blob/main/.dockerignore), and [`.gitignore`](https://github.com/telescope/telescope/blob/master/.gitignore). You don't have to worry about those things.
+- Ready-to-use [`.editorconfig`](https://github.com/telescope/telescope/blob/main/.editorconfig) and [`.gitignore`](https://github.com/telescope/telescope/blob/master/.gitignore). You don't have to worry about those things.
 
 ### Deployment features
 
 - `GitHub` integration: issue and pr templates.
-- `Github Actions` with predefined [build workflow](https://github.com/telescope/telescope/blob/main/.github/workflows/build.yml) as the default CI/CD.
-- Everything is already set up for security checks, codestyle checks, code formatting, testing, linting, docker builds, etc with [`Makefile`](https://github.com/telescope/telescope/blob/main/Makefile#L89). More details in [makefile-usage](#makefile-usage).
-- [Dockerfile](https://github.com/telescope/telescope/blob/main/docker/Dockerfile) for your package.
-- Always up-to-date dependencies with [`@dependabot`](https://dependabot.com/). You will only [enable it](https://docs.github.com/en/github/administering-a-repository/enabling-and-disabling-version-updates#enabling-github-dependabot-version-updates).
-- Automatic drafts of new releases with [`Release Drafter`](https://github.com/marketplace/actions/release-drafter). You may see the list of labels in [`release-drafter.yml`](https://github.com/telescope/telescope/blob/main/.github/release-drafter.yml). Works perfectly with [Semantic Versions](https://semver.org/) specification.
-
-### Open source community features
-
-- [Semantic Versions](https://semver.org/) specification with [`Release Drafter`](https://github.com/marketplace/actions/release-drafter).
+- `Github Actions` with predefined [build workflow](https://github.com/telescope/telescope/blob/main/.github/workflows/cicd.yml) as the default CI/CD.
+- Everything is already set up for security checks, codestyle checks, code formatting, testing, linting, etc with [`Makefile`](https://github.com/telescope/telescope/blob/main/Makefile#L89). More details in [makefile-usage](#makefile-usage).
 
 ## Installation
 
@@ -190,6 +185,7 @@ make check-codestyle
 ```
 
 > Note: `check-codestyle` uses `isort` and `black` library
+</details>
 
 <details>
 <summary>4. Code security</summary>
@@ -241,32 +237,7 @@ make test && make check-codestyle && make check-safety
 </details>
 
 <details>
-<summary>7. Docker</summary>
-<p>
-
-```bash
-make docker-build
-```
-
-which is equivalent to:
-
-```bash
-make docker-build VERSION=latest
-```
-
-Remove docker image with
-
-```bash
-make docker-remove
-```
-
-More information [about docker](https://github.com/telescope/telescope/tree/master/docker).
-
-</p>
-</details>
-
-<details>
-<summary>8. Cleanup</summary>
+<summary>7. Cleanup</summary>
 <p>
 Delete pycache files
 

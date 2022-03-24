@@ -109,8 +109,8 @@ delete-tag:
 	- git push origin --delete $(TELESCOPE_TAG)
 
 
-.PHONY: release
-release: clean-all delete-tag
+.PHONY:tag
+tag: clean-all delete-tag
 	git tag $(TELESCOPE_TAG)
 	git push origin $(TELESCOPE_TAG)
 
