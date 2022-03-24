@@ -14,7 +14,7 @@ A tool to observe distant (or local!) Airflow installations, and gather metadata
 
 # Installation Method 1) via Binary
 
-Find and download the executable in [the Telescope Release for the correct version](https://github.com/astronomer/telescope/releases)
+Find and download the executable in [the Telescope Release for the correct version](https://github.com/astronomer/telescope/releases/latest)
 
 e.g. *for x86_64 Linux*
 ```shell
