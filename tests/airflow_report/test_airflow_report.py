@@ -1,14 +1,13 @@
-import json
 import tarfile
 from importlib.resources import path
 from io import BytesIO
 from time import sleep, time
 
+import docker
 import pytest
 from docker.models.containers import Container
 
 import airflow_report
-import docker
 from airflow_report.__main__ import dag_varconn_usage
 from telescope.util import clean_airflow_report_output
 from tests import resources

@@ -6,6 +6,7 @@ import os
 import yaml
 
 import telescope
+from telescope.functions.astronomer_enterprise import get_helm_info
 from telescope.functions.autodiscover import AUTODISCOVERERS, docker_autodiscover, kube_autodiscover
 from telescope.getters import Getter
 from telescope.getters.docker import LocalDockerGetter
@@ -71,7 +72,7 @@ def gather_getters(
         log.info(f"Parsing user supplied hosts file... {hosts_file}")
         with open(hosts_file) as hosts_f:
             parsed_host_file = yaml.safe_load(hosts_f)
-            return parse_getters_from_hosts_file(parsed_host_file, label_selector)
+            _getters = parse_getters_from_hosts_file(parsed_host_file, label_selector)
 
     # or use passed-in flags and autodiscovery
     else:
@@ -95,11 +96,13 @@ def get_from_getter(getter: Getter) -> dict:
     getter_key = getter.get_report_key()
     host_type = getter.get_type()
     results = {}
-    key = "airflow_report"
-    full_key = (host_type, getter_key, key)
+    full_key = (host_type, getter_key, "airflow_report")
+    helm_full_key = (host_type, getter_key, "helm")
     log.debug(f"Fetching 'report[{full_key}]'...")
     try:
         results[full_key] = getter.get(AIRFLOW_REPORT_CMD)
+        if type(getter) == KubernetesGetter:
+            results[helm_full_key] = get_helm_info(namespace=getter_key.split("|")[0])
     except Exception as e:
         log.exception(e)
         results[full_key] = str(e)

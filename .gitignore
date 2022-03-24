@@ -218,11 +218,6 @@ celerybeat-schedule
 # mkdocs documentation
 /site
 
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
 # Pyre type checker
 .pyre/
 
@@ -617,7 +612,8 @@ MigrationBackup/
 # End of https://www.gitignore.io/api/osx,python,pycharm,windows,visualstudio,visualstudiocode
 
 cookiecutter-config-file.yml
-report.json
+data.json
+*.data.json
 !tests/resources
 airflow_debug_report.md
 output.yaml
@@ -628,6 +624,7 @@ out.xlsx
 report.*
 airflow_report.pyz
 telescope*.whl
+telescope-*
 
 report_output.xlsx
 report_summary.txt
@@ -641,3 +638,6 @@ requirements.txt
 withoutcharts
 withcharts
 venv
+reports_to_ul
+.~lock*
+schemas

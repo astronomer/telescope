@@ -28,40 +28,10 @@ SAMPLE_HOSTS = {
 
 
 # noinspection PyTypeChecker
-@pytest.mark.slow_integration_test
-def test_cli_versions_json():
-    """https://click.palletsprojects.com/en/8.0.x/testing/#basic-testing"""
-    runner = CliRunner()
-    result = runner.invoke(cli, "--versions -o '-'")
-    assert result.exit_code == 0
-    actual = json.loads(remove_initial_log_lines(result.output))
-    assert type(actual) == dict, "the --versions flag (with -o -) gives a dict for output"
-    print(actual)
-    assert (
-        "python" in actual["versions"]
-    ), "the --local flag retrieves the installed versions of things keyed by the hostname"
-
-
-# noinspection PyTypeChecker
-@pytest.mark.slow_integration_test
-def test_cli_versions_file():
-    runner = CliRunner()
-    with runner.isolated_filesystem():
-        result = runner.invoke(cli, "--versions --no-report")
-        assert result.exit_code == 0
-        with open("report.json") as f:
-            actual = json.load(f)
-            assert type(actual) == dict, "we write a dict to report.json"
-            assert (
-                "python" in actual["versions"]
-            ), "the --versions flag retrieves the installed versions of things keyed by the hostname"
-
-
-# noinspection PyTypeChecker
 @manual_tests
 def test_cli_docker():
     runner = CliRunner()
-    result = runner.invoke(cli, "--docker --no-report -o '-'")
+    result = runner.invoke(cli, "--docker -o '-'")
     if result.exit_code != 0:
         print(result.output)
     assert result.exit_code == 0
@@ -74,7 +44,7 @@ def test_cli_docker():
 @manual_tests
 def test_cli_kubernetes():
     runner = CliRunner()
-    result = runner.invoke(cli, "--cluster-info --kubernetes --no-report -o '-'")
+    result = runner.invoke(cli, "--kubernetes -o '-'")
     print(result.output)
     assert result.exit_code == 0
     actual = json.loads(remove_initial_log_lines(result.output))
@@ -82,10 +52,11 @@ def test_cli_kubernetes():
     # TODO - fill out kube autodiscovery
 
 
+# noinspection PyTypeChecker
 @manual_tests
 def test_cli_local():
     runner = CliRunner()
-    result = runner.invoke(cli, "--local --no-report -o '-'")
+    result = runner.invoke(cli, "--local -o '-'")
     print(result.output)
     assert result.exit_code == 0
     actual = json.loads(remove_initial_log_lines(result.output))

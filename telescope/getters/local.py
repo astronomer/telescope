@@ -1,6 +1,5 @@
 from typing import List, Union
 
-import json
 import logging
 import shlex
 import socket

@@ -1,8 +1,7 @@
 import logging
 
-from docker.errors import DockerException
-
 import docker
+from docker.errors import DockerException
 
 log = logging.getLogger(__name__)
 
