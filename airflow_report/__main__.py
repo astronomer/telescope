@@ -12,8 +12,6 @@ from sqlalchemy import text
 logging.getLogger("airflow.settings").setLevel(logging.ERROR)
 logging.getLogger("google.cloud.bigquery.opentelemetry_tracing").setLevel(logging.ERROR)
 
-import airflow.jobs.base_job
-
 try:
     from airflow.utils.session import provide_session
 except:
@@ -78,7 +76,9 @@ except ModuleNotFoundError:
 
 
 def airflow_version_report() -> Any:
-    return airflow.version.version
+    from airflow.version import version
+
+    return version
 
 
 def providers_report() -> Any:
@@ -154,8 +154,10 @@ def env_vars_report() -> Any:
 
 
 def pools_report() -> Any:
+    from airflow.models import Pool
+
     try:
-        return airflow.models.Pool.slots_stats()
+        return Pool.slots_stats()
     except AttributeError:
         from typing import Dict, Iterable, Optional, Tuple
 
@@ -230,7 +232,7 @@ def pools_report() -> Any:
         return slots_stats()
 
 
-# noinspection SqlNoDataSourceInspection
+# noinspection SqlNoDataSourceInspection,PyBroadException
 @provide_session
 def dags_report(session) -> Any:
     from airflow.models import DagModel, TaskInstance
@@ -308,6 +310,7 @@ def dag_varconn_usage(dag_path: str):
     return (var_results or None), (conn_results or None)
 
 
+# noinspection PyProtectedMember,PyUnresolvedReferences
 def dag_complexity_report(dag_path: str):
     from radon.complexity import average_complexity, cc_rank, cc_visit
     from radon.metrics import mi_rank, mi_visit
