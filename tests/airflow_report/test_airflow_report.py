@@ -25,10 +25,18 @@ def example_dag_path():
         return str(p.resolve())
 
 
-@pytest.fixture(params=["2.2.1", "2.1.3", "1.10.15", "1.10.10"])
+@pytest.fixture(
+    params=[
+        "apache/airflow:2.2.4",
+        "apache/airflow:2.1.3",
+        "apache/airflow:1.10.15",
+        "apache/airflow:1.10.10",
+        "bitnami/airflow:1.10.2",
+    ]
+)
 def docker_scheduler(docker_client, request):
     scheduler = docker_client.containers.run(
-        f"apache/airflow:{request.param}",
+        request.param,
         entrypoint="sh",
         command='-c "(airflow db upgrade || airflow upgradedb) && airflow scheduler"',
         detach=True,
@@ -121,12 +129,15 @@ def test_airflow_report(docker_scheduler):
 
     assert "user_report" in report
     if type(report["user_report"]) == dict:
-        assert list(report["user_report"].keys()) == [
-            "1_days_active_users",
-            "7_days_active_users",
-            "30_days_active_users",
-            "365_days_active_users",
-            "total_users",
+        assert list(report["user_report"].keys()) in [
+            [
+                "1_days_active_users",
+                "7_days_active_users",
+                "30_days_active_users",
+                "365_days_active_users",
+                "total_users",
+            ],
+            ["total_users"],
         ]
 
 
