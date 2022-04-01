@@ -78,24 +78,34 @@ def copy_to_container(container: Container, container_path: str, local_path: str
 
 
 @manual_tests
-def test_airflow_report(docker_scheduler):
+def test_airflow_report(docker_scheduler: Container):
     with path(airflow_report, "__main__.py") as p:
         airflow_report_path = str(p.resolve())
 
-    copy_to_container(docker_scheduler, "/opt/airflow/", local_path=airflow_report_path, name="__main__.py")
+    if "bitnami" in str(docker_scheduler.image):
+        fpath = "/opt/bitnami/airflow/"
+        run = "bash -c 'cd /opt/bitnami/airflow/ && source venv/bin/activate && python __main__.py'"
+    else:
+        fpath = "/opt/airflow/"
+        run = "python __main__.py"
 
-    exit_code, output = docker_scheduler.exec_run("python __main__.py")
+    copy_to_container(docker_scheduler, fpath, local_path=airflow_report_path, name="__main__.py")
+    exit_code, output = docker_scheduler.exec_run(run)
     print(output.decode("utf-8"))
     report = clean_airflow_report_output(output.decode("utf-8"))
 
     print(report)
 
     assert "airflow_version_report" in report  # '2.2.1'
-    assert type(report["airflow_version_report"]) == str
+    assert (
+        type(report["airflow_version_report"]) == str
+    ), f'airflow_version_report: {report["airflow_version_report"]} - {type(report["airflow_version_report"])} != str'
     assert "." in report["airflow_version_report"]
 
     assert "hostname_report" in report  # '0ad460b0b358'
-    assert type(report["hostname_report"]) == str
+    assert (
+        type(report["hostname_report"]) == str
+    ), f'hostname_report: {report["hostname_report"]} - {type(report["hostname_report"])} != str'
 
     assert "providers_report" in report
     assert type(report["providers_report"]) in [
@@ -104,28 +114,45 @@ def test_airflow_report(docker_scheduler):
     ], "providers_report is either a dict of providers or None if it's 1.x (not supported)"
 
     assert "installed_packages_report" in report
-    assert type(report["installed_packages_report"]) == dict
+    assert (
+        type(report["installed_packages_report"]) == dict
+    ), f'installed_packages_report: {report["installed_packages_report"]} - {type(report["installed_packages_report"])} != dict'
 
     assert "configuration_report" in report
-    assert type(report["configuration_report"]) == dict
+    assert (
+        type(report["configuration_report"]) == dict
+    ), f'configuration_report: {report["configuration_report"]} - {type(report["configuration_report"])} != dict'
 
     assert "pools_report" in report
-    assert type(report["pools_report"]) == dict
+    assert type(report["pools_report"]) in [
+        list,
+        dict,
+    ], f'pools_report: {report["pools_report"]} - {type(report["pools_report"])} not in [list, dict]'
 
     assert "dags_report" in report
-    assert type(report["dags_report"]) == list
+    assert (
+        type(report["dags_report"]) == list
+    ), f'dags_report: {report["dags_report"]} - {type(report["dags_report"])} != list'
 
     assert "env_vars_report" in report
-    assert type(report["env_vars_report"]) == dict
+    assert (
+        type(report["env_vars_report"]) == dict
+    ), f'env_vars_report: {report["env_vars_report"]} - {type(report["env_vars_report"])} != dict'
 
     assert "usage_stats_report" in report
-    assert type(report["usage_stats_report"]) == list
+    assert (
+        type(report["usage_stats_report"]) == list
+    ), f'usage_stats_report: {report["usage_stats_report"]} - {type(report["usage_stats_report"])} != list'
 
     assert "connections_report" in report
-    assert type(report["connections_report"]) == list
+    assert (
+        type(report["connections_report"]) == list
+    ), f'connections_report: {report["connections_report"]} - {type(report["connections_report"])} != list'
 
     assert "variables_report" in report
-    assert type(report["variables_report"]) == list
+    assert (
+        type(report["variables_report"]) == list
+    ), f'variables_report: {report["variables_report"]} - {type(report["variables_report"])} != list'
 
     assert "user_report" in report
     if type(report["user_report"]) == dict:
@@ -138,7 +165,7 @@ def test_airflow_report(docker_scheduler):
                 "total_users",
             ],
             ["total_users"],
-        ]
+        ], f'user_report: {report["user_report"]} - {type(report["user_report"])} != dict or keys are different'
 
 
 def test_dag_varconn_usage(example_dag_path: str):
