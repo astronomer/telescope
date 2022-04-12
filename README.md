@@ -49,7 +49,7 @@ telescope --kubernetes
 You should now have a file ending in `*.data.json` - which is an intermediate data payload
 
 # Quickstart - SSH Assessment Mode
-This will work if your Airflow's are on hosts accessible via SSH and SSH is configured to connect to all of these hosts (e.g. you have `~/.ssh/config` with entries for all hosts)
+This will work if your Airflows are on hosts accessible via SSH and SSH is configured to connect to all of these hosts (e.g. you have `~/.ssh/config` with entries for all hosts)
 Create a `hosts.yaml` file, like this, enumerating every host:
 ```shell
 ssh:
@@ -94,7 +94,7 @@ Options:
 ```
 
 # Optional Environmental Variables
-- `TELESCOPE_KUBERNETES_METHOD` - can be `kubectl` to run with kubectl instead of the python SDK for compatability reasons
+- `TELESCOPE_KUBERNETES_METHOD` - can be `kubectl` to run with kubectl instead of the python SDK for compatibility reasons
 - `TELESCOPE_REPORT_RELEASE_VERSION` - can be a separate telescope semver release number, to control which report gets run
 
 # Requirements
@@ -199,7 +199,7 @@ Using `curl`, `airflow_report.pyz` is executed on the remote host (the host or c
 The name of this file can vary depending on what options were passed to the tool. 
 There is an intermediate output ending in `*.data.json` which contains all data gathered, and is utilized to generate the report outputs.
 
-# Compatability Matrix
+# Compatibility Matrix
 Telescope is been tested against the following Airflow versions:
 - "1.10.15", "1.10.10", "2.2.1", "2.1.3"
 
