@@ -1,7 +1,9 @@
-from typing import Dict
+from typing import Callable, Dict
 
 import logging
 import os
+from pathlib import Path
+from shlex import split
 
 import yaml
 
@@ -92,7 +94,24 @@ def gather_getters(
     return _getters
 
 
-def get_from_getter(getter: Getter) -> dict:
+def obfuscate(x: str) -> str:
+    """
+    >>> obfuscate("Hello World!")
+    'Hel***********ld!'
+    >>> obfuscate("")
+    '***********'
+    >>> obfuscate("/a/b/c/d/hello_world.py")
+    '/a/b/c/d/hel***********rld.py'
+    """
+    if "/" not in x:
+        return f"{x[:3]}***********{x[-3:]}"
+    p = Path(x)
+    return x.replace(p.stem, obfuscate(p.stem))
+
+
+def get_from_getter(
+    getter: Getter, dag_obfuscation: bool = False, dag_obfuscation_fn: Callable[[str], str] = obfuscate
+) -> dict:
     getter_key = getter.get_report_key()
     host_type = getter.get_type()
     results = {}
@@ -100,7 +119,13 @@ def get_from_getter(getter: Getter) -> dict:
     helm_full_key = (host_type, getter_key, "helm")
     log.debug(f"Fetching 'report[{full_key}]'...")
     try:
-        results[full_key] = getter.get(AIRFLOW_REPORT_CMD)
+        result = getter.get(AIRFLOW_REPORT_CMD)
+        if dag_obfuscation:
+            for dag in result.get("dags_report", []):
+                dag["dag_id"] = dag_obfuscation_fn(dag["dag_id"])
+                dag["fileloc"] = dag_obfuscation_fn(dag["fileloc"])
+
+        results[full_key] = result
         if type(getter) == KubernetesGetter:
             results[helm_full_key] = get_helm_info(namespace=getter_key.split("|")[0])
     except Exception as e:
