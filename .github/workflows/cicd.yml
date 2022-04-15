@@ -7,11 +7,7 @@ jobs:
     strategy:
       matrix:
         os: [ "ubuntu-latest" ]
-<<<<<<< HEAD
         python-version: ["3.6", "3.9", "3.10"]
-=======
-        python-version: ["3.4", "3.9", "3.11"]
->>>>>>> 34846ab (increase range of python versions in cicd tests; build on older linux for gcc bug)
     runs-on: ${{ matrix.os }}
 
     defaults:
