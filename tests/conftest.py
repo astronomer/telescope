@@ -1,7 +1,11 @@
 import json
 import os
 import pprint
-from importlib.resources import path
+
+try:
+    from importlib.resources import path
+except ModuleNotFoundError:
+    from importlib_resources import path
 
 import pytest
 

@@ -98,8 +98,8 @@ Options:
 - `TELESCOPE_REPORT_RELEASE_VERSION` - can be a separate telescope semver release number, to control which report gets run
 
 # Requirements
-## Locally - Python
-- Python >=3.8
+## Locally - via PIP 
+- Python >=3.6
 - `pip`
 
 ## Locally - Docker or Kubernetes or SSH Airflow Assessment modes
@@ -110,10 +110,10 @@ Options:
 
 ## Remote Airflow Requirements
 - Airflow Scheduler >1.10.5
-- Python 3
-- Curl
+- Python >=3.6
 - Postgresql/Mysql/Sqlite Metadata Database (support not guaranteed for other backing databases)
 - **Kubernetes**: Kubernetes Scheduler has label `component=scheduler` (or `--label-selector` specified)
+- `github.com` access
 
 # Input
 ## Local autodiscovery
@@ -166,6 +166,43 @@ ssh:
 The default is `component=scheduler`, however, if your Airflows contain `role=scheduler` instead, you would 
 use `--label-selector "role=scheduler"`.
 
+## Airflow Report Command
+`TELESCOPE_AIRFLOW_REPORT_COMMAND` can be set, normally the default is 
+```shell
+python -W ignore -c "import runpy,os;from urllib.request import urlretrieve as u;a='airflow_report.pyz';u('https://github.com/astronomer/telescope/releases/latest/download/'+a,a);runpy.run_path(a);os.remove(a)"
+```
+
+This can be used, for instance, if there is no access to Github on the remote box, 
+or a custom directory is needed to run, 
+or environment activation is required ahead of time,
+or your `python` is called something other than `python` (e.g. `python3`)
+```shell
+https://github.com/astronomer/telescope/releases/latest/download/
+scp airflow_report.pyz remote_user@remote_host:airflow_report.pyz 
+TELESCOPE_AIRFLOW_REPORT_COMMAND="scl enable rh-python36 python -W ignore -c 'import runpy;a=\'airflow_report.pyz\';runpy.run_path(a);os.remove(a)'"
+```
+
+## DAG Obfuscation
+
+
+# Install from Source 
+If neither the [pip installation method](#installation-method-2-via-pip) 
+or [binary installation](#installation-method-1-via-binary)
+methods work - you can download the source and execute directly as a python module
+
+## As a zip
+```shell
+wget https://github.com/astronomer/telescope/archive/refs/heads/main.zip && unzip main.zip
+cd telescope-main
+python -m telescope ...
+```
+
+## With git
+```shell
+git clone https://github.com/astronomer/telescope.git
+cd telescope
+python -m telescope ...
+```
 
 # Data Collected
 The following Data is collected:
@@ -176,10 +213,10 @@ When run using `kubernetes`, cluster info is attained from the Nodes - including
 ## `verify`
 When run using `kubernetes`, Helm chart information for charts named like `astronomer` or `airflow` is fetched, sensitive values are redacted. 
 
-## Airflow Report
+## `Airflow Report`
 This information is saved under the `airflow_report` key, under the `host_type` key and the host key. E.g. `kubernetes.mynamespace|myhost-1234-xyz.airflow_report` or `ssh.my_hostname.airflow_report`
 
-Using `curl`, `airflow_report.pyz` is executed on the remote host (the host or container running the airflow scheduler). The performance impact of this report is negligible
+Using python `airflow_report.pyz` is downloaded and executed on the remote host (the host or container running the airflow scheduler). The performance impact of this report is negligible
 - `airflow.version.version` output to determine Airflow's version
 - `airflow.providers_manager.ProvidersManager`'s output, to determine what providers and versions are installed
 - `socket.gethostname()` to determine the hostname
