@@ -21,7 +21,11 @@ homepage = "https://github.com/telescope/telescope"
 "telescope" = "telescope.__main__:cli"
 
 [tool.poetry.dependencies]
+<<<<<<< HEAD
 python = ">=3.6.2,<3.11"
+=======
+python = ">=3.5,<3.11"
+>>>>>>> 34846ab (increase range of python versions in cicd tests; build on older linux for gcc bug)
 importlib_metadata = { version = "^4.5.0", python = "<3.8" }
 rich = "^11.1.0"
 kubernetes = "^21.7"
