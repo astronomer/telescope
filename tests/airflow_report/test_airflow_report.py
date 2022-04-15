@@ -1,10 +1,5 @@
 import tarfile
-
-try:
-    from importlib.resources import path
-except ModuleNotFoundError:
-    from importlib_resources import path
-
+from importlib.resources import path
 from io import BytesIO
 from time import sleep, time
 

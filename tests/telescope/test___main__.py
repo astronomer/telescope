@@ -1,17 +1,10 @@
-import json
-
-import pytest
-from click.testing import CliRunner
 from pytest_mock import MockerFixture
 
-from telescope.__main__ import cli
 from telescope.getter_util import gather_getters, parse_getters_from_hosts_file
 from telescope.getters.docker import LocalDockerGetter
 from telescope.getters.kubernetes import KubernetesGetter
 from telescope.getters.local import LocalGetter
 from telescope.getters.ssh import SSHGetter
-from telescope.util import remove_initial_log_lines
-from tests.conftest import manual_tests
 
 SAMPLE_HOSTS = {
     "local": None,
@@ -25,42 +18,6 @@ SAMPLE_HOSTS = {
         }
     ],
 }
-
-
-# noinspection PyTypeChecker
-@manual_tests
-def test_cli_docker():
-    runner = CliRunner()
-    result = runner.invoke(cli, "--docker -o '-'")
-    if result.exit_code != 0:
-        print(result.output)
-    assert result.exit_code == 0
-    actual = json.loads(result.output.split("\n")[-1])
-    assert type(actual) == dict
-    # TODO - fill out docker autodiscovery
-
-
-# noinspection PyTypeChecker
-@manual_tests
-def test_cli_kubernetes():
-    runner = CliRunner()
-    result = runner.invoke(cli, "--kubernetes -o '-'")
-    print(result.output)
-    assert result.exit_code == 0
-    actual = json.loads(remove_initial_log_lines(result.output))
-    assert type(actual) == dict
-    # TODO - fill out kube autodiscovery
-
-
-# noinspection PyTypeChecker
-@manual_tests
-def test_cli_local():
-    runner = CliRunner()
-    result = runner.invoke(cli, "--local -o '-'")
-    print(result.output)
-    assert result.exit_code == 0
-    actual = json.loads(remove_initial_log_lines(result.output))
-    assert type(actual) == dict
 
 
 def test_gather_getters_local():

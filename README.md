@@ -81,6 +81,13 @@ Options:
                                 Kubernetes  [default: False]
   -l, --label-selector TEXT     Label selector for Kubernetes Autodiscovery
                                 [default: component=scheduler]
+  --dag-obfuscation             Obfuscate DAG IDs and filenames, keeping first
+                                and last 3 chars; my-dag-name => my-*****ame
+                                [default: False]
+  --dag-obfuscation-fn TEXT     Obfuscate DAG IDs, defining a custom function
+                                that takes a string and returns a string;
+                                'lambda x: x[-5:]' would return only the last
+                                five letters of the DAG ID and fileloc
   -f, --hosts-file PATH         Hosts file to pass in various types of hosts
                                 (ssh, kubernetes, docker) - See README.md for
                                 sample
@@ -92,10 +99,6 @@ Options:
                                 can be '-' for stdout
   --help                        Show this message and exit.
 ```
-
-# Optional Environmental Variables
-- `TELESCOPE_KUBERNETES_METHOD` - can be `kubectl` to run with kubectl instead of the python SDK for compatibility reasons
-- `TELESCOPE_REPORT_RELEASE_VERSION` - can be a separate telescope semver release number, to control which report gets run
 
 # Requirements
 ## Locally - via PIP 
@@ -179,10 +182,32 @@ or your `python` is called something other than `python` (e.g. `python3`)
 ```shell
 https://github.com/astronomer/telescope/releases/latest/download/
 scp airflow_report.pyz remote_user@remote_host:airflow_report.pyz 
-TELESCOPE_AIRFLOW_REPORT_COMMAND="scl enable rh-python36 python -W ignore -c 'import runpy;a=\'airflow_report.pyz\';runpy.run_path(a);os.remove(a)'"
+TELESCOPE_AIRFLOW_REPORT_COMMAND="scl enable rh-python36 python -W ignore -c 'import runpy;a=\'airflow_report.pyz\';runpy.run_path(a);os.remove(a)'" telescope -f hosts.yaml
 ```
 
 ## DAG Obfuscation
+`DAG ID` and `fileloc` can be obfuscated with the `--dag-obfuscation` command.
+The default obfuscation keeps the first 3 and last 3 characters and adds a fixed width of `******`. e.g.
+```text
+my-dag-name => my-*****ame
+```
+
+### Custom Obfuscation Function
+If a different obfuscation function is desired, a `--dag-obfuscation-function` can be passed, 
+which needs to be a python function that evaluates to `(str) -> str`. E.g.
+```shell
+--dag-obfuscation-fn="lambda x: x[-5:]"
+```
+would return only the last five letters of `dag_id` and `fileloc`. E.g.
+```
+dag_id="hello_world" -> "world"
+fileloc="/a/b/c/d/filepath.py" -> "th.py"
+```
+
+## Optional Environmental Variables
+- `TELESCOPE_KUBERNETES_METHOD` - can be `kubectl` to run with kubectl instead of the python SDK for compatibility reasons
+- `TELESCOPE_REPORT_RELEASE_VERSION` - can be a separate telescope semver release number, to control which report gets run
+
 
 
 # Install from Source 

@@ -18,15 +18,17 @@ from telescope.getters.local import LocalGetter
 log = logging.getLogger(__name__)
 
 VERSION = os.getenv("TELESCOPE_REPORT_RELEASE_VERSION", telescope.version)
-AIRFLOW_REPORT_CMD = [
-    "/bin/sh",
-    "-c",
-    "curl -sslL "
-    f"https://github.com/astronomer/telescope/releases/download/v{VERSION}/airflow_report.pyz > "
-    "airflow_report.pyz && chmod +x airflow_report.pyz && "
-    "PYTHONWARNINGS=ignore ./airflow_report.pyz && "
-    "rm -f ./airflow_report.pyz",
-]
+if os.getenv("TELESCOPE_AIRFLOW_REPORT_CMD"):
+    AIRFLOW_REPORT_CMD = split(os.getenv("TELESCOPE_AIRFLOW_REPORT_CMD"))
+else:
+    AIRFLOW_REPORT_CMD = split(
+        'python -W ignore -c "'
+        "import runpy,os;from urllib.request import urlretrieve as u;"
+        f"a='airflow_report.pyz';"
+        f"u('https://github.com/astronomer/telescope/releases/v{VERSION}/download/'+a,a);"
+        f'runpy.run_path(a);os.remove(a)"'
+    )
+    # Alternatively?? - python -c "from zipimport import zipimporter; zipimporter('/dev/stdin').load_module('__main__')"
 
 
 def parse_getters_from_hosts_file(hosts: dict, label_selector: str = "") -> Dict[str, list]:
@@ -124,6 +126,9 @@ def get_from_getter(
             for dag in result.get("dags_report", []):
                 dag["dag_id"] = dag_obfuscation_fn(dag["dag_id"])
                 dag["fileloc"] = dag_obfuscation_fn(dag["fileloc"])
+
+        if type(result) == str:
+            log.error(f"\n{full_key} raised an error - \n{result}\n")
 
         results[full_key] = result
         if type(getter) == KubernetesGetter:
