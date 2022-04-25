@@ -8,7 +8,7 @@ from functools import partial
 
 import click as click
 from click import Path, echo
-from click.exceptions import UsageError
+from click.exceptions import Exit, UsageError
 from halo import Halo
 
 import telescope
@@ -153,15 +153,18 @@ def cli(
     try:
         if dag_obfuscation_fn:
             dag_obfuscation_fn = eval(dag_obfuscation_fn)
-        get_from_getters_with_obfuscation = partial(get_from_getter, dag_obfuscation, dag_obfuscation_fn)
+        get_from_getters_with_obfuscation = partial(
+            get_from_getter, dag_obfuscation=dag_obfuscation, dag_obfuscation_fn=dag_obfuscation_fn
+        )
         with multiprocessing.Pool(parallelism) as p:
             results: List[Dict[Any, Any]] = p.map(get_from_getters_with_obfuscation, all_getters)
         spinner.succeed(text=f"Gathering Data from {len(all_getters)} Airflow Deployments!")
-    except (KeyboardInterrupt, SystemExit):
+    except (KeyboardInterrupt, SystemExit) as e:
         spinner.stop()
-        raise
+        raise Exit(1) from e
     except Exception as e:
         spinner.fail(text=str(e))
+        raise Exit(1) from e
 
     # unflatten and assemble into report
     for result in results:

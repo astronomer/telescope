@@ -25,7 +25,7 @@ else:
         'python -W ignore -c "'
         "import runpy,os;from urllib.request import urlretrieve as u;"
         f"a='airflow_report.pyz';"
-        f"u('https://github.com/astronomer/telescope/releases/v{VERSION}/download/'+a,a);"
+        f"u('https://github.com/astronomer/telescope/releases/download/v{VERSION}/'+a,a);"
         f'runpy.run_path(a);os.remove(a)"'
     )
     # Alternatively?? - python -c "from zipimport import zipimporter; zipimporter('/dev/stdin').load_module('__main__')"
