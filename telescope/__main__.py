@@ -1,13 +1,14 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import json
 import logging
 import multiprocessing
 from datetime import datetime
+from functools import partial
 
 import click as click
 from click import Path, echo
-from click.exceptions import UsageError
+from click.exceptions import Exit, UsageError
 from halo import Halo
 
 import telescope
@@ -39,6 +40,19 @@ def version(ctx, self, value):
 @click.option("--kubernetes", "use_kubernetes", **fd, help="Autodiscovery and Airflow reporting for Kubernetes")
 @click.option(
     "-l", "--label-selector", **d, default="component=scheduler", help="Label selector for Kubernetes Autodiscovery"
+)
+@click.option(
+    "--dag-obfuscation",
+    **fd,
+    default=False,
+    help="Obfuscate DAG IDs and filenames, keeping first and last 3 chars; my-dag-name => my-*****ame",
+)
+@click.option(
+    "--dag-obfuscation-fn",
+    **d,
+    default=None,
+    help="Obfuscate DAG IDs, defining a custom function that takes a string and returns a string; "
+    "'lambda x: x[-5:]' would return only the last five letters of the DAG ID and fileloc",
 )
 @click.option(
     "-f",
@@ -75,6 +89,8 @@ def cli(
     use_docker: bool,
     use_kubernetes: bool,
     label_selector: str,
+    dag_obfuscation: bool,
+    dag_obfuscation_fn: Optional[str],
     hosts_file: str,
     parallelism: int,
     organization_name: str,
@@ -123,7 +139,7 @@ def cli(
     spinner.start()
 
     # Check for helm secrets or get cluster info if we know we are running with Kubernetes
-    if any([type(g) == KubernetesGetter for g in all_getters]):
+    if any(type(g) == KubernetesGetter for g in all_getters):
         try:
             data["verify"] = get_helm_info()
         except Exception as e:
@@ -135,14 +151,20 @@ def cli(
             logging.warning(f"Failure getting cluster info - {e}")
 
     try:
+        if dag_obfuscation_fn:
+            dag_obfuscation_fn = eval(dag_obfuscation_fn)
+        get_from_getters_with_obfuscation = partial(
+            get_from_getter, dag_obfuscation=dag_obfuscation, dag_obfuscation_fn=dag_obfuscation_fn
+        )
         with multiprocessing.Pool(parallelism) as p:
-            results: List[Dict[Any, Any]] = p.map(get_from_getter, all_getters)
+            results: List[Dict[Any, Any]] = p.map(get_from_getters_with_obfuscation, all_getters)
         spinner.succeed(text=f"Gathering Data from {len(all_getters)} Airflow Deployments!")
-    except (KeyboardInterrupt, SystemExit):
+    except (KeyboardInterrupt, SystemExit) as e:
         spinner.stop()
-        raise
+        raise Exit(1) from e
     except Exception as e:
         spinner.fail(text=str(e))
+        raise Exit(1) from e
 
     # unflatten and assemble into report
     for result in results:

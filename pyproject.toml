@@ -3,13 +3,9 @@
 requires = ["poetry_core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-#[build-system]
-#requires = ["setuptools>=42", "wheel", "nuitka"]
-#build-backend = "nuitka.distutils.Build"
-
 [tool.poetry]
 name = "telescope"
-version = "2.0.1"
+version = "2.0.2"
 description = "A tool to observe distant (or local!) Airflow installations, and gather metadata or other required data."
 readme = "README.md"
 authors = ["telescope <solutions@astronomer.io>"]

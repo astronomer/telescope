@@ -19,8 +19,13 @@ class LocalGetter(Getter):
         """
         if type(cmd) == list:
             cmd = shlex.join(cmd)
-        out = run(cmd, hide=True, warn=True).stdout  # other options: timeout, warn
-        out = clean_airflow_report_output(out)
+        out = run(cmd, hide=True, warn=True)  # other options: timeout, warn
+        if out.stdout:
+            out = clean_airflow_report_output(out.stdout)
+        elif out.stderr_bytes is not None:
+            out = out.stderr
+        else:
+            out = "Unknown Error"
         return out
 
     def get_report_key(self):
