@@ -44,7 +44,7 @@ and `component=scheduler` is used to identify the schedulers). It will use Helm 
 connect to the Airflow schedulers to gather metadata
 
 ```shell
-telescope --kubernetes
+telescope --kubernetes --organization-name <My Organization>
 ```
 You should now have a file ending in `*.data.json` - which is an intermediate data payload
 
@@ -59,7 +59,7 @@ ssh:
 ```
 
 ```shell
-telescope -f hosts.yaml
+telescope -f hosts.yaml --organization-name <My Organization>
 ```
 You should now have a file ending in `*.data.json` - which is an intermediate data payload
 
