@@ -170,7 +170,7 @@ The default is `component=scheduler`, however, if your Airflows contain `role=sc
 use `--label-selector "role=scheduler"`.
 
 ## Airflow Report Command
-`TELESCOPE_AIRFLOW_REPORT_COMMAND` can be set, normally the default is 
+`TELESCOPE_AIRFLOW_REPORT_CMD` can be set, normally the default is 
 ```shell
 python -W ignore -c "import runpy,os;from urllib.request import urlretrieve as u;a='airflow_report.pyz';u('https://github.com/astronomer/telescope/releases/latest/download/'+a,a);runpy.run_path(a);os.remove(a)"
 ```
@@ -182,7 +182,7 @@ or your `python` is called something other than `python` (e.g. `python3`)
 ```shell
 https://github.com/astronomer/telescope/releases/latest/download/
 scp airflow_report.pyz remote_user@remote_host:airflow_report.pyz 
-TELESCOPE_AIRFLOW_REPORT_COMMAND="scl enable rh-python36 python -W ignore -c 'import runpy;a=\'airflow_report.pyz\';runpy.run_path(a);os.remove(a)'" telescope -f hosts.yaml
+TELESCOPE_AIRFLOW_REPORT_CMD="scl enable rh-python36 python -W ignore -c 'import runpy;a=\'airflow_report.pyz\';runpy.run_path(a);os.remove(a)'" telescope -f hosts.yaml
 ```
 
 ## DAG Obfuscation
