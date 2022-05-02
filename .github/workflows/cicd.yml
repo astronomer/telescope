@@ -95,13 +95,13 @@ jobs:
       run: poetry install --no-interaction
 
     - name: Build wheel and report
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'ubuntu-18.04'
       run: |
         make build
         make package-report
 
     - uses: actions/upload-artifact@v3
-      if: matrix.os == 'ubuntu-latest'
+      if: matrix.os == 'ubuntu-18.04'
       with:
         path: airflow_report.pyz
 
