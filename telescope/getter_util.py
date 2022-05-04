@@ -1,4 +1,4 @@
-from typing import Callable, Dict
+from typing import Callable, Dict, Union, Any
 
 import logging
 import os
@@ -120,20 +120,32 @@ def get_from_getter(
     full_key = (host_type, getter_key, "airflow_report")
     helm_full_key = (host_type, getter_key, "helm")
     log.debug(f"Fetching 'report[{full_key}]'...")
+
+    # get airflow report
     try:
-        result = getter.get(AIRFLOW_REPORT_CMD)
+        result: Union[Dict[Any, Any], str] = getter.get(AIRFLOW_REPORT_CMD)
+
+        # bubble up exception to except clause
+        if type(result) == str:
+            log.error(f"\n{full_key} raised an error\n")
+            raise Exception(result)
+
         if dag_obfuscation:
             for dag in result.get("dags_report", []):
                 dag["dag_id"] = dag_obfuscation_fn(dag["dag_id"])
                 dag["fileloc"] = dag_obfuscation_fn(dag["fileloc"])
 
-        if type(result) == str:
-            log.error(f"\n{full_key} raised an error - \n{result}\n")
-
         results[full_key] = result
+    except Exception as e:
+        log.exception(e)
+        results[full_key] = str(e)
+
+    # get helm report
+    try:
         if type(getter) == KubernetesGetter:
             results[helm_full_key] = get_helm_info(namespace=getter_key.split("|")[0])
     except Exception as e:
         log.exception(e)
-        results[full_key] = str(e)
+        results[helm_full_key] = str(e)
+
     return results
