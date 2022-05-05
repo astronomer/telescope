@@ -1,3 +1,4 @@
+import os
 from typing import Any, Dict, List, Optional
 
 import json
@@ -18,6 +19,8 @@ from telescope.getter_util import gather_getters, get_from_getter
 from telescope.getters.kubernetes import KubernetesGetter
 
 log = logging.getLogger(__name__)
+log.setLevel(os.getenv("LOG_LEVEL", "INFO"))
+log.addHandler(logging.StreamHandler())
 
 d = {"show_default": True, "show_envvar": True}
 fd = {"show_default": True, "show_envvar": True, "is_flag": True}
@@ -142,7 +145,9 @@ def cli(
             data["verify"] = get_helm_info()
             helm_spinner.succeed()
         except Exception as e:
-            helm_spinner.warn(f"WARNING: verifying helm info - {e}")
+            helm_spinner.warn(f"verifying helm info failed")
+            log.debug(e)
+            data["verify"] = str(e)
 
         cluster_spinner = Halo(
             text=f"Gathering cluster info",
@@ -153,7 +158,9 @@ def cli(
             data["cluster_info"] = cluster_info()
             cluster_spinner.succeed()
         except Exception as e:
-            cluster_spinner.warn(f"WARNING: gathering cluster info - {e}")
+            cluster_spinner.warn(f"gathering cluster info failed")
+            log.debug(e)
+            data["cluster_info"] = str(e)
 
     # get all the Airflow Reports at once, in parallel
     spinner = Halo(
@@ -161,7 +168,6 @@ def cli(
         spinner="moon",  # dots12, growHorizontal, arc, moon
     )
     spinner.start()
-
     try:
         if dag_obfuscation_fn:
             dag_obfuscation_fn = eval(dag_obfuscation_fn)

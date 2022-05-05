@@ -17,6 +17,8 @@ from telescope.getters.kubernetes import KubernetesGetter
 from telescope.getters.local import LocalGetter
 
 log = logging.getLogger(__name__)
+log.setLevel(os.getenv("LOG_LEVEL", "INFO"))
+log.addHandler(logging.StreamHandler())
 
 VERSION = os.getenv("TELESCOPE_REPORT_RELEASE_VERSION", telescope.version)
 if os.getenv("TELESCOPE_AIRFLOW_REPORT_CMD"):
@@ -124,10 +126,7 @@ def get_from_getter(
     namespace = getter_key.split("|")[0]
 
     # get airflow report
-    airflow_spinner = Halo(
-        text=f"{namespace} airflow info",
-        spinner="dots",
-    )
+    airflow_spinner = Halo(spinner="simpleDots", enabled=False) # simpleDots
     airflow_spinner.start()
     try:
         result: Union[Dict[Any, Any], str] = getter.get(AIRFLOW_REPORT_CMD)
@@ -142,24 +141,26 @@ def get_from_getter(
                 dag["fileloc"] = dag_obfuscation_fn(dag["fileloc"])
 
         results[full_key] = result
-        airflow_spinner.succeed()
+        airflow_spinner.enabled=True
+        airflow_spinner.succeed(f"\n{namespace} airflow info")
     except Exception as e:
-        airflow_spinner.fail(f"FAILED: airflow info {namespace} - {e}")
-        log.exception(e)
+        airflow_spinner.enabled=True
+        airflow_spinner.fail(f"\n{namespace} airflow info failed")
+        log.debug(e, exc_info=True)
         results[full_key] = str(e)
 
     # get helm report
-    helm_spinner = Halo(
-        text=f"{namespace} helm info",
-        spinner="dots",
-    )
+    helm_spinner = Halo(spinner="simpleDots", enabled=False)
     try:
         if type(getter) == KubernetesGetter:
             helm_spinner.start()
             results[helm_full_key] = get_helm_info(namespace=namespace)
-            helm_spinner.succeed()
+            helm_spinner.enabled = True
+            helm_spinner.succeed(f"\n{namespace} helm info")
     except Exception as e:
-        helm_spinner.warn(f"WARNING: helm info {namespace} - {e}")
+        helm_spinner.enabled = True
+        helm_spinner.warn(f"\n{namespace} helm info failed")
+        log.debug(e)
         results[helm_full_key] = str(e)
 
     return results
