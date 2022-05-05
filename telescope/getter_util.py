@@ -145,7 +145,7 @@ def get_from_getter(
         if type(getter) == KubernetesGetter:
             results[helm_full_key] = get_helm_info(namespace=getter_key.split("|")[0])
     except Exception as e:
-        log.exception(e)
+        log.warning(f"\nFailure getting helm information for {helm_full_key} - {e}\n")
         results[helm_full_key] = str(e)
 
     return results

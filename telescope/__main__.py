@@ -143,12 +143,12 @@ def cli(
         try:
             data["verify"] = get_helm_info()
         except Exception as e:
-            logging.warning(f"Failure getting helm information - {e}")
+            logging.warning(f"\nFailure getting helm information - {e}\n")
 
         try:
             data["cluster_info"] = cluster_info()
         except Exception as e:
-            logging.warning(f"Failure getting cluster info - {e}")
+            logging.warning(f"\nFailure getting cluster info - {e}\n")
 
     try:
         if dag_obfuscation_fn:
