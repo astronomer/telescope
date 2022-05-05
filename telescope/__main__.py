@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional
 import json
 import logging
 import multiprocessing
+import os
 from datetime import datetime
 from functools import partial
 
@@ -18,6 +19,8 @@ from telescope.getter_util import gather_getters, get_from_getter
 from telescope.getters.kubernetes import KubernetesGetter
 
 log = logging.getLogger(__name__)
+log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))
+log.addHandler(logging.StreamHandler())
 
 d = {"show_default": True, "show_envvar": True}
 fd = {"show_default": True, "show_envvar": True, "is_flag": True}
@@ -131,25 +134,40 @@ def cli(
     if not len(all_getters):
         raise UsageError("No Airflow Deployments found, exiting...")
 
+    # Check for helm secrets or get cluster info if we know we are running with Kubernetes
+    if any(type(g) == KubernetesGetter for g in all_getters):
+        helm_spinner = Halo(
+            text=f"Verifying helm chart info",
+            spinner="dots",
+        )
+        helm_spinner.start()
+        try:
+            data["verify"] = get_helm_info()
+            helm_spinner.succeed()
+        except Exception as e:
+            helm_spinner.warn(f"verifying helm info failed")
+            log.debug(e)
+            data["verify"] = {"error": str(e)}
+
+        cluster_spinner = Halo(
+            text=f"Gathering cluster info",
+            spinner="dots",
+        )
+        cluster_spinner.start()
+        try:
+            data["cluster_info"] = cluster_info()
+            cluster_spinner.succeed()
+        except Exception as e:
+            cluster_spinner.warn(f"gathering cluster info failed")
+            log.debug(e)
+            data["cluster_info"] = {"error": str(e)}
+
     # get all the Airflow Reports at once, in parallel
     spinner = Halo(
-        text=f"Gathering Data from {len(all_getters)} Airflow Deployments...",
+        text=f"Gathering data from {len(all_getters)} Airflow Deployments...\n",
         spinner="moon",  # dots12, growHorizontal, arc, moon
     )
     spinner.start()
-
-    # Check for helm secrets or get cluster info if we know we are running with Kubernetes
-    if any(type(g) == KubernetesGetter for g in all_getters):
-        try:
-            data["verify"] = get_helm_info()
-        except Exception as e:
-            logging.warning(f"Failure getting helm information - {e}")
-
-        try:
-            data["cluster_info"] = cluster_info()
-        except Exception as e:
-            logging.warning(f"Failure getting cluster info - {e}")
-
     try:
         if dag_obfuscation_fn:
             dag_obfuscation_fn = eval(dag_obfuscation_fn)
@@ -158,7 +176,7 @@ def cli(
         )
         with multiprocessing.Pool(parallelism) as p:
             results: List[Dict[Any, Any]] = p.map(get_from_getters_with_obfuscation, all_getters)
-        spinner.succeed(text=f"Gathering Data from {len(all_getters)} Airflow Deployments!")
+        spinner.succeed(text=f"Data gathered from {len(all_getters)} Airflow Deployments!")
     except (KeyboardInterrupt, SystemExit) as e:
         spinner.stop()
         raise Exit(1) from e

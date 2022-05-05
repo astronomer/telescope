@@ -18,7 +18,7 @@ Find and download the executable in [the Telescope Release for the correct versi
 
 e.g. *for x86_64 Linux*
 ```shell
-wget https://github.com/astronomer/telescope/releases/latest/download/telescope-linux-x86_64 
+wget https://github.com/astronomer/telescope/releases/latest/download/telescope-linux-x86_64
 chmod +x telescope-linux-x86_64
 ```
 
@@ -28,7 +28,7 @@ chmod +x telescope-linux-x86_64
 *optionally*, create a virtualenv called `venv` (or anything else ) in the current directory for easy cleanup
 ```shell
 python -m venv venv
-source venv/bin/activate 
+source venv/bin/activate
 ```
 
 Install Telescope using Pip from Github
@@ -54,7 +54,7 @@ Create a `hosts.yaml` file, like this, enumerating every host:
 ```shell
 ssh:
   - host: airflow.foo1.bar.com
-  - host: airflow.foo2.bar.com 
+  - host: airflow.foo2.bar.com
   - host: ...
 ```
 
@@ -65,7 +65,7 @@ You should now have a file ending in `*.data.json` - which is an intermediate da
 
 # Usage
 ```shell
-$ telescope --help                                                
+$ telescope --help
 Usage: telescope [OPTIONS]
 
   Telescope - A tool to observe distant (or local!) Airflow installations, and
@@ -101,7 +101,7 @@ Options:
 ```
 
 # Requirements
-## Locally - via PIP 
+## Locally - via PIP
 - Python >=3.6
 - `pip`
 
@@ -131,21 +131,21 @@ the container_id
 
 - `hosts.yaml`
 ```
-docker: 
+docker:
 ```
 
 ## Kubernetes autodiscovery
 Either use `--kubernetes` or an empty `kubernetes` in your hosts file to enable autodiscovery.
-Autodiscovery searches for pods running in the Kubernetes cluster defined by `KUBEPROFILE` 
-in any namespace, that contain the label `component=scheduler` (or another label defined by `--label-selector`), 
+Autodiscovery searches for pods running in the Kubernetes cluster defined by `KUBEPROFILE`
+in any namespace, that contain the label `component=scheduler` (or another label defined by `--label-selector`),
 and returns the namespace, name, and container (`scheduler`)
 
 - `hosts.yaml`
 ```
-kubernetes: 
+kubernetes:
 ```
 
-## Example `hosts.yaml` input 
+## Example `hosts.yaml` input
 use `-f hosts.yaml`
 ```
 local:
@@ -165,23 +165,23 @@ ssh:
 
 # Extra Functionality
 ## Label Selection
-`--label-selector` allows Kubernetes Autodiscovery to locate Airflow Deployments with alternate key/values. 
-The default is `component=scheduler`, however, if your Airflows contain `role=scheduler` instead, you would 
+`--label-selector` allows Kubernetes Autodiscovery to locate Airflow Deployments with alternate key/values.
+The default is `component=scheduler`, however, if your Airflows contain `role=scheduler` instead, you would
 use `--label-selector "role=scheduler"`.
 
 ## Airflow Report Command
-`TELESCOPE_AIRFLOW_REPORT_CMD` can be set, normally the default is 
+`TELESCOPE_AIRFLOW_REPORT_CMD` can be set, normally the default is
 ```shell
 python -W ignore -c "import runpy,os;from urllib.request import urlretrieve as u;a='airflow_report.pyz';u('https://github.com/astronomer/telescope/releases/latest/download/'+a,a);runpy.run_path(a);os.remove(a)"
 ```
 
-This can be used, for instance, if there is no access to Github on the remote box, 
-or a custom directory is needed to run, 
+This can be used, for instance, if there is no access to Github on the remote box,
+or a custom directory is needed to run,
 or environment activation is required ahead of time,
 or your `python` is called something other than `python` (e.g. `python3`)
 ```shell
 https://github.com/astronomer/telescope/releases/latest/download/
-scp airflow_report.pyz remote_user@remote_host:airflow_report.pyz 
+scp airflow_report.pyz remote_user@remote_host:airflow_report.pyz
 TELESCOPE_AIRFLOW_REPORT_CMD="scl enable rh-python36 python -W ignore -c 'import runpy;a=\'airflow_report.pyz\';runpy.run_path(a);os.remove(a)'" telescope -f hosts.yaml
 ```
 
@@ -193,7 +193,7 @@ my-dag-name => my-*****ame
 ```
 
 ### Custom Obfuscation Function
-If a different obfuscation function is desired, a `--dag-obfuscation-function` can be passed, 
+If a different obfuscation function is desired, a `--dag-obfuscation-function` can be passed,
 which needs to be a python function that evaluates to `(str) -> str`. E.g.
 ```shell
 --dag-obfuscation-fn="lambda x: x[-5:]"
@@ -207,11 +207,13 @@ fileloc="/a/b/c/d/filepath.py" -> "th.py"
 ## Optional Environmental Variables
 - `TELESCOPE_KUBERNETES_METHOD` - can be `kubectl` to run with kubectl instead of the python SDK for compatibility reasons
 - `TELESCOPE_REPORT_RELEASE_VERSION` - can be a separate telescope semver release number, to control which report gets run
+- `LOG_LEVEL` - can be any support Python logging level `[CRITICAL, FATAL, ERROR, WARN, WARNING, INFO, DEBUG, NOTSET]`
+  - use `DEBUG` for details about any errors that occur
 
 
 
-# Install from Source 
-If neither the [pip installation method](#installation-method-2-via-pip) 
+# Install from Source
+If neither the [pip installation method](#installation-method-2-via-pip)
 or [binary installation](#installation-method-1-via-binary)
 methods work - you can download the source and execute directly as a python module
 
@@ -236,7 +238,7 @@ The following Data is collected:
 When run using `kubernetes`, cluster info is attained from the Nodes - including allocated and max CPU and Memory, number of nodes, and kubelet version
 
 ## `verify`
-When run using `kubernetes`, Helm chart information for charts named like `astronomer` or `airflow` is fetched, sensitive values are redacted. 
+When run using `kubernetes`, Helm chart information for charts named like `astronomer` or `airflow` is fetched, sensitive values are redacted.
 
 ## `Airflow Report`
 This information is saved under the `airflow_report` key, under the `host_type` key and the host key. E.g. `kubernetes.mynamespace|myhost-1234-xyz.airflow_report` or `ssh.my_hostname.airflow_report`
@@ -253,12 +255,12 @@ Using python `airflow_report.pyz` is downloaded and executed on the remote host 
   - `dags` are read off disk to attain variable and connection names, utilizing the filepath from the `dags` table
 - the `connection` table is fetched from the Airflow metadata db
 - the `variable` table is fetched from the Airflow metadata db
-- the `ab_user` table is fetched from the Airflow metadata db 
+- the `ab_user` table is fetched from the Airflow metadata db
 - the `task_instance` table is analyzed from the Airflow metadata db
 
 # Output
 ## `*.data.json`
-The name of this file can vary depending on what options were passed to the tool. 
+The name of this file can vary depending on what options were passed to the tool.
 There is an intermediate output ending in `*.data.json` which contains all data gathered, and is utilized to generate the report outputs.
 
 # Compatibility Matrix

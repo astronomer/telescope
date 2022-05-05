@@ -1,4 +1,4 @@
-from typing import Callable, Dict
+from typing import Any, Callable, Dict, Union
 
 import logging
 import os
@@ -6,6 +6,7 @@ from pathlib import Path
 from shlex import split
 
 import yaml
+from halo import Halo
 
 import telescope
 from telescope.functions.astronomer_enterprise import get_helm_info
@@ -16,6 +17,8 @@ from telescope.getters.kubernetes import KubernetesGetter
 from telescope.getters.local import LocalGetter
 
 log = logging.getLogger(__name__)
+log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))
+log.addHandler(logging.StreamHandler())
 
 VERSION = os.getenv("TELESCOPE_REPORT_RELEASE_VERSION", telescope.version)
 if os.getenv("TELESCOPE_AIRFLOW_REPORT_CMD"):
@@ -120,20 +123,44 @@ def get_from_getter(
     full_key = (host_type, getter_key, "airflow_report")
     helm_full_key = (host_type, getter_key, "helm")
     log.debug(f"Fetching 'report[{full_key}]'...")
+    namespace = getter_key.split("|")[0]
+
+    # get airflow report
+    airflow_spinner = Halo(spinner="simpleDots", enabled=False)
+    airflow_spinner.start()
     try:
-        result = getter.get(AIRFLOW_REPORT_CMD)
+        result: Union[Dict[Any, Any], str] = getter.get(AIRFLOW_REPORT_CMD)
+
+        # bubble up exception to except clause
+        if type(result) == str:
+            raise Exception(result)
+
         if dag_obfuscation:
             for dag in result.get("dags_report", []):
                 dag["dag_id"] = dag_obfuscation_fn(dag["dag_id"])
                 dag["fileloc"] = dag_obfuscation_fn(dag["fileloc"])
 
-        if type(result) == str:
-            log.error(f"\n{full_key} raised an error - \n{result}\n")
-
         results[full_key] = result
-        if type(getter) == KubernetesGetter:
-            results[helm_full_key] = get_helm_info(namespace=getter_key.split("|")[0])
+        airflow_spinner.enabled = True
+        airflow_spinner.succeed(f"\n{namespace} airflow info")
     except Exception as e:
-        log.exception(e)
-        results[full_key] = str(e)
+        airflow_spinner.enabled = True
+        airflow_spinner.fail(f"\n{namespace} airflow info failed")
+        log.debug(e, exc_info=True)
+        results[full_key] = {"error": str(e)}
+
+    # get helm report
+    helm_spinner = Halo(spinner="simpleDots", enabled=False)
+    try:
+        if type(getter) == KubernetesGetter:
+            helm_spinner.start()
+            results[helm_full_key] = get_helm_info(namespace=namespace)
+            helm_spinner.enabled = True
+            helm_spinner.succeed(f"\n{namespace} helm info")
+    except Exception as e:
+        helm_spinner.enabled = True
+        helm_spinner.warn(f"\n{namespace} helm info failed")
+        log.debug(e)
+        results[helm_full_key] = {"error": str(e)}
+
     return results

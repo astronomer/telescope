@@ -1,5 +1,7 @@
 from typing import List, Union
 
+import shlex
+
 from fabric import Connection
 
 from telescope.getters import Getter
@@ -15,7 +17,7 @@ class SSHGetter(Getter):
         """
         return Connection(
             self.host,
-        ).run(cmd, hide=True)
+        ).run(shlex.join(cmd), hide=True)
 
     def __eq__(self, other):
         return type(self) == type(other) and self.host == other.host
