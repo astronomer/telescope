@@ -17,7 +17,7 @@ from telescope.getters.kubernetes import KubernetesGetter
 from telescope.getters.local import LocalGetter
 
 log = logging.getLogger(__name__)
-log.setLevel(os.getenv("LOG_LEVEL", "INFO"))
+log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))
 log.addHandler(logging.StreamHandler())
 
 VERSION = os.getenv("TELESCOPE_REPORT_RELEASE_VERSION", telescope.version)

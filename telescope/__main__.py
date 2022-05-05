@@ -19,7 +19,7 @@ from telescope.getter_util import gather_getters, get_from_getter
 from telescope.getters.kubernetes import KubernetesGetter
 
 log = logging.getLogger(__name__)
-log.setLevel(os.getenv("LOG_LEVEL", "INFO"))
+log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))
 log.addHandler(logging.StreamHandler())
 
 d = {"show_default": True, "show_envvar": True}
