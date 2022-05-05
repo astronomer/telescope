@@ -147,7 +147,7 @@ def get_from_getter(
         airflow_spinner.enabled = True
         airflow_spinner.fail(f"\n{namespace} airflow info failed")
         log.debug(e, exc_info=True)
-        results[full_key] = str(e)
+        results[full_key] = {"error": str(e)}
 
     # get helm report
     helm_spinner = Halo(spinner="simpleDots", enabled=False)
@@ -161,6 +161,6 @@ def get_from_getter(
         helm_spinner.enabled = True
         helm_spinner.warn(f"\n{namespace} helm info failed")
         log.debug(e)
-        results[helm_full_key] = str(e)
+        results[helm_full_key] = {"error": str(e)}
 
     return results

@@ -147,7 +147,7 @@ def cli(
         except Exception as e:
             helm_spinner.warn(f"verifying helm info failed")
             log.debug(e)
-            data["verify"] = str(e)
+            data["verify"] = {"error": str(e)}
 
         cluster_spinner = Halo(
             text=f"Gathering cluster info",
@@ -160,7 +160,7 @@ def cli(
         except Exception as e:
             cluster_spinner.warn(f"gathering cluster info failed")
             log.debug(e)
-            data["cluster_info"] = str(e)
+            data["cluster_info"] = {"error": str(e)}
 
     # get all the Airflow Reports at once, in parallel
     spinner = Halo(
