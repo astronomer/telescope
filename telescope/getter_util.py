@@ -6,6 +6,7 @@ from pathlib import Path
 from shlex import split
 
 import yaml
+from halo import Halo
 
 import telescope
 from telescope.functions.astronomer_enterprise import get_helm_info
@@ -120,14 +121,19 @@ def get_from_getter(
     full_key = (host_type, getter_key, "airflow_report")
     helm_full_key = (host_type, getter_key, "helm")
     log.debug(f"Fetching 'report[{full_key}]'...")
+    namespace = getter_key.split("|")[0]
 
     # get airflow report
+    airflow_spinner = Halo(
+        text=f"{namespace} airflow info",
+        spinner="dots",
+    )
+    airflow_spinner.start()
     try:
         result: Union[Dict[Any, Any], str] = getter.get(AIRFLOW_REPORT_CMD)
 
         # bubble up exception to except clause
         if type(result) == str:
-            log.error(f"\n{full_key} raised an error\n")
             raise Exception(result)
 
         if dag_obfuscation:
@@ -136,16 +142,24 @@ def get_from_getter(
                 dag["fileloc"] = dag_obfuscation_fn(dag["fileloc"])
 
         results[full_key] = result
+        airflow_spinner.succeed()
     except Exception as e:
+        airflow_spinner.fail(f"FAILED: airflow info {namespace} - {e}")
         log.exception(e)
         results[full_key] = str(e)
 
     # get helm report
+    helm_spinner = Halo(
+        text=f"{namespace} helm info",
+        spinner="dots",
+    )
     try:
         if type(getter) == KubernetesGetter:
-            results[helm_full_key] = get_helm_info(namespace=getter_key.split("|")[0])
+            helm_spinner.start()
+            results[helm_full_key] = get_helm_info(namespace=namespace)
+            helm_spinner.succeed()
     except Exception as e:
-        log.warning(f"\nFailure getting helm information for {helm_full_key} - {e}\n")
+        helm_spinner.warn(f"WARNING: helm info {namespace} - {e}")
         results[helm_full_key] = str(e)
 
     return results

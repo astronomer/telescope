@@ -131,24 +131,36 @@ def cli(
     if not len(all_getters):
         raise UsageError("No Airflow Deployments found, exiting...")
 
+    # Check for helm secrets or get cluster info if we know we are running with Kubernetes
+    if any(type(g) == KubernetesGetter for g in all_getters):
+        helm_spinner = Halo(
+            text=f"Verifying helm chart info",
+            spinner="dots",
+        )
+        helm_spinner.start()
+        try:
+            data["verify"] = get_helm_info()
+            helm_spinner.succeed()
+        except Exception as e:
+            helm_spinner.warn(f"WARNING: verifying helm info - {e}")
+
+        cluster_spinner = Halo(
+            text=f"Gathering cluster info",
+            spinner="dots",
+        )
+        cluster_spinner.start()
+        try:
+            data["cluster_info"] = cluster_info()
+            cluster_spinner.succeed()
+        except Exception as e:
+            cluster_spinner.warn(f"WARNING: gathering cluster info - {e}")
+
     # get all the Airflow Reports at once, in parallel
     spinner = Halo(
-        text=f"Gathering Data from {len(all_getters)} Airflow Deployments...",
+        text=f"Gathering data from {len(all_getters)} Airflow Deployments...\n",
         spinner="moon",  # dots12, growHorizontal, arc, moon
     )
     spinner.start()
-
-    # Check for helm secrets or get cluster info if we know we are running with Kubernetes
-    if any(type(g) == KubernetesGetter for g in all_getters):
-        try:
-            data["verify"] = get_helm_info()
-        except Exception as e:
-            logging.warning(f"\nFailure getting helm information - {e}\n")
-
-        try:
-            data["cluster_info"] = cluster_info()
-        except Exception as e:
-            logging.warning(f"\nFailure getting cluster info - {e}\n")
 
     try:
         if dag_obfuscation_fn:
@@ -158,7 +170,7 @@ def cli(
         )
         with multiprocessing.Pool(parallelism) as p:
             results: List[Dict[Any, Any]] = p.map(get_from_getters_with_obfuscation, all_getters)
-        spinner.succeed(text=f"Gathering Data from {len(all_getters)} Airflow Deployments!")
+        spinner.succeed(text=f"Data gathered from {len(all_getters)} Airflow Deployments!")
     except (KeyboardInterrupt, SystemExit) as e:
         spinner.stop()
         raise Exit(1) from e
