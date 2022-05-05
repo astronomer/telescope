@@ -126,7 +126,7 @@ def get_from_getter(
     namespace = getter_key.split("|")[0]
 
     # get airflow report
-    airflow_spinner = Halo(spinner="simpleDots", enabled=False) # simpleDots
+    airflow_spinner = Halo(spinner="simpleDots", enabled=False)
     airflow_spinner.start()
     try:
         result: Union[Dict[Any, Any], str] = getter.get(AIRFLOW_REPORT_CMD)
@@ -141,10 +141,10 @@ def get_from_getter(
                 dag["fileloc"] = dag_obfuscation_fn(dag["fileloc"])
 
         results[full_key] = result
-        airflow_spinner.enabled=True
+        airflow_spinner.enabled = True
         airflow_spinner.succeed(f"\n{namespace} airflow info")
     except Exception as e:
-        airflow_spinner.enabled=True
+        airflow_spinner.enabled = True
         airflow_spinner.fail(f"\n{namespace} airflow info failed")
         log.debug(e, exc_info=True)
         results[full_key] = str(e)
