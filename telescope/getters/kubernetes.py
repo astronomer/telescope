@@ -25,9 +25,7 @@ log = logging.getLogger(__name__)
 log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))
 log.addHandler(logging.StreamHandler())
 
-CWD = os.getcwd()
 REPORT_PACKAGE = "airflow_report.pyz"
-REPORT_PACKAGE_PATH = os.path.join(CWD, REPORT_PACKAGE)
 AIRGAPPED = os.getenv("KUBERNETES_AIRGAPPED", "").lower() == "true"
 
 class KubernetesGetter(Getter):
@@ -43,7 +41,7 @@ class KubernetesGetter(Getter):
         """
 
         if AIRGAPPED:
-            cp_cmd = f"kubectl cp {REPORT_PACKAGE_PATH} -n {self.namespace} {self.name}:{REPORT_PACKAGE} -c {self.container}"
+            cp_cmd = f"kubectl cp {REPORT_PACKAGE} -n {self.namespace} {self.name}:{REPORT_PACKAGE} -c {self.container}"
             log.debug(f"Running {cmd} for airgapped {self.namespace}")
             cp_result = run(cp_cmd, hide=True, warn=True)
             log.debug(cp_result.stdout)

@@ -20,10 +20,8 @@ log = logging.getLogger(__name__)
 log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))
 log.addHandler(logging.StreamHandler())
 
-CWD = os.getcwd()
 VERSION = os.getenv("TELESCOPE_REPORT_RELEASE_VERSION", telescope.version)
 REPORT_PACKAGE = "airflow_report.pyz"
-REPORT_PACKAGE_PATH = os.path.join(CWD, REPORT_PACKAGE)
 REPORT_PACKAGE_URL = f"https://github.com/astronomer/telescope/releases/download/v{VERSION}/{REPORT_PACKAGE}"
 AIRGAPPED = os.getenv("KUBERNETES_AIRGAPPED", "").lower() == "true"
 
