@@ -11,6 +11,7 @@ from retrying import retry
 from telescope.getters import Getter
 from telescope.util import clean_airflow_report_output
 from telescope.getters.kubernetes_client import kube_client
+from telescope.config import AIRGAPPED, REPORT_PACKAGE
 
 lazyimport(
     globals(),
@@ -24,9 +25,6 @@ from kubernetes.client import ApiException
 log = logging.getLogger(__name__)
 log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))
 log.addHandler(logging.StreamHandler())
-
-REPORT_PACKAGE = "airflow_report.pyz"
-AIRGAPPED = os.getenv("KUBERNETES_AIRGAPPED", "").lower() == "true"
 
 class KubernetesGetter(Getter):
     def __init__(self, name: str = None, namespace: str = None, container: str = "scheduler"):

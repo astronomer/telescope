@@ -15,15 +15,11 @@ from telescope.getters import Getter
 from telescope.getters.docker import LocalDockerGetter
 from telescope.getters.kubernetes import KubernetesGetter
 from telescope.getters.local import LocalGetter
+from telescope.config import AIRGAPPED, REPORT_PACKAGE, REPORT_PACKAGE_URL
 
 log = logging.getLogger(__name__)
 log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))
 log.addHandler(logging.StreamHandler())
-
-VERSION = os.getenv("TELESCOPE_REPORT_RELEASE_VERSION", telescope.version)
-REPORT_PACKAGE = "airflow_report.pyz"
-REPORT_PACKAGE_URL = f"https://github.com/astronomer/telescope/releases/download/v{VERSION}/{REPORT_PACKAGE}"
-AIRGAPPED = os.getenv("KUBERNETES_AIRGAPPED", "").lower() == "true"
 
 if os.getenv("TELESCOPE_AIRFLOW_REPORT_CMD"):
     AIRFLOW_REPORT_CMD = split(os.getenv("TELESCOPE_AIRFLOW_REPORT_CMD"))
