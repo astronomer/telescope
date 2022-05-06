@@ -41,6 +41,13 @@ class KubernetesGetter(Getter):
         """Utilize kubernetes python client to exec in a container
         https://github.com/kubernetes-client/python/blob/master/examples/pod_exec.py
         """
+
+        if AIRGAPPED:
+            cp_cmd = f"kubectl cp {REPORT_PACKAGE_PATH} -n {self.namespace} {self.name}:{REPORT_PACKAGE} -c {self.container}"
+            log.debug(f"Running {cmd} for airgapped {self.namespace}")
+            cp_result = run(cp_cmd, hide=True, warn=True)
+            log.debug(cp_result.stdout)
+
         if os.getenv("TELESCOPE_KUBERNETES_METHOD", "") == "kubectl":
             if type(cmd) == list:
                 cmd = shlex.join(cmd)
