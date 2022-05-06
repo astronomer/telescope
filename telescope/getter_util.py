@@ -9,13 +9,13 @@ import yaml
 from halo import Halo
 
 import telescope
+from telescope.config import AIRGAPPED, REPORT_PACKAGE, REPORT_PACKAGE_URL
 from telescope.functions.astronomer_enterprise import get_helm_info
 from telescope.functions.autodiscover import AUTODISCOVERERS, docker_autodiscover, kube_autodiscover
 from telescope.getters import Getter
 from telescope.getters.docker import LocalDockerGetter
 from telescope.getters.kubernetes import KubernetesGetter
 from telescope.getters.local import LocalGetter
-from telescope.config import AIRGAPPED, REPORT_PACKAGE, REPORT_PACKAGE_URL
 
 log = logging.getLogger(__name__)
 log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))

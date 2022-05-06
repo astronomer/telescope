@@ -8,9 +8,9 @@ from invoke import run
 from lazyimport import lazyimport
 from retrying import retry
 
+from telescope.config import AIRGAPPED, REPORT_PACKAGE
 from telescope.getters import Getter
 from telescope.util import clean_airflow_report_output
-from telescope.config import AIRGAPPED, REPORT_PACKAGE
 
 lazyimport(
     globals(),

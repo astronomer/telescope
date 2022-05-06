@@ -14,11 +14,11 @@ from click.exceptions import Exit, UsageError
 from halo import Halo
 
 import telescope
+from telescope.config import AIRGAPPED, REPORT_PACKAGE, REPORT_PACKAGE_URL
 from telescope.functions.astronomer_enterprise import get_helm_info
 from telescope.functions.cluster_info import cluster_info
 from telescope.getter_util import gather_getters, get_from_getter
 from telescope.getters.kubernetes import KubernetesGetter
-from telescope.config import AIRGAPPED, REPORT_PACKAGE, REPORT_PACKAGE_URL
 
 log = logging.getLogger(__name__)
 log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))
