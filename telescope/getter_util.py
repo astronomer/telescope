@@ -25,10 +25,7 @@ if os.getenv("TELESCOPE_AIRFLOW_REPORT_CMD"):
     AIRFLOW_REPORT_CMD = split(os.getenv("TELESCOPE_AIRFLOW_REPORT_CMD"))
 elif AIRGAPPED:
     AIRFLOW_REPORT_CMD = split(
-        'python -W ignore -c "'
-        "import runpy,os;"
-        f"a='{REPORT_PACKAGE}';"
-        f'runpy.run_path(a);os.remove(a)"'
+        'python -W ignore -c "' "import runpy,os;" f"a='{REPORT_PACKAGE}';" f'runpy.run_path(a);os.remove(a)"'
     )
 else:
     AIRFLOW_REPORT_CMD = split(

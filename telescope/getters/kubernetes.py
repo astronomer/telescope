@@ -25,6 +25,7 @@ log = logging.getLogger(__name__)
 log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))
 log.addHandler(logging.StreamHandler())
 
+
 class KubernetesGetter(Getter):
     def __init__(self, name: str = None, namespace: str = None, container: str = "scheduler"):
         self.name = name
