@@ -6,6 +6,7 @@ import multiprocessing
 import os
 from datetime import datetime
 from functools import partial
+from urllib.request import urlretrieve
 
 import click as click
 from click import Path, echo
@@ -21,6 +22,11 @@ from telescope.getters.kubernetes import KubernetesGetter
 log = logging.getLogger(__name__)
 log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))
 log.addHandler(logging.StreamHandler())
+
+VERSION = os.getenv("TELESCOPE_REPORT_RELEASE_VERSION", telescope.version)
+REPORT_PACKAGE = "airflow_report.pyz"
+REPORT_PACKAGE_URL = f"https://github.com/astronomer/telescope/releases/download/v{VERSION}/{REPORT_PACKAGE}"
+AIRGAPPED = os.getenv("KUBERNETES_AIRGAPPED", "").lower() == "true"
 
 d = {"show_default": True, "show_envvar": True}
 fd = {"show_default": True, "show_envvar": True, "is_flag": True}
@@ -162,6 +168,9 @@ def cli(
             log.debug(e)
             data["cluster_info"] = {"error": str(e)}
 
+        if AIRGAPPED:
+            urlretrieve(REPORT_PACKAGE_URL, REPORT_PACKAGE)
+
     # get all the Airflow Reports at once, in parallel
     spinner = Halo(
         text=f"Gathering data from {len(all_getters)} Airflow Deployments...\n",
@@ -183,6 +192,9 @@ def cli(
     except Exception as e:
         spinner.fail(text=str(e))
         raise Exit(1) from e
+    finally:
+        if AIRGAPPED:
+            os.remove(REPORT_PACKAGE)
 
     # unflatten and assemble into report
     for result in results:
