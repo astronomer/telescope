@@ -10,7 +10,6 @@ from retrying import retry
 
 from telescope.getters import Getter
 from telescope.util import clean_airflow_report_output
-from telescope.getters.kubernetes_client import kube_client
 from telescope.config import AIRGAPPED, REPORT_PACKAGE
 
 lazyimport(

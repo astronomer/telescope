@@ -207,6 +207,7 @@ fileloc="/a/b/c/d/filepath.py" -> "th.py"
 ## Optional Environmental Variables
 - `TELESCOPE_KUBERNETES_METHOD` - can be `kubectl` to run with kubectl instead of the python SDK for compatibility reasons
 - `TELESCOPE_REPORT_RELEASE_VERSION` - can be a separate telescope semver release number, to control which report gets run
+- `TELESCOPE_KUBERNETES_AIRGAPPED` - executes the airflow report in airgapped mode (i.e copies report binary from local to pod)
 - `LOG_LEVEL` - can be any support Python logging level `[CRITICAL, FATAL, ERROR, WARN, WARNING, INFO, DEBUG, NOTSET]`
   - use `DEBUG` for details about any errors that occur
 
