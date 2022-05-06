@@ -1,5 +1,6 @@
 """Set some variables for re-use across the project"""
 import os
+
 import telescope
 
 VERSION = os.getenv("TELESCOPE_REPORT_RELEASE_VERSION", telescope.version)
