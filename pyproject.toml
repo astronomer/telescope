@@ -5,7 +5,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "telescope"
-version = "2.0.3"
+version = "2.0.3-1"
 description = "A tool to observe distant (or local!) Airflow installations, and gather metadata or other required data."
 readme = "README.md"
 authors = ["telescope <solutions@astronomer.io>"]
