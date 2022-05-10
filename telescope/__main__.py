@@ -137,7 +137,7 @@ def cli(
     # Check for helm secrets or get cluster info if we know we are running with Kubernetes
     if any(type(g) == KubernetesGetter for g in all_getters):
         helm_spinner = Halo(
-            text=f"Verifying helm chart info",
+            text="Verifying helm chart info",
             spinner="dots",
         )
         helm_spinner.start()
@@ -145,12 +145,12 @@ def cli(
             data["verify"] = get_helm_info()
             helm_spinner.succeed()
         except Exception as e:
-            helm_spinner.warn(f"verifying helm info failed")
+            helm_spinner.warn("verifying helm info failed")
             log.debug(e)
             data["verify"] = {"error": str(e)}
 
         cluster_spinner = Halo(
-            text=f"Gathering cluster info",
+            text="Gathering cluster info",
             spinner="dots",
         )
         cluster_spinner.start()
@@ -158,7 +158,7 @@ def cli(
             data["cluster_info"] = cluster_info()
             cluster_spinner.succeed()
         except Exception as e:
-            cluster_spinner.warn(f"gathering cluster info failed")
+            cluster_spinner.warn("gathering cluster info failed")
             log.debug(e)
             data["cluster_info"] = {"error": str(e)}
 
