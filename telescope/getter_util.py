@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, Union
+from typing import Any, Callable, Dict, Optional, Union
 
 import logging
 import os
@@ -115,15 +115,20 @@ def obfuscate(x: str) -> str:
 
 
 def get_from_getter(
-    getter: Getter, dag_obfuscation: bool = False, dag_obfuscation_fn: Callable[[str], str] = obfuscate
+    getter: Getter, dag_obfuscation: bool = False, dag_obfuscation_fn: Optional[Callable[[str], str]] = None
 ) -> dict:
+    if dag_obfuscation and dag_obfuscation_fn is None:
+        dag_obfuscation_fn = obfuscate
+
     getter_key = getter.get_report_key()
     host_type = getter.get_type()
     results = {}
     full_key = (host_type, getter_key, "airflow_report")
     helm_full_key = (host_type, getter_key, "helm")
     log.debug(f"Fetching 'report[{full_key}]'...")
-    namespace = getter_key.split("|")[0]
+
+    # We might not have a namespace - if we aren't using --kubernetes
+    friendly_name = getter_key.split("|")[0] if "|" in getter_key else getter_key
 
     # get airflow report
     airflow_spinner = Halo(spinner="simpleDots", enabled=False)
@@ -133,7 +138,7 @@ def get_from_getter(
 
         # bubble up exception to except clause
         if type(result) == str:
-            raise Exception(result)
+            raise RuntimeError(result)
 
         if dag_obfuscation:
             for dag in result.get("dags_report", []):
@@ -142,25 +147,25 @@ def get_from_getter(
 
         results[full_key] = result
         airflow_spinner.enabled = True
-        airflow_spinner.succeed(f"\n{namespace} airflow info")
+        airflow_spinner.succeed(f"\n{friendly_name} airflow info")
     except Exception as e:
         airflow_spinner.enabled = True
-        airflow_spinner.fail(f"\n{namespace} airflow info failed")
+        airflow_spinner.fail(f"\n{friendly_name} airflow info failed")
         log.debug(e, exc_info=True)
         results[full_key] = {"error": str(e)}
 
     # get helm report
-    helm_spinner = Halo(spinner="simpleDots", enabled=False)
-    try:
-        if type(getter) == KubernetesGetter:
+    if type(getter) == KubernetesGetter:
+        helm_spinner = Halo(spinner="simpleDots", enabled=False)
+        try:
             helm_spinner.start()
-            results[helm_full_key] = get_helm_info(namespace=namespace)
+            results[helm_full_key] = get_helm_info(namespace=friendly_name)
             helm_spinner.enabled = True
-            helm_spinner.succeed(f"\n{namespace} helm info")
-    except Exception as e:
-        helm_spinner.enabled = True
-        helm_spinner.warn(f"\n{namespace} helm info failed")
-        log.debug(e)
-        results[helm_full_key] = {"error": str(e)}
+            helm_spinner.succeed(f"\n{friendly_name} helm info")
+        except Exception as e:
+            helm_spinner.enabled = True
+            helm_spinner.warn(f"\n{friendly_name} helm info failed")
+            log.debug(e)
+            results[helm_full_key] = {"error": str(e)}
 
     return results
