@@ -22,7 +22,7 @@ class LocalGetter(Getter):
         out = run(cmd, hide=True, warn=True)  # other options: timeout, warn
         if out.stdout:
             out = clean_airflow_report_output(out.stdout)
-        elif out.stderr_bytes is not None:
+        elif out.stderr is not None:
             out = out.stderr
         else:
             out = "Unknown Error"
