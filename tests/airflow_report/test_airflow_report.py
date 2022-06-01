@@ -49,7 +49,7 @@ def docker_scheduler(docker_client, request):
     )
     timeout, elapsed_time = 120, 0
     sleep_time = 3
-    status = docker_client.containers.get(scheduler.id)
+    status = docker_client.containers.get(scheduler.id).status
     while status != "running" and elapsed_time < timeout:
         print("Not running, sleeping...")
         sleep(sleep_time)
