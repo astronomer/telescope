@@ -9,6 +9,7 @@ import yaml
 from halo import Halo
 
 import telescope
+from telescope.config import AIRGAPPED, REPORT_PACKAGE, REPORT_PACKAGE_URL
 from telescope.functions.astronomer_enterprise import get_helm_info
 from telescope.functions.autodiscover import AUTODISCOVERERS, docker_autodiscover, kube_autodiscover
 from telescope.getters import Getter
@@ -20,15 +21,18 @@ log = logging.getLogger(__name__)
 log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))
 log.addHandler(logging.StreamHandler())
 
-VERSION = os.getenv("TELESCOPE_REPORT_RELEASE_VERSION", telescope.version)
 if os.getenv("TELESCOPE_AIRFLOW_REPORT_CMD"):
     AIRFLOW_REPORT_CMD = split(os.getenv("TELESCOPE_AIRFLOW_REPORT_CMD"))
+elif AIRGAPPED:
+    AIRFLOW_REPORT_CMD = split(
+        'python -W ignore -c "' "import runpy,os;" f"a='{REPORT_PACKAGE}';" f'runpy.run_path(a);os.remove(a)"'
+    )
 else:
     AIRFLOW_REPORT_CMD = split(
         'python -W ignore -c "'
         "import runpy,os;from urllib.request import urlretrieve as u;"
-        f"a='airflow_report.pyz';"
-        f"u('https://github.com/astronomer/telescope/releases/download/v{VERSION}/'+a,a);"
+        f"a='{REPORT_PACKAGE}';"
+        f"u('{REPORT_PACKAGE_URL}', a);"
         f'runpy.run_path(a);os.remove(a)"'
     )
     # Alternatively?? - python -c "from zipimport import zipimporter; zipimporter('/dev/stdin').load_module('__main__')"
@@ -138,6 +142,7 @@ def get_from_getter(
 
         # bubble up exception to except clause
         if type(result) == str:
+            log.debug(result)
             raise RuntimeError(result)
 
         if dag_obfuscation:

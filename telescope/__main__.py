@@ -6,6 +6,7 @@ import multiprocessing
 import os
 from datetime import datetime
 from functools import partial
+from urllib.request import urlretrieve
 
 import click as click
 from click import Path, echo
@@ -13,6 +14,7 @@ from click.exceptions import Exit, UsageError
 from halo import Halo
 
 import telescope
+from telescope.config import AIRGAPPED, REPORT_PACKAGE, REPORT_PACKAGE_URL
 from telescope.functions.astronomer_enterprise import get_helm_info
 from telescope.functions.cluster_info import cluster_info
 from telescope.getter_util import gather_getters, get_from_getter
@@ -162,6 +164,9 @@ def cli(
             log.debug(e)
             data["cluster_info"] = {"error": str(e)}
 
+        if AIRGAPPED:
+            urlretrieve(REPORT_PACKAGE_URL, REPORT_PACKAGE)
+
     # get all the Airflow Reports at once, in parallel
     spinner = Halo(
         text=f"Gathering data from {len(all_getters)} Airflow Deployments...\n",
@@ -183,6 +188,9 @@ def cli(
     except Exception as e:
         spinner.fail(text=str(e))
         raise Exit(1) from e
+    finally:
+        if AIRGAPPED:
+            os.remove(REPORT_PACKAGE)
 
     # unflatten and assemble into report
     for result in results:

@@ -8,6 +8,7 @@ from invoke import run
 from lazyimport import lazyimport
 from retrying import retry
 
+from telescope.config import AIRGAPPED, REPORT_PACKAGE
 from telescope.getters import Getter
 from telescope.util import clean_airflow_report_output
 
@@ -21,6 +22,8 @@ from kubernetes.client import ApiException
 """,
 )
 log = logging.getLogger(__name__)
+log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))
+log.addHandler(logging.StreamHandler())
 
 
 class KubernetesGetter(Getter):
@@ -34,6 +37,13 @@ class KubernetesGetter(Getter):
         """Utilize kubernetes python client to exec in a container
         https://github.com/kubernetes-client/python/blob/master/examples/pod_exec.py
         """
+
+        if AIRGAPPED:
+            cp_cmd = f"kubectl cp {REPORT_PACKAGE} -n {self.namespace} {self.name}:{REPORT_PACKAGE} -c {self.container}"
+            log.debug(f"Running {cmd} for airgapped {self.namespace}")
+            cp_result = run(cp_cmd, hide=True, warn=True)
+            log.debug(cp_result.stdout)
+
         if os.getenv("TELESCOPE_KUBERNETES_METHOD", "") == "kubectl":
             if type(cmd) == list:
                 cmd = shlex.join(cmd)
