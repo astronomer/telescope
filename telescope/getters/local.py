@@ -25,7 +25,7 @@ class LocalGetter(Getter):
         elif out.stderr is not None:
             out = out.stderr
         else:
-            out = "Unknown Error"
+            raise RuntimeError("Unknown Error")
         return out
 
     def get_report_key(self):

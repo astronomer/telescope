@@ -5,6 +5,7 @@ import shlex
 from fabric import Connection
 
 from telescope.getters import Getter
+from telescope.util import clean_airflow_report_output
 
 
 class SSHGetter(Getter):
@@ -15,9 +16,16 @@ class SSHGetter(Getter):
         """Utilize fabric to run over SSH
         https://docs.fabfile.org/en/2.6/getting-started.html#run-commands-via-connections-and-run
         """
-        return Connection(
+        out = Connection(
             self.host,
         ).run(shlex.join(cmd), hide=True)
+        if out.stdout:
+            out = clean_airflow_report_output(out.stdout)
+        elif out.stderr is not None:
+            out = out.stderr
+        else:
+            raise RuntimeError("Unknown Error")
+        return out
 
     def __eq__(self, other):
         return type(self) == type(other) and self.host == other.host
