@@ -41,6 +41,11 @@ formatting: codestyle
 test:
 	poetry run pytest -c pyproject.toml
 
+.PHONY: test-coverage
+test-coverage:
+	poetry run pytest -c pyproject.toml > pytest-coverage.txt
+
+
 .PHONY: check-codestyle
 check-codestyle:
 	poetry run isort --diff --check-only --settings-path pyproject.toml ./

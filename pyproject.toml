@@ -44,6 +44,7 @@ pytest-mock = "^3.6.1"
 apache-airflow = "^2.2.1"
 pytest-xdist = {extras = ["psutil"], version = "^2.4.0"}
 pyinstaller = "^4.10"
+pytest-coverage = "^0.0"
 
 [tool.black]
 # https://github.com/psf/black
@@ -91,12 +92,11 @@ doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAI
 # Extra options:
 addopts = [
   "--ignore=tests/resources/example-dag.py",
-  "--ignore=resources/fix.py",
   "--strict-markers",
   "--tb=short",
   "--disable-warnings",
   "--numprocesses=auto",
-  "--no-header",
+  "--cov=telescope",
   "--doctest-modules",
   "--doctest-continue-on-failure",
 ]
