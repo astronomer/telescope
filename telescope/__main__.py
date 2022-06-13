@@ -4,9 +4,11 @@ import json
 import logging
 import multiprocessing
 import os
+import shutil
+import urllib
 from datetime import datetime
 from functools import partial
-from urllib.request import urlretrieve
+from urllib.request import urlopen
 
 import click as click
 from click import Path, echo
@@ -165,7 +167,8 @@ def cli(
             data["cluster_info"] = {"error": str(e)}
 
         if AIRGAPPED:
-            urlretrieve(REPORT_PACKAGE_URL, REPORT_PACKAGE)
+            with urllib.request.urlopen(REPORT_PACKAGE_URL) as response, open(REPORT_PACKAGE, "wb") as out_file:
+                shutil.copyfileobj(response, out_file)
 
     # get all the Airflow Reports at once, in parallel
     spinner = Halo(
