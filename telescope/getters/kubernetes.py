@@ -18,7 +18,7 @@ lazyimport(
 from telescope.getters.kubernetes_client import kube_client
 from telescope.getters.kubernetes_client import api_client
 from telescope.getters.kubernetes_client import stream
-from kubernetes.client import ApiException
+from telescope.getters.kubernetes_client import ApiException
 """,
 )
 log = logging.getLogger(__name__)
