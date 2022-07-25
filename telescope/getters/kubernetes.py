@@ -4,6 +4,14 @@ import logging
 import os
 import shlex
 
+try:
+    from shlex import join
+except ImportError:
+
+    def join(split_command):
+        return " ".join(shlex.quote(arg) for arg in split_command)
+
+
 from invoke import run
 from lazyimport import lazyimport
 from retrying import retry
@@ -46,7 +54,7 @@ class KubernetesGetter(Getter):
 
         if os.getenv("TELESCOPE_KUBERNETES_METHOD", "") == "kubectl":
             if type(cmd) == list:
-                cmd = shlex.join(cmd)
+                cmd = join(cmd)
 
             cmd = f"kubectl exec -it -n {self.namespace} {self.name} -c {self.container} -- {cmd}"
             log.debug(f"Running {cmd}")
@@ -62,7 +70,7 @@ class KubernetesGetter(Getter):
                     )
             except ApiException as e:
                 if e.status != 404:
-                    raise RuntimeError(f"Unknown Kubernetes error: {e}")
+                    raise RuntimeError(f"Unknown Kubernetes error: {e}") from e
 
             log.debug(f"Running {cmd} on pod {self.name} in namespace {self.namespace} in container {self.container}")
             # noinspection PyUnresolvedReferences

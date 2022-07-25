@@ -2,6 +2,15 @@ from typing import List, Union
 
 import logging
 import shlex
+
+try:
+    from shlex import join
+except ImportError:
+
+    def join(split_command):
+        return " ".join(shlex.quote(arg) for arg in split_command)
+
+
 import socket
 
 from invoke import run
@@ -18,7 +27,7 @@ class LocalGetter(Getter):
         http://docs.pyinvoke.org/en/stable/api/runners.html#invoke.runners.Runner.run
         """
         if type(cmd) == list:
-            cmd = shlex.join(cmd)
+            cmd = join(cmd)
         out = run(cmd, hide=True, warn=True)  # other options: timeout, warn
         if out.stdout:
             out = clean_airflow_report_output(out.stdout)

@@ -2,6 +2,14 @@ from typing import List, Union
 
 import shlex
 
+try:
+    from shlex import join
+except ImportError:
+
+    def join(split_command):
+        return " ".join(shlex.quote(arg) for arg in split_command)
+
+
 from fabric import Connection
 
 from telescope.getters import Getter
@@ -18,7 +26,7 @@ class SSHGetter(Getter):
         """
         out = Connection(
             self.host,
-        ).run(shlex.join(cmd), hide=True)
+        ).run(join(cmd), hide=True)
         if out.stdout:
             out = clean_airflow_report_output(out.stdout)
         elif out.stderr is not None:

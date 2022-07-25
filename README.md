@@ -23,7 +23,7 @@ chmod +x telescope-linux-x86_64
 ```
 
 # Installation Method 2) via PIP
-*Note: PIP installation requires Python >= 3.8*
+*Note: PIP installation requires Python >= 3.6*
 
 *optionally*, create a virtualenv called `venv` (or anything else ) in the current directory for easy cleanup
 ```shell
@@ -102,7 +102,7 @@ Options:
 
 # Requirements
 ## Locally - via PIP
-- Python >=3.8
+- Python >=3.6
 - `pip`
 
 ## Locally - Docker or Kubernetes or SSH Airflow Assessment modes
