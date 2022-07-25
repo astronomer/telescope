@@ -102,7 +102,7 @@ Options:
 
 # Requirements
 ## Locally - via PIP
-- Python >=3.6
+- Python >=3.8
 - `pip`
 
 ## Locally - Docker or Kubernetes or SSH Airflow Assessment modes
