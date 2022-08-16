@@ -211,6 +211,14 @@ fileloc="/a/b/c/d/filepath.py" -> "th.py"
 - `LOG_LEVEL` - can be any support Python logging level `[CRITICAL, FATAL, ERROR, WARN, WARNING, INFO, DEBUG, NOTSET]`
   - use `DEBUG` for details about any errors that occur
 
+# Install as an Airflow Plugin
+Telescope can also be installed as an Airflow plugin. 
+This is helpful in instances where shell access is unable to be acquired - such as with Google Cloud Composer (GCC) or AWS' Managed Apache Airflow (MWAA).
+
+To install Telescope this way upload the [Aeroscope plugin](plugins/aeroscope.py) based on your normal method of installing plugins. 
+- Google Cloud Composer - https://cloud.google.com/composer/docs/concepts/plugins
+- AWS Managed Apache Airflow - https://docs.aws.amazon.com/mwaa/latest/userguide/configuring-dag-import-plugins.html
+
 
 
 # Install from Source
