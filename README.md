@@ -16,10 +16,23 @@ A tool to observe distant (or local!) Airflow installations, and gather metadata
 
 Find and download the executable in [the Telescope Release for the correct version](https://github.com/astronomer/telescope/releases/latest)
 
-e.g. *for x86_64 Linux*
+- **for Linux (x86_64)**
 ```shell
 wget https://github.com/astronomer/telescope/releases/latest/download/telescope-linux-x86_64
 chmod +x telescope-linux-x86_64
+```
+
+- **for Mac (x86_64, not M1 or ARM)**
+```shell
+wget https://github.com/astronomer/telescope/releases/latest/download/telescope-darwin-x86_64
+chmod +x telescope-darwin-x86_64
+```
+Note: For Mac, you will get a Security error when you first run Telescope via the CLI binary - you can bypass this in `System Preferences -> Security & Privacy -> General` and hitting `Allow` 
+
+- **for Windows (x86_64)**
+```shell
+wget https://github.com/astronomer/telescope/releases/latest/download/telescope-mingw64_nt-10.0-20348-x86_64.exe
+chmod +x telescope-mingw64_nt-10.0-20348-x86_64.exe
 ```
 
 # Installation Method 2) via PIP
