@@ -16,10 +16,23 @@ A tool to observe distant (or local!) Airflow installations, and gather metadata
 
 Find and download the executable in [the Telescope Release for the correct version](https://github.com/astronomer/telescope/releases/latest)
 
-e.g. *for x86_64 Linux*
+- **for Linux (x86_64)**
 ```shell
 wget https://github.com/astronomer/telescope/releases/latest/download/telescope-linux-x86_64
 chmod +x telescope-linux-x86_64
+```
+
+- **for Mac (x86_64, not M1 or ARM)**
+```shell
+wget https://github.com/astronomer/telescope/releases/latest/download/telescope-darwin-x86_64
+chmod +x telescope-darwin-x86_64
+```
+Note: For Mac, you will get a Security error when you first run Telescope via the CLI binary - you can bypass this in `System Preferences -> Security & Privacy -> General` and hitting `Allow` 
+
+- **for Windows (x86_64)**
+```shell
+wget https://github.com/astronomer/telescope/releases/latest/download/telescope-mingw64_nt-10.0-20348-x86_64.exe
+chmod +x telescope-mingw64_nt-10.0-20348-x86_64.exe
 ```
 
 # Installation Method 2) via PIP
@@ -223,6 +236,14 @@ fileloc="/a/b/c/d/filepath.py" -> "th.py"
 - `TELESCOPE_KUBERNETES_AIRGAPPED` - executes the airflow report in airgapped mode (i.e copies report binary from local to pod)
 - `LOG_LEVEL` - can be any support Python logging level `[CRITICAL, FATAL, ERROR, WARN, WARNING, INFO, DEBUG, NOTSET]`
   - use `DEBUG` for details about any errors that occur
+
+# Install as an Airflow Plugin
+Telescope can also be installed as an Airflow plugin. 
+This is helpful in instances where shell access is unable to be acquired - such as with Google Cloud Composer (GCC) or AWS' Managed Apache Airflow (MWAA).
+
+To install Telescope this way upload the [Aeroscope plugin](plugins/aeroscope.py) based on your normal method of installing plugins. 
+- Google Cloud Composer - https://cloud.google.com/composer/docs/concepts/plugins
+- AWS Managed Apache Airflow - https://docs.aws.amazon.com/mwaa/latest/userguide/configuring-dag-import-plugins.html
 
 
 
