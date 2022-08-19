@@ -49,13 +49,16 @@ telescope --kubernetes --organization-name <My Organization>
 You should now have a file ending in `*.data.json` - which is an intermediate data payload
 
 # Quickstart - SSH Assessment Mode
-This will work if your Airflows are on hosts accessible via SSH and SSH is configured to connect to all of these hosts (e.g. you have `~/.ssh/config` with entries for all hosts)
+This will work if your Airflows are on hosts accessible via SSH and SSH is configured to connect to all of these hosts.
+You can pass any configuration option that a [Fabric Connection object](https://docs.fabfile.org/en/stable/api/connection.html#module-fabric.connection) can take
 Create a `hosts.yaml` file, like this, enumerating every host:
 ```shell
 ssh:
   - host: airflow.foo1.bar.com
-  - host: airflow.foo2.bar.com
-  - host: ...
+  - host: root@airflow.foo2.bar.com
+  - host: airflow.foo3.bar.com
+    user: root
+    connect_kwargs: {"key_filename":"/full/path/to/id_rsa"}
 ```
 
 ```shell
@@ -159,8 +162,11 @@ kubernetes:
     container: scheduler
 
 ssh:
-  - host: 1.2.3.4
-  - host: foo.com
+  - host: airflow.foo1.bar.com
+  - host: root@airflow.foo2.bar.com
+  - host: airflow.foo3.bar.com
+    user: root
+    connect_kwargs: {"key_filename":"/full/path/to/id_rsa"}
 ```
 
 # Extra Functionality
@@ -175,12 +181,19 @@ use `--label-selector "role=scheduler"`.
 python -W ignore -c "import runpy,os;from urllib.request import urlretrieve as u;a='airflow_report.pyz';u('https://github.com/astronomer/telescope/releases/latest/download/'+a,a);runpy.run_path(a);os.remove(a)"
 ```
 
-This can be used, for instance, if there is no access to Github on the remote box,
-or a custom directory is needed to run,
-or environment activation is required ahead of time,
-or your `python` is called something other than `python` (e.g. `python3`)
+This can be used, for instance, if there is no access to Github on the remote box, or a custom directory is needed to run,
+or environment activation is required ahead of time.
+
+If your `python` is called something other than `python` (e.g. `python3`):
 ```shell
-https://github.com/astronomer/telescope/releases/latest/download/
+TELESCOPE_AIRFLOW_REPORT_CMD=$(cat <<'EOF'
+python3 -W ignore -c "import runpy,os;from urllib.request import urlretrieve as u;a='airflow_report.pyz';u('https://github.com/astronomer/telescope/releases/latest/download/airflow_report.pyz',a);runpy.run_path(a);os.remove(a)"
+EOF
+) telescope -f hosts.yaml 
+```
+
+or if you need to activate a `python` (such as with RedHat Linux) prior to running, and want to copy the telescope Manifest up to the host independently:
+```shell
 scp airflow_report.pyz remote_user@remote_host:airflow_report.pyz
 TELESCOPE_AIRFLOW_REPORT_CMD="scl enable rh-python36 python -W ignore -c 'import runpy;a=\'airflow_report.pyz\';runpy.run_path(a);os.remove(a)'" telescope -f hosts.yaml
 ```

@@ -184,6 +184,8 @@ def cli(
         )
         with multiprocessing.Pool(parallelism) as p:
             results: List[Dict[Any, Any]] = p.map(get_from_getters_with_obfuscation, all_getters)
+        if all("error" in r for result in results for r in result.values()):
+            raise RuntimeError("Unable to gather results, run with LOG_LEVEL=DEBUG for more information - exiting!")
         spinner.succeed(text=f"Data gathered from {len(all_getters)} Airflow Deployments!")
     except (KeyboardInterrupt, SystemExit) as e:
         spinner.stop()

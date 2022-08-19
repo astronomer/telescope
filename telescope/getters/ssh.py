@@ -17,16 +17,15 @@ from telescope.util import clean_airflow_report_output
 
 
 class SSHGetter(Getter):
-    def __init__(self, host):
+    def __init__(self, host: str, **kwargs):
         self.host = host
+        self.kwargs = kwargs
 
     def get(self, cmd: Union[List[str], str]):
         """Utilize fabric to run over SSH
         https://docs.fabfile.org/en/2.6/getting-started.html#run-commands-via-connections-and-run
         """
-        out = Connection(
-            self.host,
-        ).run(join(cmd), hide=True)
+        out = Connection(self.host, **self.kwargs).run(join(cmd), hide=True)
         if out.stdout:
             out = clean_airflow_report_output(out.stdout)
         elif out.stderr is not None:
