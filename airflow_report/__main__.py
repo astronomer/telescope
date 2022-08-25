@@ -8,7 +8,6 @@ import sys
 from functools import reduce
 
 import airflow.version
-import sqlglot as sqlglot
 from sqlalchemy import text
 
 logging.getLogger("airflow.settings").setLevel(logging.ERROR)
@@ -89,23 +88,11 @@ def providers_report() -> Any:
         from airflow.providers_manager import ProvidersManager
 
         providers_manager = ProvidersManager()
-        try:
-            return {
-                provider_info["package-name"]: provider_version
-                for provider_version, provider_info in providers_manager.providers.values()
-            }
-        except AttributeError:
-            # assume airflow +2.3 and providers changed?
-            return {
-                provider.provider_info["package-name"]: provider.version
-                for _, provider in providers_manager.providers.items()
-            }
-        except TypeError:
-            # assume airflow +2.3 and providers changed?
-            return {
-                provider.provider_info["package-name"]: provider.version
-                for _, provider in providers_manager.providers.items()
-            }
+        result = {}
+        for provider_version, provider_info in providers_manager.providers.values():
+            result[provider_info["package-name"]] = provider_version
+
+        return result
     except ModuleNotFoundError:
         # Older version of airflow
         return None
@@ -378,39 +365,45 @@ def variables_report(session) -> List[str]:
     return [key for (key,) in session.query(Variable.key)]
 
 
-def convert_to_dialect(sql: str, to: str) -> str:
-    # https://docs.sqlalchemy.org/en/14/dialects/
-    # https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/dialect.py#L15-L28
-    if to == "postgres" or to == "postgresql":
-        return sql
-    try:
-        return sqlglot.transpile(sql, read="postgres", write=to)[0]
-    except ValueError as e:
-        logging.exception(e)
-        return sql
+def days_ago(dialect: str, days: int) -> str:
+    if dialect == "sqlite":
+        return f"DATE('now', '-{days} days')"
+    elif dialect == "mysql":
+        return f"DATE_SUB(NOW(), INTERVAL {days} day)"
+    else:
+        # postgresql
+        return f"now() - interval '{days} days'"
 
 
+# noinspection SqlResolve
 @provide_session
 def usage_stats_report(session) -> Any:
+    dialect = session.bind.dialect.name
     sql = text(
-        convert_to_dialect(
-            """
+        """
         SELECT
             dag_id,
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > now() - interval '1 days' and sti.dag_id = ti.dag_id) as "1_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > now() - interval '1 days' and sti.dag_id = ti.dag_id) as "1_days_failed",
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > now() - interval '7 days' and sti.dag_id = ti.dag_id) as "7_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > now() - interval '7 days' and sti.dag_id = ti.dag_id) as "7_days_failed",
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > now() - interval '30 days' and sti.dag_id = ti.dag_id) as "30_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > now() - interval '30 days' and sti.dag_id = ti.dag_id) as "30_days_failed",
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > now() - interval '365 days' and sti.dag_id = ti.dag_id) as "365_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > now() - interval '365 days' and sti.dag_id = ti.dag_id) as "365_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id) as "1_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id) as "1_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id) as "7_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id) as "7_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id) as "30_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id) as "30_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id) as "365_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id) as "365_days_failed",
             (select count(1) from task_instance as sti where state = 'success' and sti.dag_id = ti.dag_id) as "all_days_success",
             (select count(1) from task_instance as sti where state = 'failed' and sti.dag_id = ti.dag_id) as "all_days_failed"
         FROM task_instance as ti
         GROUP BY 1;
-        """,
-            session.bind.dialect.name,
+    """.format(
+            days_ago(dialect, 1),
+            days_ago(dialect, 1),
+            days_ago(dialect, 7),
+            days_ago(dialect, 7),
+            days_ago(dialect, 30),
+            days_ago(dialect, 30),
+            days_ago(dialect, 365),
+            days_ago(dialect, 365),
         )
     )
     return [dict(r) for r in session.execute(sql)]
@@ -422,18 +415,18 @@ def user_report(session) -> Any:
     from airflow.version import version
     from sqlalchemy.exc import OperationalError
 
+    dialect = session.bind.dialect.name
     if version >= "1.10.5":
         sql = text(
-            convert_to_dialect(
-                """
+            """
             SELECT
-                (SELECT COUNT(id) FROM ab_user WHERE last_login > now() - interval '1 days') AS "1_days_active_users",
-                (SELECT COUNT(id) FROM ab_user WHERE last_login > now() - interval '7 days') AS "7_days_active_users",
-                (SELECT COUNT(id) FROM ab_user WHERE last_login > now() - interval '30 days') AS "30_days_active_users",
-                (SELECT COUNT(id) FROM ab_user WHERE last_login > now() - interval '365 days') AS "365_days_active_users",
+                (SELECT COUNT(id) FROM ab_user WHERE last_login > {}) AS "1_days_active_users",
+                (SELECT COUNT(id) FROM ab_user WHERE last_login > {}) AS "7_days_active_users",
+                (SELECT COUNT(id) FROM ab_user WHERE last_login > {}) AS "30_days_active_users",
+                (SELECT COUNT(id) FROM ab_user WHERE last_login > {}) AS "365_days_active_users",
                 (SELECT COUNT(id) FROM ab_user) AS "total_users";
-            """,
-                session.bind.dialect.name,
+            """.format(
+                days_ago(dialect, 1), days_ago(dialect, 7), days_ago(dialect, 30), days_ago(dialect, 365)
             )
         )
     else:

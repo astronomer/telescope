@@ -1,3 +1,1 @@
 radon==5.1.0
-sqlglot==5.1.1
-python-dateutil
