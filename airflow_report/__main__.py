@@ -93,6 +93,12 @@ def providers_report() -> Any:
                 provider_info["package-name"]: provider_version
                 for provider_version, provider_info in providers_manager.providers.values()
             }
+        except AttributeError:
+            # assume airflow +2.3 and providers changed?
+            return {
+                provider.provider_info["package-name"]: provider.version
+                for _, provider in providers_manager.providers.items()
+            }
         except TypeError:
             # assume airflow +2.3 and providers changed?
             return {
