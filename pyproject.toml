@@ -44,7 +44,6 @@ pytest-mock = "^3.6.1"
 apache-airflow = "^2.2.1"
 pytest-xdist = {extras = ["psutil"], version = "^2.4.0"}
 pyinstaller = "^4.10"
-sqlglot = "^5.1.1"
 
 [tool.black]
 # https://github.com/psf/black

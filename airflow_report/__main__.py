@@ -8,6 +8,7 @@ import sys
 from functools import reduce
 
 import airflow.version
+import sqlglot as sqlglot
 from sqlalchemy import text
 
 logging.getLogger("airflow.settings").setLevel(logging.ERROR)
@@ -378,14 +379,12 @@ def variables_report(session) -> List[str]:
 
 
 def convert_to_dialect(sql: str, to: str) -> str:
-    from sqlglot import transpile
-
     # https://docs.sqlalchemy.org/en/14/dialects/
     # https://github.com/tobymao/sqlglot/blob/main/sqlglot/dialects/dialect.py#L15-L28
     if to == "postgres" or to == "postgresql":
         return sql
     try:
-        return transpile(sql, read="postgres", write=to)[0]
+        return sqlglot.transpile(sql, read="postgres", write=to)[0]
     except ValueError as e:
         logging.exception(e)
         return sql
