@@ -88,11 +88,20 @@ def providers_report() -> Any:
         from airflow.providers_manager import ProvidersManager
 
         providers_manager = ProvidersManager()
-        result = {}
-        for provider_version, provider_info in providers_manager.providers.values():
-            result[provider_info["package-name"]] = provider_version
-
-        return result
+        try:
+            return {
+                provider_info["package-name"]: provider_version
+                for provider_version, provider_info in providers_manager.providers.values()
+            }
+        except TypeError:  # "cannot unpack non-iterable ProviderObject
+            # assume airflow +2.3 and providers changed?
+            try:
+                return {
+                    provider.provider_info["package-name"]: provider.version
+                    for _, provider in providers_manager.providers.items()
+                }
+            except AttributeError:  # ProviderObject has no attribute provider_info
+                return {key: provider.version for key, provider in providers_manager.providers.items()}
     except ModuleNotFoundError:
         # Older version of airflow
         return None
