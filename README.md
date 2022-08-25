@@ -129,7 +129,7 @@ Options:
 
 ## Remote Airflow Requirements
 - Airflow Scheduler >1.10.5
-- Python >=3.6
+- Python 3.x
 - Postgresql/Mysql/Sqlite Metadata Database (support not guaranteed for other backing databases)
 - **Kubernetes**: Kubernetes Scheduler has label `component=scheduler` (or `--label-selector` specified)
 - `github.com` access
@@ -231,11 +231,10 @@ fileloc="/a/b/c/d/filepath.py" -> "th.py"
 ```
 
 ## Optional Environmental Variables
-- `TELESCOPE_KUBERNETES_METHOD` - can be `kubectl` to run with kubectl instead of the python SDK for compatibility reasons
-- `TELESCOPE_REPORT_RELEASE_VERSION` - can be a separate telescope semver release number, to control which report gets run
-- `TELESCOPE_KUBERNETES_AIRGAPPED` - executes the airflow report in airgapped mode (i.e copies report binary from local to pod)
-- `LOG_LEVEL` - can be any support Python logging level `[CRITICAL, FATAL, ERROR, WARN, WARNING, INFO, DEBUG, NOTSET]`
-  - use `DEBUG` for details about any errors that occur
+- `TELESCOPE_KUBERNETES_METHOD=kubectl` - to run with kubectl instead of the python SDK (often for compatibility reasons)
+- `TELESCOPE_REPORT_RELEASE_VERSION=x.y.z` - can be a separate telescope semver release number, to control which report gets run
+- `TELESCOPE_KUBERNETES_AIRGAPPED=true` - executes the airflow report in airgapped mode (i.e copies report binary from local to pod)
+- `LOG_LEVEL=DEBUG` - can be any support Python logging level `[CRITICAL, FATAL, ERROR, WARN, WARNING, INFO, DEBUG, NOTSET]`
 
 # Install as an Airflow Plugin
 Telescope can also be installed as an Airflow plugin. 
@@ -300,14 +299,23 @@ There is an intermediate output ending in `*.data.json` which contains all data 
 
 # Compatibility Matrix
 Telescope is been tested against the following Airflow versions:
-- "1.10.15", "1.10.10", "2.2.1", "2.1.3"
+```shell
+"apache/airflow:2.3.4"
+"apache/airflow:2.2.4"
+"apache/airflow:2.1.3"
+"apache/airflow:1.10.15"
+"apache/airflow:1.10.10"
+"bitnami/airflow:1.10.2"
+```
 
 Telescope is tested with the following Metadata Database Backends:
 - (automated) PostgreSQL, SQLite
 - (manually) MySQL, SQLServer
 
 Telescope is tested on the following versions of Python:
-- 3.9
+```
+"3.5", "3.9", "3.10"
+```
 
 Telescope is tested on the following Operating Systems:
 - Ubuntu
