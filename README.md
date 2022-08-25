@@ -47,7 +47,7 @@ source venv/bin/activate
 Install Telescope using Pip from Github
 
 ```shell
-python -m pip install telescope --find-links https://github.com/astronomer/telescope/releases/latest
+pip install git+https://github.com/astronomer/telescope.git
 ```
 
 # Quickstart - Kubernetes Autodiscovery Assessment Mode
