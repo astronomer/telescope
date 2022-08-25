@@ -235,6 +235,7 @@ fileloc="/a/b/c/d/filepath.py" -> "th.py"
 - `TELESCOPE_REPORT_RELEASE_VERSION=x.y.z` - can be a separate telescope semver release number, to control which report gets run
 - `TELESCOPE_KUBERNETES_AIRGAPPED=true` - executes the airflow report in airgapped mode (i.e copies report binary from local to pod)
 - `LOG_LEVEL=DEBUG` - can be any support Python logging level `[CRITICAL, FATAL, ERROR, WARN, WARNING, INFO, DEBUG, NOTSET]`
+- `TELESCOPE_SHOULD_VERIFY=false` - turn off helm chart collection - required to gather some data about Airflow in Kubernetes
 
 # Install as an Airflow Plugin
 Telescope can also be installed as an Airflow plugin. 
