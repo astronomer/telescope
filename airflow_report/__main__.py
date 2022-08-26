@@ -88,11 +88,20 @@ def providers_report() -> Any:
         from airflow.providers_manager import ProvidersManager
 
         providers_manager = ProvidersManager()
-        result = {}
-        for provider_version, provider_info in providers_manager.providers.values():
-            result[provider_info["package-name"]] = provider_version
-
-        return result
+        try:
+            return {
+                provider_info["package-name"]: provider_version
+                for provider_version, provider_info in providers_manager.providers.values()
+            }
+        except TypeError:  # "cannot unpack non-iterable ProviderObject
+            # assume airflow +2.3 and providers changed?
+            try:
+                return {
+                    provider.provider_info["package-name"]: provider.version
+                    for _, provider in providers_manager.providers.items()
+                }
+            except AttributeError:  # ProviderObject has no attribute provider_info
+                return {key: provider.version for key, provider in providers_manager.providers.items()}
     except ModuleNotFoundError:
         # Older version of airflow
         return None
@@ -380,22 +389,31 @@ def days_ago(dialect: str, days: int) -> str:
 def usage_stats_report(session) -> Any:
     dialect = session.bind.dialect.name
     sql = text(
-        f"""
+        """
         SELECT
             dag_id,
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > {days_ago(dialect, 1)} and sti.dag_id = ti.dag_id) as "1_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {days_ago(dialect, 1)} and sti.dag_id = ti.dag_id) as "1_days_failed",
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > {days_ago(dialect, 7)} and sti.dag_id = ti.dag_id) as "7_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {days_ago(dialect, 7)} and sti.dag_id = ti.dag_id) as "7_days_failed",
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > {days_ago(dialect, 30)} and sti.dag_id = ti.dag_id) as "30_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {days_ago(dialect, 30)} and sti.dag_id = ti.dag_id) as "30_days_failed",
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > {days_ago(dialect, 365)} and sti.dag_id = ti.dag_id) as "365_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {days_ago(dialect, 365)} and sti.dag_id = ti.dag_id) as "365_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id) as "1_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id) as "1_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id) as "7_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id) as "7_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id) as "30_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id) as "30_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id) as "365_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id) as "365_days_failed",
             (select count(1) from task_instance as sti where state = 'success' and sti.dag_id = ti.dag_id) as "all_days_success",
             (select count(1) from task_instance as sti where state = 'failed' and sti.dag_id = ti.dag_id) as "all_days_failed"
         FROM task_instance as ti
         GROUP BY 1;
-    """
+    """.format(
+            days_ago(dialect, 1),
+            days_ago(dialect, 1),
+            days_ago(dialect, 7),
+            days_ago(dialect, 7),
+            days_ago(dialect, 30),
+            days_ago(dialect, 30),
+            days_ago(dialect, 365),
+            days_ago(dialect, 365),
+        )
     )
     return [dict(r) for r in session.execute(sql)]
 
@@ -409,14 +427,16 @@ def user_report(session) -> Any:
     dialect = session.bind.dialect.name
     if version >= "1.10.5":
         sql = text(
-            f"""
-            SELECT
-                (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 1)}) AS "1_days_active_users",
-                (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 7)}) AS "7_days_active_users",
-                (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 30)}) AS "30_days_active_users",
-                (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 365)}) AS "365_days_active_users",
-                (SELECT COUNT(id) FROM ab_user) AS "total_users";
             """
+            SELECT
+                (SELECT COUNT(id) FROM ab_user WHERE last_login > {}) AS "1_days_active_users",
+                (SELECT COUNT(id) FROM ab_user WHERE last_login > {}) AS "7_days_active_users",
+                (SELECT COUNT(id) FROM ab_user WHERE last_login > {}) AS "30_days_active_users",
+                (SELECT COUNT(id) FROM ab_user WHERE last_login > {}) AS "365_days_active_users",
+                (SELECT COUNT(id) FROM ab_user) AS "total_users";
+            """.format(
+                days_ago(dialect, 1), days_ago(dialect, 7), days_ago(dialect, 30), days_ago(dialect, 365)
+            )
         )
     else:
         sql = text("""SELECT COUNT(id) AS "total_users" FROM "users";""")

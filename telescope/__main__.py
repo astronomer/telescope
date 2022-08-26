@@ -145,13 +145,15 @@ def cli(
             spinner="dots",
         )
         helm_spinner.start()
-        try:
-            data["verify"] = get_helm_info()
-            helm_spinner.succeed()
-        except Exception as e:
-            helm_spinner.warn("verifying helm info failed")
-            log.debug(e)
-            data["verify"] = {"error": str(e)}
+        # Feature gate "verify"
+        if os.getenv("TELESCOPE_SHOULD_VERIFY", True):
+            try:
+                data["verify"] = get_helm_info()
+                helm_spinner.succeed()
+            except Exception as e:
+                helm_spinner.warn("verifying helm info failed")
+                log.debug(e)
+                data["verify"] = {"error": str(e)}
 
         cluster_spinner = Halo(
             text="Gathering cluster info",

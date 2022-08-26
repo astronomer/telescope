@@ -160,7 +160,8 @@ def get_from_getter(
         results[full_key] = {"error": str(e)}
 
     # get helm report
-    if type(getter) == KubernetesGetter:
+    # Feature gate "verify"
+    if type(getter) == KubernetesGetter and os.getenv("TELESCOPE_SHOULD_VERIFY", True):
         helm_spinner = Halo(spinner="simpleDots", enabled=False)
         try:
             helm_spinner.start()
