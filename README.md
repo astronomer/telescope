@@ -12,6 +12,8 @@
 
 A tool to observe distant (or local!) Airflow installations, and gather metadata or other required data.
 
+Telescope is a CLI that runs on your workstation and accesses remote Airflows to collect a common set of data.
+
 # Installation Method 1) via Binary
 
 Find and download the executable in [the Telescope Release for the correct version](https://github.com/astronomer/telescope/releases/latest)
