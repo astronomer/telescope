@@ -33,7 +33,7 @@ except:
             # func_params is an ordered dict -- this is the "recommended" way of getting the position
             session_args_idx = tuple(func_params).index("session")
         except ValueError:
-            raise ValueError(f"Function {func.__qualname__} has no `session` argument") from None
+            raise ValueError("Function {} has no `session` argument".format(func.__qualname__)) from None
 
         return session_args_idx
 
@@ -137,7 +137,7 @@ def configuration_report() -> Any:
             running_configuration[section] = {}
 
         for option, (value, config_source) in options.items():
-            airflow_env_var_key = f"AIRFLOW__{section.upper()}__{option.upper()}"
+            airflow_env_var_key = "AIRFLOW__{}__{}".format(section.upper(), option.upper())
             if should_hide_value_for_key(airflow_env_var_key) or airflow_env_var_key in additional_hide_list:
                 running_configuration[section][option] = ("***", config_source)
             else:
@@ -228,7 +228,7 @@ def pools_report() -> Any:
                     elif state == "queued":
                         stats_dict["queued"] = count
                     else:
-                        raise AirflowException(f"Unexpected state. Expected values: {EXECUTION_STATES}.")
+                        raise AirflowException("Unexpected state. Expected values: {}.".format(EXECUTION_STATES))
 
                 # calculate open metric
                 for pool_name, stats_dict in pools.items():
@@ -376,12 +376,12 @@ def variables_report(session) -> List[str]:
 
 def days_ago(dialect: str, days: int) -> str:
     if dialect == "sqlite":
-        return f"DATE('now', '-{days} days')"
+        return "DATE('now', '-{} days')".format(days)
     elif dialect == "mysql":
-        return f"DATE_SUB(NOW(), INTERVAL {days} day)"
+        return "DATE_SUB(NOW(), INTERVAL {} day)".format(days)
     else:
         # postgresql
-        return f"now() - interval '{days} days'"
+        return "now() - interval '{} days'".format(days)
 
 
 # noinspection SqlResolve
@@ -466,7 +466,7 @@ def main():
         try:
             return {r.__name__: r()}
         except Exception as e:
-            logging.exception(f"Failed reporting {r.__name__}")
+            logging.exception("Failed reporting {}".format(r.__name__))
             return {r.__name__: str(e)}
 
     collected_reports = [try_reporter(report) for report in reports]
