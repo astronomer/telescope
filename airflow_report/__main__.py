@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import Any, List, Optional
 
 import base64
 import json
@@ -7,7 +7,6 @@ import re
 import sys
 from functools import reduce
 
-import airflow.version
 from sqlalchemy import text
 
 logging.getLogger("airflow.settings").setLevel(logging.ERROR)
@@ -26,7 +25,8 @@ except:
 
     RT = TypeVar("RT")
 
-    def find_session_idx(func: Callable[..., RT]) -> int:
+    def find_session_idx(func):
+        # type: (Callable[..., RT]) -> int
         """Find session index in function call parameter."""
         func_params = signature(func).parameters
         try:
@@ -50,7 +50,8 @@ except:
         finally:
             session.close()
 
-    def provide_session(func: Callable[..., RT]) -> Callable[..., RT]:
+    def provide_session(func):
+        # type: (Callable[..., RT]) -> Callable[..., RT]
         """
         Function decorator that provides a session if it isn't provided.
         If you want to reuse a session or run the function as part of a
@@ -60,7 +61,8 @@ except:
         session_args_idx = find_session_idx(func)
 
         @wraps(func)
-        def wrapper(*args, **kwargs) -> RT:
+        def wrapper(*args, **kwargs):
+            # type: () -> RT
             if "session" in kwargs or session_args_idx < len(args):
                 return func(*args, **kwargs)
             else:
@@ -72,17 +74,21 @@ except:
 
 try:
     from airflow.utils.log.secrets_masker import should_hide_value_for_key
+except ImportError:
+    should_hide_value_for_key = lambda x: False  # too old version
 except ModuleNotFoundError:
     should_hide_value_for_key = lambda x: False  # too old version
 
 
-def airflow_version_report() -> Any:
+def airflow_version_report():
+    # type: () -> str
     from airflow.version import version
 
     return version
 
 
-def providers_report() -> Any:
+def providers_report():
+    # type: () -> Optional[dict]
     """Return dict of providers packages {package name: version}"""
     try:
         from airflow.providers_manager import ProvidersManager
@@ -102,24 +108,29 @@ def providers_report() -> Any:
                 }
             except AttributeError:  # ProviderObject has no attribute provider_info
                 return {key: provider.version for key, provider in providers_manager.providers.items()}
+    except ImportError:
+        return None
     except ModuleNotFoundError:
         # Older version of airflow
         return None
 
 
-def hostname_report() -> Any:
+def hostname_report():
+    # type: () -> str
     import socket
 
     return socket.gethostname()
 
 
-def installed_packages_report() -> Any:
+def installed_packages_report():
+    # type: () -> dict
     import pkg_resources
 
     return {pkg.key: pkg.version for pkg in pkg_resources.working_set}
 
 
-def configuration_report() -> Any:
+def configuration_report():
+    # type: () -> dict
     from airflow.configuration import conf
 
     running_configuration = {}
@@ -146,7 +157,8 @@ def configuration_report() -> Any:
     return running_configuration
 
 
-def env_vars_report() -> Any:
+def env_vars_report():
+    # type: () -> dict
     import os
 
     config_options = []
@@ -163,7 +175,8 @@ def env_vars_report() -> Any:
     return {"config_options": config_options, "connections": connections, "variables": variables}
 
 
-def pools_report() -> Any:
+def pools_report():
+    # type: () -> Any
     from airflow.models import Pool
 
     try:
@@ -183,11 +196,8 @@ def pools_report() -> Any:
             }
 
             @provide_session
-            def slots_stats(
-                *,
-                lock_rows: bool = False,
-                session: Session = None,
-            ) -> Dict[str, dict]:
+            def slots_stats(*, lock_rows=False, session=None):
+                # type: (..., bool, Session) -> Dict[str, dict]
                 """
                 Get Pool stats (Number of Running, Queued, Open & Total tasks)
                 If ``lock_rows`` is True, and the database engine in use supports the ``NOWAIT`` syntax, then a
@@ -198,11 +208,11 @@ def pools_report() -> Any:
                 """
                 from airflow.models.taskinstance import TaskInstance  # Avoid circular import
 
-                pools: Dict[str, dict] = {}
+                pools = {}  # type: Dict[str, dict]
 
                 query = session.query(Pool.pool, Pool.slots)
 
-                pool_rows: Iterable[Tuple[str, int]] = query.all()
+                pool_rows = query.all()  # type: Iterable[Tuple[str, int]]
                 for (pool_name, total_slots) in pool_rows:
                     if total_slots == -1:
                         total_slots = float("inf")  # type: ignore
@@ -241,7 +251,7 @@ def pools_report() -> Any:
                 return pools
 
             return slots_stats()
-        except ModuleNotFoundError as e:
+        except ModuleNotFoundError:
             # probably in airflow 1.10.2?
             from airflow.api.common.experimental.pool import get_pools
 
@@ -250,7 +260,8 @@ def pools_report() -> Any:
 
 # noinspection SqlNoDataSourceInspection,PyBroadException
 @provide_session
-def dags_report(session) -> Any:
+def dags_report(session):
+    # type: (Any) -> List[dict]
     from airflow.models import DagModel, TaskInstance
     from sqlalchemy import distinct, func, literal_column
 
@@ -324,7 +335,8 @@ conn_patterns = [
 ]
 
 
-def dag_varconn_usage(dag_path: str):
+def dag_varconn_usage(dag_path):
+    # type: (str) -> tuple
     var_results = set()
     conn_results = set()
     with open(dag_path) as f:
@@ -339,7 +351,8 @@ def dag_varconn_usage(dag_path: str):
 
 
 # noinspection PyProtectedMember,PyUnresolvedReferences
-def dag_complexity_report(dag_path: str):
+def dag_complexity_report(dag_path):
+    # type: (str) -> dict
     from radon.complexity import average_complexity, cc_rank, cc_visit
     from radon.metrics import mi_rank, mi_visit
     from radon.raw import analyze
@@ -354,7 +367,8 @@ def dag_complexity_report(dag_path: str):
 
 
 @provide_session
-def connections_report(session) -> List[str]:
+def connections_report(session):
+    # type: (Any) -> List[str]
     try:
         from airflow.models.connection import Connection
     except ModuleNotFoundError:
@@ -365,7 +379,8 @@ def connections_report(session) -> List[str]:
 
 
 @provide_session
-def variables_report(session) -> List[str]:
+def variables_report(session):
+    # type: (Any) -> List[str]
     try:
         from airflow.models.variable import Variable
     except:
@@ -374,7 +389,8 @@ def variables_report(session) -> List[str]:
     return [key for (key,) in session.query(Variable.key)]
 
 
-def days_ago(dialect: str, days: int) -> str:
+def days_ago(dialect, days):
+    # type: (str, int) -> str
     if dialect == "sqlite":
         return "DATE('now', '-{} days')".format(days)
     elif dialect == "mysql":
@@ -386,7 +402,8 @@ def days_ago(dialect: str, days: int) -> str:
 
 # noinspection SqlResolve
 @provide_session
-def usage_stats_report(session) -> Any:
+def usage_stats_report(session):
+    # type: (Any) -> Any
     dialect = session.bind.dialect.name
     sql = text(
         """
@@ -420,7 +437,8 @@ def usage_stats_report(session) -> Any:
 
 # noinspection SqlResolve
 @provide_session
-def user_report(session) -> Any:
+def user_report(session):
+    # type: (Any) -> dict
     from airflow.version import version
     from sqlalchemy.exc import OperationalError
 
