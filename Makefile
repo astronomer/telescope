@@ -10,11 +10,11 @@ TELESCOPE_TAG := "v$(TELESCOPE_VERSION)"
 #* Poetry
 .PHONY: poetry-download
 poetry-download:
-	curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | $(PYTHON) -
+	curl -sSL https://install.python-poetry.org | $(PYTHON) -
 
 .PHONY: poetry-remove
 poetry-remove:
-	curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | $(PYTHON) - --uninstall
+	curl -sSL https://install.python-poetry.org | $(PYTHON) - --uninstall
 
 #* Installation
 .PHONY: install
@@ -40,6 +40,10 @@ formatting: codestyle
 .PHONY: test
 test:
 	poetry run pytest -c pyproject.toml
+
+.PHONY: test-with-coverage
+test-with-coverage:
+	poetry run pytest -c pyproject.toml --cov=./ --cov-report=xml
 
 .PHONY: check-codestyle
 check-codestyle:

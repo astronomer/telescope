@@ -38,7 +38,7 @@ chmod +x telescope-mingw64_nt-10.0-20348-x86_64.exe
 ```
 
 # Installation Method 2) via PIP
-*Note: PIP installation requires Python >= 3.6*
+*Note: PIP installation requires Python >= 3.7*
 
 *optionally*, create a virtualenv called `venv` (or anything else ) in the current directory for easy cleanup
 ```shell
@@ -120,7 +120,7 @@ Options:
 
 # Requirements
 ## Locally - via PIP
-- Python >=3.6
+- Python >=3.7
 - `pip`
 
 ## Locally - Docker or Kubernetes or SSH Airflow Assessment modes
