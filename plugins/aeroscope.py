@@ -5,6 +5,7 @@ AWS Managed Apache Airflow - https://docs.aws.amazon.com/mwaa/latest/userguide/c
 from typing import Any, Dict, List, Union
 
 import base64
+import datetime
 import json
 import logging
 import socket
@@ -12,7 +13,7 @@ from contextlib import redirect_stderr, redirect_stdout
 from json import JSONDecodeError
 
 from airflow.plugins_manager import AirflowPlugin
-from flask import Blueprint
+from flask import Blueprint, Response, jsonify
 from flask_appbuilder import BaseView as AppBuilderBaseView
 from flask_appbuilder import expose
 
@@ -78,19 +79,20 @@ class Aeroscope(AppBuilderBaseView):
         s = io.StringIO()
         with redirect_stdout(s), redirect_stderr(s):
             runpy.run_path(a)
-        return {
-            "local": {
-                f"aeroscope_{socket.gethostname()}": {"airflow_report": clean_airflow_report_output(s.getvalue())}
-            }
+        date = datetime.datetime.utcnow().isoformat()[:10]
+        content = {
+            "telescope_version": "aeroscope",
+            "report_date": date,
+            "organization_name": "aeroscope",
+            "local": {socket.gethostname(): {"airflow_report": clean_airflow_report_output(s.getvalue())}},
         }
+        filename = f"{date}.aeroscope.data.json"
+        return Response(
+            content, mimetype="application/json", headers={"Content-Disposition": f"attachment;filename={filename}"}
+        )
 
 
 v_appbuilder_view = Aeroscope()
-v_appbuilder_package = {
-    "name": "View Results",
-    "category": "Aeroscope",
-    "view": v_appbuilder_view,
-}
 
 
 # Defining the plugin class
@@ -101,15 +103,10 @@ class AirflowTestPlugin(AirflowPlugin):
     flask_blueprints = [bp]
     appbuilder_views = [
         {
-            "name": "View Results",
+            "name": "Download Results",
             "category": "Aeroscope",
             "view": v_appbuilder_view,
         },
-        # {
-        # "name": "Send Results",
-        # "category": "Aeroscope",
-        # "view": v_appbuilder_view,
-        # }
     ]
     appbuilder_menu_items = []
     global_operator_extra_links = []
