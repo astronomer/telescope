@@ -72,14 +72,14 @@ class Aeroscope(AppBuilderBaseView):
     def aeroscope(self):
         import io
         import runpy
-        from urllib.request import urlretrieve as u
+        from urllib.request import urlretrieve
 
         a = "airflow_report.pyz"
-        u("https://github.com/astronomer/telescope/releases/latest/download/airflow_report.pyz", a)
+        urlretrieve("https://github.com/astronomer/telescope/releases/latest/download/airflow_report.pyz", a)
         s = io.StringIO()
         with redirect_stdout(s), redirect_stderr(s):
             runpy.run_path(a)
-        date = datetime.datetime.utcnow().isoformat()[:10]
+        date = datetime.datetime.now(datetime.timezone.utc).isoformat()[:10]
         content = {
             "telescope_version": "aeroscope",
             "report_date": date,
@@ -88,7 +88,9 @@ class Aeroscope(AppBuilderBaseView):
         }
         filename = f"{date}.aeroscope.data.json"
         return Response(
-            content, mimetype="application/json", headers={"Content-Disposition": f"attachment;filename={filename}"}
+            json.dumps(content),
+            mimetype="application/json",
+            headers={"Content-Disposition": f"attachment;filename={filename}"},
         )
 
 
