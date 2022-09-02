@@ -141,6 +141,8 @@ def configuration_report():
         "AIRFLOW__CELERY__FLOWER_BASIC_AUTH",
         "AIRFLOW__CELERY__RESULT_BACKEND",
         "AIRFLOW__CORE__SQL_ALCHEMY_CONN",
+        "AIRFLOW__CORE__FERNET_KEY",
+        "AIRFLOW__ELASTICSEARCH__HOST",
     }
 
     for section, options in conf.as_dict(display_source=True, display_sensitive=True).items():
