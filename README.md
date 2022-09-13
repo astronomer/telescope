@@ -246,7 +246,8 @@ This is helpful in instances where shell access is unable to be acquired - such 
 To install Telescope this way upload the [Aeroscope plugin](plugins/aeroscope.py) based on your normal method of installing plugins. 
 - Google Cloud Composer - https://cloud.google.com/composer/docs/concepts/plugins
 - AWS Managed Apache Airflow - https://docs.aws.amazon.com/mwaa/latest/userguide/configuring-dag-import-plugins.html
-
+    - :no_entry: **MWAA Does not allow [Webserver plugins prior to Airflow version 2.2.2](https://docs.aws.amazon.com/mwaa/latest/userguide/configuring-dag-import-plugins.html#configuring-dag-plugins-overview)** :no_entry: this method does not work with earlier versions
+    > Note: For environments using Apache Airflow v1.10.12 or v2.0.2, Amazon MWAA limits outbound traffic on the Apache Airflow web server, and does not allow you to install plugins nor Python dependencies directly on the web server. Starting with Apache Airflow v2.2.2, Amazon MWAA can install plugins and dependencies directly on the web server.
 
 
 # Install from Source
