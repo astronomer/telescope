@@ -11,6 +11,7 @@ import logging
 import socket
 from contextlib import redirect_stderr, redirect_stdout
 from json import JSONDecodeError
+
 from airflow.models.baseoperator import BaseOperator
 from airflow.plugins_manager import AirflowPlugin
 from flask import Blueprint, Response, jsonify
