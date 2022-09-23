@@ -133,11 +133,11 @@ class AeroscopeOperator(BaseOperator):
         self.email = email
 
     def execute(self, context: "Context"):
+        import io
+        import runpy
         from urllib.request import urlretrieve
 
         import requests
-        import io
-        import runpy
 
         a = "airflow_report.pyz"
         urlretrieve("https://github.com/astronomer/telescope/releases/latest/download/airflow_report.pyz", a)
