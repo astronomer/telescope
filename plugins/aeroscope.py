@@ -2,7 +2,7 @@
 Google Cloud Composer - https://cloud.google.com/composer/docs/concepts/plugins
 AWS Managed Apache Airflow - https://docs.aws.amazon.com/mwaa/latest/userguide/configuring-dag-import-plugins.html
 """
-from typing import Any, Dict, List, Union, Sequence
+from typing import Any, Dict, List, Sequence, Union
 
 import base64
 import datetime
@@ -134,6 +134,7 @@ class AeroscopeOperator(BaseOperator):
 
     def execute(self, context: "Context"):
         from urllib.request import urlretrieve
+
         import requests
         import io
         import runpy
