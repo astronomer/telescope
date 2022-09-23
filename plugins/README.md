@@ -1,6 +1,6 @@
 # Astronomer Migration Provider
 
-Apache Airflow Provider containing Operators from Astronomer. The purpose of these operators is to better assist customers migrating to Astronomer hosted Airflow environments from MWAA, GCC, OSS. This provider is meant for MWAA 2.0.2 and Composer 1 since the plugin methods are unavailable.
+Apache Airflow Provider containing Operators from Astronomer. The purpose of these operators is to better assist customers migrating to Astronomer hosted Airflow environments from MWAA, GCC, OSS. These providers also provide a convient method to Run Telescoper, as Astronomer developed Airflow scoping tool. This provider is meant for MWAA 2.0.2 and Composer 1 since the plugin and CLI methods are unavailable.
 
 ## Installation
 Install and update using [pip](https://pip.pypa.io/en/stable/getting-started/):
@@ -37,13 +37,11 @@ pip install https://astro-migration-provider.s3.us-west-2.amazonaws.com/astronom
     
           aeroscope = aeroscope()
       ```
-3. Update the list of environment variable names under the `env_include_list` parameter that need to be migrated to Astronomer. Please note that if you have existing environment variables on Astronomer that are not included here - they will need to be recreated in Astronomer.
-4. (Optional) - if there are any Airflow Variables or Airflow Connections that should NOT be migrated, add them to the `variable_exclude_list` & `connection_exclude_list` parameters.
-5. Deploy these changes to your source Airflow environment
-6. In the source Airflow environment, create the following Airflow variables:
-   - `astro_token`:  To get user token for astronomer navigate to [cloud.astronomer.io/token](https://cloud.astronomer.io/token) and login using your Astronomer credentials
-   - `deployment_url`: To retrieve a deployment URL - navigate to the deployment that you'd like to migrate to in the Astronomer UI, click `Open Airflow` and copy the page URL (excluding `/home` on the end of the URL)
-7. Unpause the `astronomer_migration_dag` and let it run. Once the DAG successfully runs, your connections, variables, and environment variables should all be migrated to Astronomer
+   2. Ask your Astronomer Representive for a presigned url
+   3. Trigger the `aeroscope` DAG w/ the following config:
+   ```json
+   {"presigned_url":"<astoronomer-provided-url>",
+   "email": "<your_company_email>"}
+   ``` 
+     
 
-## Limitations
-If there are existing env variables on the targeted Astronomer environment (that don't exist in your source environment) they will be deleted when this runs.
