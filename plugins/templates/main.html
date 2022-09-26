@@ -1,8 +1,16 @@
- <form method="post">
-  <label for="company">Company:</label>
-  <input type="text" id="company" name="company"><br><br>
-  <label for="email">Email:</label>
-  <input type="text" id="email" name="email"><br><br>
-   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>.
-  <input type="submit" value="Download">
+{% from "formhelper.html" import render_field %}
+<form method="post">
+    <dl>
+    {{ render_field(form.company) }}
+    {{ render_field(form.email) }}
+<input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+  </dl>
+  <p><input type=submit name="action" value=Download>
+    <input type="submit" name="action" value="Back to Airflow">
+<!--  <label for="company">Company:</label>-->
+<!--  <input type="text" id="company" name="company"><br><br>-->
+<!--  <label for="email">Email:</label>-->
+<!--  <input type="text" id="email" name="email"><br><br>-->
+<!--   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>.-->
+<!--  <input type="submit" value="Download">-->
 </form>

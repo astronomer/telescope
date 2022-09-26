@@ -2,7 +2,7 @@
 Google Cloud Composer - https://cloud.google.com/composer/docs/concepts/plugins
 AWS Managed Apache Airflow - https://docs.aws.amazon.com/mwaa/latest/userguide/configuring-dag-import-plugins.html
 """
-from typing import Any, Dict, List, Union, Sequence
+from typing import Any, Dict, List, Sequence, Union
 
 import base64
 import datetime
@@ -11,11 +11,14 @@ import logging
 import socket
 from contextlib import redirect_stderr, redirect_stdout
 from json import JSONDecodeError
+
+from airflow.configuration import conf
 from airflow.models.baseoperator import BaseOperator
 from airflow.plugins_manager import AirflowPlugin
-from flask import Blueprint, Response, jsonify, request
+from flask import Blueprint, Response, jsonify, redirect, request
 from flask_appbuilder import BaseView as AppBuilderBaseView
 from flask_appbuilder import expose
+from wtforms import Form, StringField, validators
 
 bp = Blueprint(
     "aeroscope",
@@ -24,6 +27,11 @@ bp = Blueprint(
     static_folder="static",
     static_url_path="/static/aeroscope",
 )
+
+
+class AeroForm(Form):
+    company = StringField("Company", [validators.Length(min=4, max=25)])
+    email = StringField("Email Address", [validators.Email()])
 
 
 def clean_airflow_report_output(log_string: str) -> Union[dict, str]:
@@ -68,10 +76,10 @@ log = logging.getLogger(__name__)
 class Aeroscope(AppBuilderBaseView):
     default_view = "aeroscope"
 
-    @expose("/",
-        methods=("GET", "POST"))
+    @expose("/", methods=("GET", "POST"))
     def aeroscope(self):
-        if request.method== "POST":
+        form = AeroForm(request.form)
+        if request.method == "POST" and form.validate() and request.form["action"] == "Download":
 
             import io
             import runpy
@@ -84,21 +92,27 @@ class Aeroscope(AppBuilderBaseView):
                 runpy.run_path(a)
             date = datetime.datetime.now(datetime.timezone.utc).isoformat()[:10]
             content = {
-                "company": request.form["company"],
-                "email":request.form["email"],
+                # "form":form,
+                "company": form.company.data,
+                "email": form.email.data,
+                # "comany": request.form
                 "telescope_version": "aeroscope",
                 "report_date": date,
                 "organization_name": "aeroscope",
                 "local": {socket.gethostname(): {"airflow_report": clean_airflow_report_output(s.getvalue())}},
             }
-            filename = f"{date}.aeroscope.data.json"
+            filename = f"{form.company.data}-{date}.aeroscope.data.json"
+            # flash('Downloading')
             return Response(
                 json.dumps(content),
                 mimetype="application/json",
                 headers={"Content-Disposition": f"attachment;filename={filename}"},
             )
-        elif request.method == "GET":
-            return self.render_template('main.html')
+        elif request.method == "POST" and request.form["action"] == "Back to Airflow":
+            return redirect(conf.get("webserver", "base_url"))
+
+        else:
+            return self.render_template("main.html", form=form)
 
 
 v_appbuilder_view = Aeroscope()
@@ -127,21 +141,25 @@ class AeroscopeOperator(BaseOperator):
         "presigned_url",
         "email",
     )
-    def __init__(self,
-                 *,
-                 presigned_url,
-                 email,
-                **kwargs,
-                 ):
+
+    def __init__(
+        self,
+        *,
+        presigned_url,
+        email,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
-        self.presigned_url=presigned_url
+        self.presigned_url = presigned_url
         self.email = email
 
     def execute(self, context: "Context"):
-        from urllib.request import urlretrieve
-        import requests
         import io
         import runpy
+        from urllib.request import urlretrieve
+
+        import requests
+
         a = "airflow_report.pyz"
         urlretrieve("https://github.com/astronomer/telescope/releases/latest/download/airflow_report.pyz", a)
         s = io.StringIO()
@@ -153,11 +171,11 @@ class AeroscopeOperator(BaseOperator):
             "report_date": date,
             "organization_name": "aeroscope",
             "local": {socket.gethostname(): {"airflow_report": clean_airflow_report_output(s.getvalue())}},
-            "user_email":self.email,
+            "user_email": self.email,
         }
-        s3=requests.put(self.presigned_url, data=json.dumps(content))
+        s3 = requests.put(self.presigned_url, data=json.dumps(content))
         if s3.ok:
-            return 'success'
+            return "success"
         else:
             raise ValueError(f"upload failed  with code {s3.status_code}::{s3.json()}")
         # return json.dumps(content)
