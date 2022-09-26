@@ -1,0 +1,8 @@
+ <form method="post">
+  <label for="company">Company:</label>
+  <input type="text" id="company" name="company"><br><br>
+  <label for="email">Email:</label>
+  <input type="text" id="email" name="email"><br><br>
+   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>.
+  <input type="submit" value="Submit">
+</form>

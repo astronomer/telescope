@@ -2,7 +2,7 @@
 Google Cloud Composer - https://cloud.google.com/composer/docs/concepts/plugins
 AWS Managed Apache Airflow - https://docs.aws.amazon.com/mwaa/latest/userguide/configuring-dag-import-plugins.html
 """
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Sequence
 
 import base64
 import datetime
@@ -11,9 +11,9 @@ import logging
 import socket
 from contextlib import redirect_stderr, redirect_stdout
 from json import JSONDecodeError
-
+from airflow.models.baseoperator import BaseOperator
 from airflow.plugins_manager import AirflowPlugin
-from flask import Blueprint, Response, jsonify
+from flask import Blueprint, Response, jsonify, request
 from flask_appbuilder import BaseView as AppBuilderBaseView
 from flask_appbuilder import expose
 
@@ -68,30 +68,37 @@ log = logging.getLogger(__name__)
 class Aeroscope(AppBuilderBaseView):
     default_view = "aeroscope"
 
-    @expose("/")
+    @expose("/",
+        methods=("GET", "POST"))
     def aeroscope(self):
-        import io
-        import runpy
-        from urllib.request import urlretrieve
+        if request.method== "POST":
 
-        a = "airflow_report.pyz"
-        urlretrieve("https://github.com/astronomer/telescope/releases/latest/download/airflow_report.pyz", a)
-        s = io.StringIO()
-        with redirect_stdout(s), redirect_stderr(s):
-            runpy.run_path(a)
-        date = datetime.datetime.now(datetime.timezone.utc).isoformat()[:10]
-        content = {
-            "telescope_version": "aeroscope",
-            "report_date": date,
-            "organization_name": "aeroscope",
-            "local": {socket.gethostname(): {"airflow_report": clean_airflow_report_output(s.getvalue())}},
-        }
-        filename = f"{date}.aeroscope.data.json"
-        return Response(
-            json.dumps(content),
-            mimetype="application/json",
-            headers={"Content-Disposition": f"attachment;filename={filename}"},
-        )
+            import io
+            import runpy
+            from urllib.request import urlretrieve
+
+            a = "airflow_report.pyz"
+            urlretrieve("https://github.com/astronomer/telescope/releases/latest/download/airflow_report.pyz", a)
+            s = io.StringIO()
+            with redirect_stdout(s), redirect_stderr(s):
+                runpy.run_path(a)
+            date = datetime.datetime.now(datetime.timezone.utc).isoformat()[:10]
+            content = {
+                "company": request.form["company"],
+                "email":request.form["email"],
+                "telescope_version": "aeroscope",
+                "report_date": date,
+                "organization_name": "aeroscope",
+                "local": {socket.gethostname(): {"airflow_report": clean_airflow_report_output(s.getvalue())}},
+            }
+            filename = f"{date}.aeroscope.data.json"
+            return Response(
+                json.dumps(content),
+                mimetype="application/json",
+                headers={"Content-Disposition": f"attachment;filename={filename}"},
+            )
+        elif request.method == "GET":
+            return self.render_template('main.html')
 
 
 v_appbuilder_view = Aeroscope()
@@ -113,3 +120,44 @@ class AirflowTestPlugin(AirflowPlugin):
     appbuilder_menu_items = []
     global_operator_extra_links = []
     operator_extra_links = []
+
+
+class AeroscopeOperator(BaseOperator):
+    template_fields: Sequence[str] = (
+        "presigned_url",
+        "email",
+    )
+    def __init__(self,
+                 *,
+                 presigned_url,
+                 email,
+                **kwargs,
+                 ):
+        super().__init__(**kwargs)
+        self.presigned_url=presigned_url
+        self.email = email
+
+    def execute(self, context: "Context"):
+        from urllib.request import urlretrieve
+        import requests
+        import io
+        import runpy
+        a = "airflow_report.pyz"
+        urlretrieve("https://github.com/astronomer/telescope/releases/latest/download/airflow_report.pyz", a)
+        s = io.StringIO()
+        with redirect_stdout(s), redirect_stderr(s):
+            runpy.run_path(a)
+        date = datetime.datetime.now(datetime.timezone.utc).isoformat()[:10]
+        content = {
+            "telescope_version": "aeroscope",
+            "report_date": date,
+            "organization_name": "aeroscope",
+            "local": {socket.gethostname(): {"airflow_report": clean_airflow_report_output(s.getvalue())}},
+            "user_email":self.email,
+        }
+        s3=requests.put(self.presigned_url, data=json.dumps(content))
+        if s3.ok:
+            return 'success'
+        else:
+            raise ValueError(f"upload failed  with code {s3.status_code}::{s3.json()}")
+        # return json.dumps(content)
