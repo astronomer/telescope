@@ -112,7 +112,7 @@ class AirflowTestPlugin(AirflowPlugin):
     flask_blueprints = [bp]
     appbuilder_views = [
         {
-            "name": "Download Results",
+            "name": "Aeroscope",
             "category": "Aeroscope",
             "view": v_appbuilder_view,
         },
