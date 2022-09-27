@@ -16,7 +16,7 @@ import requests
 from airflow.configuration import conf
 from airflow.models.baseoperator import BaseOperator
 from airflow.plugins_manager import AirflowPlugin
-from flask import Blueprint, Response, jsonify, redirect, request,flash
+from flask import Blueprint, Response, flash, jsonify, redirect, request
 from flask_appbuilder import BaseView as AppBuilderBaseView
 from flask_appbuilder import expose
 from wtforms import Form, StringField, validators
@@ -33,7 +33,7 @@ bp = Blueprint(
 class AeroForm(Form):
     company = StringField("Company", [validators.Length(min=4, max=25)])
     email = StringField("Email Address", [validators.Email()])
-    presigned_url = StringField("Presigned URL",[validators.URL(), validators.optional()])
+    presigned_url = StringField("Presigned URL", [validators.URL(), validators.optional()])
 
 
 def clean_airflow_report_output(log_string: str) -> Union[dict, str]:
@@ -103,19 +103,19 @@ class Aeroscope(AppBuilderBaseView):
                 "organization_name": "aeroscope",
                 "local": {socket.gethostname(): {"airflow_report": clean_airflow_report_output(s.getvalue())}},
             }
-            if len(form.presigned_url.data)>1:
-                upload=requests.put(form.presigned_url.data,data=json.dumps(content))
+            if len(form.presigned_url.data) > 1:
+                upload = requests.put(form.presigned_url.data, data=json.dumps(content))
                 if upload.ok:
                     flash("Upload successful")
                 else:
-                    flash(upload.reason,"error")
+                    flash(upload.reason, "error")
             filename = f"{form.company.data}-{date}.aeroscope.data.json"
             # flash('Downloading')
             return Response(
                 json.dumps(content),
                 mimetype="application/json",
                 headers={"Content-Disposition": f"attachment;filename={filename}"},
-                     )
+            )
             # return self.render_template("main.html",form=form)
         elif request.method == "POST" and request.form["action"] == "Back to Airflow":
             return redirect(conf.get("webserver", "base_url"))
@@ -127,6 +127,8 @@ class Aeroscope(AppBuilderBaseView):
     # def download(self,filename):
     #     uploads = os.path.join(current_app.root_path, app.config['UPLOAD_FOLDER'])
     #     return send_from_directory(directory=uploads, filename=filename)
+
+
 v_appbuilder_view = Aeroscope()
 
 
