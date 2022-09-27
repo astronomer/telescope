@@ -1,8 +1,18 @@
 {% from "formhelper.html" import render_field %}
+{% with messages = get_flashed_messages() %}
+  {% if messages %}
+    <ul class=flashes>
+    {% for message in messages %}
+      <li>{{ message }}</li>
+    {% endfor %}
+    </ul>
+  {% endif %}>
+{% endwith %}
 <form method="post">
     <dl>
     {{ render_field(form.company) }}
     {{ render_field(form.email) }}
+      {{ render_field(form.presigned_url) }}
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
   </dl>
   <p><input type=submit name="action" value=Download>
