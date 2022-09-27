@@ -9,10 +9,55 @@
   <img src="astro.png" alt="Astronomer Telescope Logo" />
 </p>
 
+# What is it?
 
-A tool to observe distant (or local!) Airflow installations, and gather metadata or other required data.
+Telescope is a tool to observe distant (or local!) Airflow installations, and gather metadata or other required data.
 
-Telescope is a CLI that runs on your workstation and accesses remote Airflows to collect a common set of data.
+It is a CLI that runs on your workstation and accesses remote Airflows to collect a common set of data.
+
+Optionally, it can be installed and run as an Airflow plugin.
+
+## Why ?
+
+Telescope has been purpose-built to help administrators understand fully their Airflow install and assist with migrations.
+
+## Main features
+- Analyze your Airflow deployment and execution environment to provide a snapshot of all configurations.
+- Summarizes Airflow-specific settings (variables, connections, pools, etc.)
+- Generates a report of runtime configurations (airflow.cfg)
+- Generates a DAGs report including code quality metrics, execution statistics and more.
+- Can be run on most deployment environments (Docker, Kubernetes, SSH Remote) and Airflow versions.
+- Security and anonymity are built-in.
+  - Kubernetes sensitive values are redacted.
+  - Individual user information and secrets are never accessed.
+  - Reports can be parameterized to obfuscate DAG IDs and filenames.
+
+# Data Collected
+The following Data is collected:
+
+## `cluster_info`
+When run using `kubernetes`, cluster info is attained from the Nodes - including allocated and max CPU and Memory, number of nodes, and kubelet version
+
+## `verify`
+When run using `kubernetes`, Helm chart information for charts named like `astronomer` or `airflow` is fetched, sensitive values are redacted.
+
+## `Airflow Report`
+This information is saved under the `airflow_report` key, under the `host_type` key and the host key. E.g. `kubernetes.mynamespace|myhost-1234-xyz.airflow_report` or `ssh.my_hostname.airflow_report`
+
+Using python `airflow_report.pyz` is downloaded and executed on the remote host (the host or container running the airflow scheduler). The performance impact of this report is negligible
+- `airflow.version.version` output to determine Airflow's version
+- `airflow.providers_manager.ProvidersManager`'s output, to determine what providers and versions are installed
+- `socket.gethostname()` to determine the hostname
+- `pkg_resources` to determine installed python packages and versions
+- `airflow.configuration.conf` to determine Airflow configuration settings and what is modified from defaults. Sensitive values are redacted
+- `os.environ` to determine what airflow settings, variables, and connections are set via ENV vars. Names only
+- the `pools` table is retrieved to list Airflow pools and sizes from the Airflow metadata db
+- the `dag` table is inspected from the Airflow metadata db
+  - `dags` are read off disk to attain variable and connection names, utilizing the filepath from the `dags` table
+- the `connection` table is fetched from the Airflow metadata db
+- the `variable` table is fetched from the Airflow metadata db
+- the `ab_user` table is fetched from the Airflow metadata db
+- the `task_instance` table is analyzed from the Airflow metadata db
 
 # Installation Method 1) via Binary
 
@@ -184,6 +229,29 @@ ssh:
     connect_kwargs: {"key_filename":"/full/path/to/id_rsa"}
 ```
 
+# Output
+## `*.data.json`
+The name of this file can vary depending on what options were passed to the tool.
+There is an intermediate output ending in `*.data.json` which contains all data gathered, and is utilized to generate the report outputs.
+
+### Output file includes the following sections:
+
+| Report                    | Description                                                                              |
+|---------------------------|------------------------------------------------------------------------------------------|
+| airflow version report    | Airflow Deployment version                                                               |
+| configuration report      | Airflow runtime configuration (airflow.cfg)                                              |
+| connections report        | List of all Airflow connections (IDs only)                                               |
+| dags report               | List of DAGs, including code quality metrics                                             |
+| env vars report           | List of airflow-related environment variables                                            |
+| hostname report           | Airflow Hostname configuration                                                           |
+| installed packages report | List of all installed packages                                                           |
+| pools report              | List of Airflow pools and associated configuration                                       |
+| providers report          | List of all installed providers                                                          |
+| usage stats report        | Execution statistics (success & failures) over the last 1, 7, 30, 365 days and all time. |
+| user report               | Number of active users over the last 1, 7, 30 and 365 days                               |
+| variables report          | List of all Airflow variables (keys only)                                                |
+
+
 # Extra Functionality
 ## Label Selection
 `--label-selector` allows Kubernetes Autodiscovery to locate Airflow Deployments with alternate key/values.
@@ -269,40 +337,8 @@ cd telescope
 python -m telescope ...
 ```
 
-# Data Collected
-The following Data is collected:
-
-## `cluster_info`
-When run using `kubernetes`, cluster info is attained from the Nodes - including allocated and max CPU and Memory, number of nodes, and kubelet version
-
-## `verify`
-When run using `kubernetes`, Helm chart information for charts named like `astronomer` or `airflow` is fetched, sensitive values are redacted.
-
-## `Airflow Report`
-This information is saved under the `airflow_report` key, under the `host_type` key and the host key. E.g. `kubernetes.mynamespace|myhost-1234-xyz.airflow_report` or `ssh.my_hostname.airflow_report`
-
-Using python `airflow_report.pyz` is downloaded and executed on the remote host (the host or container running the airflow scheduler). The performance impact of this report is negligible
-- `airflow.version.version` output to determine Airflow's version
-- `airflow.providers_manager.ProvidersManager`'s output, to determine what providers and versions are installed
-- `socket.gethostname()` to determine the hostname
-- `pkg_resources` to determine installed python packages and versions
-- `airflow.configuration.conf` to determine Airflow configuration settings and what is modified from defaults. Sensitive values are redacted
-- `os.environ` to determine what airflow settings, variables, and connections are set via ENV vars. Names only
-- the `pools` table is retrieved to list Airflow pools and sizes from the Airflow metadata db
-- the `dag` table is inspected from the Airflow metadata db
-  - `dags` are read off disk to attain variable and connection names, utilizing the filepath from the `dags` table
-- the `connection` table is fetched from the Airflow metadata db
-- the `variable` table is fetched from the Airflow metadata db
-- the `ab_user` table is fetched from the Airflow metadata db
-- the `task_instance` table is analyzed from the Airflow metadata db
-
-# Output
-## `*.data.json`
-The name of this file can vary depending on what options were passed to the tool.
-There is an intermediate output ending in `*.data.json` which contains all data gathered, and is utilized to generate the report outputs.
-
 # Compatibility Matrix
-Telescope is been tested against the following Airflow versions:
+Telescope is being tested against the following Airflow versions:
 ```shell
 "apache/airflow:2.3.4"
 "apache/airflow:2.2.4"
