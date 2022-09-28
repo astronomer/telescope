@@ -11,6 +11,7 @@ import logging
 import socket
 from contextlib import redirect_stderr, redirect_stdout
 from json import JSONDecodeError
+
 import requests
 from airflow.configuration import conf
 from airflow.models.baseoperator import BaseOperator
