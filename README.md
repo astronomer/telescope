@@ -305,15 +305,11 @@ fileloc="/a/b/c/d/filepath.py" -> "th.py"
 - `LOG_LEVEL=DEBUG` - can be any support Python logging level `[CRITICAL, FATAL, ERROR, WARN, WARNING, INFO, DEBUG, NOTSET]`
 - `TELESCOPE_SHOULD_VERIFY=false` - turn off helm chart collection - required to gather some data about Airflow in Kubernetes
 
-# Install as an Airflow Plugin
-Telescope can also be installed as an Airflow plugin. 
+# Alternative Methods 
+Telescope can also be installed as an Airflow plugin and has an `AeroscopeOperator` 
 This is helpful in instances where shell access is unable to be acquired - such as with Google Cloud Composer (GCC) or AWS' Managed Apache Airflow (MWAA).
 
-To install Telescope this way upload the [Aeroscope plugin](plugins/aeroscope.py) based on your normal method of installing plugins. 
-- Google Cloud Composer - https://cloud.google.com/composer/docs/concepts/plugins
-- AWS Managed Apache Airflow - https://docs.aws.amazon.com/mwaa/latest/userguide/configuring-dag-import-plugins.html
-    - :no_entry: **MWAA Does not allow [Webserver plugins prior to Airflow version 2.2.2](https://docs.aws.amazon.com/mwaa/latest/userguide/configuring-dag-import-plugins.html#configuring-dag-plugins-overview)** :no_entry: this method does not work with earlier versions
-    > Note: For environments using Apache Airflow v1.10.12 or v2.0.2, Amazon MWAA limits outbound traffic on the Apache Airflow web server, and does not allow you to install plugins nor Python dependencies directly on the web server. Starting with Apache Airflow v2.2.2, Amazon MWAA can install plugins and dependencies directly on the web server.
+To install Telescope this way, please review instructions [here](./aeroscope/README.md).
 
 
 # Install from Source
