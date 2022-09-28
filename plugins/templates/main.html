@@ -1,14 +1,20 @@
 {% from "formhelper.html" import render_field %}
-{% with messages = get_flashed_messages() %}
-  {% if messages %}
-    <ul class=flashes>
-    {% for message in messages %}
-      <li>{{ message }}</li>
-    {% endfor %}
-    </ul>
-  {% endif %}>
-{% endwith %}
+<!--{% with messages = get_flashed_messages() %}-->
+<!--  {% if messages %}-->
+<!--    <ul class=flashes>-->
+<!--    {% for message in messages %}-->
+<!--      <li>{{ message }}</li>-->
+<!--    {% endfor %}-->
+<!--    </ul>-->
+<!--  {% endif %}>-->
+<!--{% endwith %}-->
+<title>Aeroscope</title>
 <form method="post">
+  <p>This is a utility for running telescope in a single airflow instance. You can read more about telescope
+<a href="https://github.com/astronomer/telescope">here</a>.<br>
+    The Presigned url field is optional and is to be supplied by an Astronomer Representive.<br>
+    If the Presigned URL is used the results of the telescope report is shipped to Astronomer
+  </p>
     <dl>
     {{ render_field(form.organization) }}
       {{ render_field(form.presigned_url) }}
