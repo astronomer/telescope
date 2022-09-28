@@ -103,11 +103,24 @@ package-pyinstaller: dist-remove
 	cp dist/telescope telescope-$(shell uname -s | awk '{print tolower($$0)}' )-$(shell uname -m)
 
 .PHONY: build
-build: build-remove
+build: build-remove dist-remove
 	poetry build
-	mv dist/telescope*.whl .
+	cp dist/astronomer_telescope*.whl .
 
-.PHONY: delete_tag
+.PHONY: publish_test
+publish_test: build
+	# Note: you first need to run
+	# `poetry config repositories.testpypi https://test.pypi.org/legacy/`
+	# and `poetry config pypi-token.pypi pypi-A.............` with a token
+	poetry publish --repository testpypi --skip-existing -n
+
+.PHONY: publish
+publish: build
+	# Note: you first need to run
+	# `poetry config pypi-token.pypi pypi-A.............` with a token
+	poetry publish --skip-existing -n
+
+.PHONY: delete-tag
 delete-tag:
 	- git tag -d $(TELESCOPE_TAG)
 	- git push origin --delete $(TELESCOPE_TAG)
