@@ -32,7 +32,7 @@ bp = Blueprint(
 
 class AeroForm(Form):
     organization = StringField("Organization", [validators.Length(min=4, max=25)])
-    presigned_url = StringField("Presigned URL", [validators.URL(), validators.optional()])
+    presigned_url = StringField("Presigned URL (optional)", [validators.URL(), validators.optional()])
 
 
 def clean_airflow_report_output(log_string: str) -> Union[dict, str]:
@@ -104,7 +104,7 @@ class Aeroscope(AppBuilderBaseView):
                     flash("Upload successful")
                 else:
                     flash(upload.reason, "error")
-            filename = f"{form.organization.data}-{date}.aeroscope.data.json"
+            filename = f"{date}.{form.organization.data}.data.json"
             # flash('Downloading')
             return Response(
                 json.dumps(content),
