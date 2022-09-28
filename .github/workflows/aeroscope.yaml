@@ -2,7 +2,7 @@ name: aeroscope
 on: [push]
 jobs:
   build-publish:
-    if: startsWith(github.ref, 'refs/tags/aeroscope-v') }}
+    if: startsWith(github.ref, 'refs/tags/aeroscope-v')
     runs-on: "ubuntu-latest"
     defaults:
       run:
