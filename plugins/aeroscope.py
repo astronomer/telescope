@@ -31,8 +31,7 @@ bp = Blueprint(
 
 
 class AeroForm(Form):
-    company = StringField("Company", [validators.Length(min=4, max=25)])
-    email = StringField("Email Address", [validators.Email()])
+    organization = StringField("Organization", [validators.Length(min=4, max=25)])
     presigned_url = StringField("Presigned URL", [validators.URL(), validators.optional()])
 
 
@@ -94,13 +93,9 @@ class Aeroscope(AppBuilderBaseView):
                 runpy.run_path(a)
             date = datetime.datetime.now(datetime.timezone.utc).isoformat()[:10]
             content = {
-                # "form":form,
-                "company": form.company.data,
-                "email": form.email.data,
-                # "comany": request.form
                 "telescope_version": "aeroscope",
                 "report_date": date,
-                "organization_name": "aeroscope",
+                "organization_name": form.organization.data,
                 "local": {socket.gethostname(): {"airflow_report": clean_airflow_report_output(s.getvalue())}},
             }
             if len(form.presigned_url.data) > 1:
@@ -109,7 +104,7 @@ class Aeroscope(AppBuilderBaseView):
                     flash("Upload successful")
                 else:
                     flash(upload.reason, "error")
-            filename = f"{form.company.data}-{date}.aeroscope.data.json"
+            filename = f"{form.organization.data}-{date}.aeroscope.data.json"
             # flash('Downloading')
             return Response(
                 json.dumps(content),
