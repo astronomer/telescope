@@ -26,5 +26,4 @@ jobs:
 
     - name: Aeroscope - Build + Deploy
       run: |
-        cd aeroscope && make build
         cd aeroscope && make publish
