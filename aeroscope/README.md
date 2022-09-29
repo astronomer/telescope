@@ -33,6 +33,10 @@ with DAG(
   )
 ```
 - Trigger the `astronomer_aeroscope` DAG with the configuration given by your Astronomer Representative
-   
 
-     
+```
+{
+	"presigned_url": "presigned-url-here",
+	"organization": "organization-name-here"
+}
+```
