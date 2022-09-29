@@ -625,6 +625,8 @@ report.*
 airflow_report.pyz
 telescope*.whl
 telescope-*
+astronomer_telescope*.whl
+astronomer_telescope-*
 
 report_output.xlsx
 report_summary.txt

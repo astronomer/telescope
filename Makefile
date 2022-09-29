@@ -103,9 +103,10 @@ package-pyinstaller: dist-remove
 	cp dist/telescope telescope-$(shell uname -s | awk '{print tolower($$0)}' )-$(shell uname -m)
 
 .PHONY: build
-build: build-remove dist-remove
+build: build-remove
 	poetry build
-	cp dist/astronomer_telescope*.whl .
+	mv dist/telescope*.whl .
+
 
 .PHONY: publish_test
 publish_test: build

@@ -26,5 +26,6 @@ jobs:
 
     - name: Aeroscope - Build + Deploy
       run: |
-        cd aeroscope && make build
         cd aeroscope && make publish
+      env:
+        POETRY_PYPI_TOKEN_PYPI: ${{ secrets.POETRY_PYPI_TOKEN_PYPI }}

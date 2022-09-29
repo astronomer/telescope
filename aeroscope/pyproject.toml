@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "astronomer-aeroscope"
-version = "0.1.4"
+version = "0.9.0"
 description = "An Airflow Plugin and Operator for alternative methods of running Telescope"
 authors = ["telescope <cse@astronomer.io>"]
 license = "Proprietary"
