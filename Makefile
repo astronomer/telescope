@@ -98,8 +98,9 @@ package-pyinstaller: dist-remove
 	poetry run python -m PyInstaller --onefile --noconfirm --clean --specpath dist --name telescope \
 		--hidden-import telescope.getters.kubernetes_client \
 		--hidden-import telescope.getters.docker_client \
-		--recursive-copy-metadata telescope \
 		telescope/__main__.py
+#		--recursive-copy-metadata astronomer-telescope \
+
 	cp dist/telescope telescope-$(shell uname -s | awk '{print tolower($$0)}' )-$(shell uname -m)
 
 .PHONY: build
