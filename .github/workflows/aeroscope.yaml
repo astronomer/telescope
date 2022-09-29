@@ -29,3 +29,9 @@ jobs:
         cd aeroscope && make publish
       env:
         POETRY_PYPI_TOKEN_PYPI: ${{ secrets.POETRY_PYPI_TOKEN_PYPI }}
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        prerelease: true
+        generate_release_notes: true
