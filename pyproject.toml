@@ -4,13 +4,15 @@ requires = ["poetry_core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "telescope"
-version = "2.0.9"
+name = "astronomer-telescope"
+version = "2.1.0"
 description = "A tool to observe distant (or local!) Airflow installations, and gather metadata or other required data."
 readme = "README.md"
-authors = ["telescope <solutions@astronomer.io>"]
-repository = "https://github.com/telescope/telescope"
-homepage = "https://github.com/telescope/telescope"
+authors = ["telescope <cse@astronomer.io>"]
+repository = "https://github.com/astronomer/telescope"
+homepage = "https://github.com/astronomer/telescope"
+license = "Proprietary"
+packages = [{include='telescope'}]
 
 [tool.poetry.scripts]
 # Entry points for the package https://python-poetry.org/docs/pyproject/#scripts

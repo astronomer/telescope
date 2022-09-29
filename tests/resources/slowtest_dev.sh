@@ -4,7 +4,7 @@ rm -rf dev
 virtualenv dev
 source  dev/bin/activate
 set -x
-python -m pip install telescope poetry --find-links https://github.com/astronomer/telescope/releases/tag/v$(poetry version --short)
+python -m pip install astronomer-telescope==$(poetry version --short)
 
 LOG_LEVEL=DEBUG TELESCOPE_REPORT_RELEASE_VERSION=$(poetry version --short) telescope --kubernetes --docker --local -n Astronomer
 
