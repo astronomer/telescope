@@ -15,12 +15,12 @@ from click import Path, echo
 from click.exceptions import Exit, UsageError
 from halo import Halo
 
-import telescope
-from telescope.config import AIRGAPPED, REPORT_PACKAGE, REPORT_PACKAGE_URL
-from telescope.functions.astronomer_enterprise import get_helm_info
-from telescope.functions.cluster_info import cluster_info
-from telescope.getter_util import gather_getters, get_from_getter
-from telescope.getters.kubernetes import KubernetesGetter
+import astronomer_telescope
+from astronomer_telescope.config import AIRGAPPED, REPORT_PACKAGE, REPORT_PACKAGE_URL
+from astronomer_telescope.functions.astronomer_enterprise import get_helm_info
+from astronomer_telescope.functions.cluster_info import cluster_info
+from astronomer_telescope.getter_util import gather_getters, get_from_getter
+from astronomer_telescope.getters.kubernetes import KubernetesGetter
 
 log = logging.getLogger(__name__)
 log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))
@@ -34,7 +34,7 @@ fd = {"show_default": True, "show_envvar": True, "is_flag": True}
 def version(ctx, self, value):
     if not value or ctx.resilient_parsing:
         return
-    echo(f"Telescope, version {telescope.version}")
+    echo(f"Telescope, version {astronomer_telescope.version}")
     ctx.exit()
 
 
@@ -121,7 +121,11 @@ def cli(
         organization_name = click.prompt("Organization Name", type=str)
 
     # Initialize data with a few items
-    data = {"report_date": date, "telescope_version": telescope.version, "organization_name": organization_name}
+    data = {
+        "report_date": date,
+        "telescope_version": astronomer_telescope.version,
+        "organization_name": organization_name,
+    }
 
     # if the data file name wasn't given - assemble it
     if not data_file:

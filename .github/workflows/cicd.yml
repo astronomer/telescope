@@ -60,7 +60,7 @@ jobs:
         python-version: ["3.9"]
         os: ["ubuntu-18.04", "windows-latest", "macos-latest"]
     runs-on: ${{ matrix.os }}
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/v')
     defaults:
       run:
         shell: bash
@@ -95,11 +95,14 @@ jobs:
     - name: Install library
       run: poetry install --no-interaction
 
-    - name: Build wheel and report
+    - name: Build wheel and report, push to pypi
       if: matrix.os == 'ubuntu-18.04'
       run: |
         make build
         make package-report
+        make publish
+      env:
+        POETRY_PYPI_TOKEN_PYPI: ${{ secrets.POETRY_PYPI_TOKEN_PYPI }}
 
     - uses: actions/upload-artifact@v3
       if: matrix.os == 'ubuntu-18.04'
@@ -118,7 +121,7 @@ jobs:
   release:
     needs: build
     runs-on: "ubuntu-latest"
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
     - uses: actions/download-artifact@v3

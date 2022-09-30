@@ -5,17 +5,16 @@ import gzip
 import json
 import logging
 
-from invoke import run
 from lazyimport import lazyimport
 
-from telescope.util import deep_clean, get_json_or_clean_str
+from astronomer_telescope.util import deep_clean
 
 lazyimport(
     globals(),
     """
-from telescope.getters.kubernetes_client import kube_client
-from telescope.getters.kubernetes_client import api_client
-from telescope.getters.kubernetes_client import stream
+from astronomer_telescope.getters.kubernetes_client import kube_client
+from astronomer_telescope.getters.kubernetes_client import api_client
+from astronomer_telescope.getters.kubernetes_client import stream
 from kubernetes.client import ApiException
 """,
 )

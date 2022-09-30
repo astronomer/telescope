@@ -4,8 +4,8 @@ requires = ["poetry_core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "telescope"
-version = "2.1.0"
+name = "astronomer-telescope"
+version = "3.0.0"
 description = "A tool to observe distant (or local!) Airflow installations, and gather metadata or other required data."
 readme = "README.md"
 authors = ["telescope <cse@astronomer.io>"]
@@ -15,7 +15,7 @@ license = "Proprietary"
 
 [tool.poetry.scripts]
 # Entry points for the package https://python-poetry.org/docs/pyproject/#scripts
-"telescope" = "telescope.__main__:cli"
+"telescope" = "astronomer_telescope.__main__:cli"
 
 [tool.poetry.dependencies]
 python = ">=3.6.2,<3.11"
@@ -87,7 +87,7 @@ color_output = true
 [tool.pytest.ini_options]
 # https://docs.pytest.org/en/6.2.x/customize.html#pyproject-toml
 # Directories that are not visited by pytest collector:
-norecursedirs =["tests/resources/", "hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__", "telescope/reporters"]
+norecursedirs =["tests/resources/", "hooks", "*.egg", ".eggs", "dist", "build", "docs", ".tox", ".git", "__pycache__"]
 doctest_optionflags = ["NUMBER", "NORMALIZE_WHITESPACE", "IGNORE_EXCEPTION_DETAIL"]
 
 # Extra options:

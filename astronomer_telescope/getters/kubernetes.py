@@ -16,17 +16,17 @@ from invoke import run
 from lazyimport import lazyimport
 from retrying import retry
 
-from telescope.config import AIRGAPPED, REPORT_PACKAGE
-from telescope.getters import Getter
-from telescope.util import clean_airflow_report_output
+from astronomer_telescope.config import AIRGAPPED, REPORT_PACKAGE
+from astronomer_telescope.getters import Getter
+from astronomer_telescope.util import clean_airflow_report_output
 
 lazyimport(
     globals(),
     """
-from telescope.getters.kubernetes_client import kube_client
-from telescope.getters.kubernetes_client import api_client
-from telescope.getters.kubernetes_client import stream
-from telescope.getters.kubernetes_client import ApiException
+from astronomer_telescope.getters.kubernetes_client import kube_client
+from astronomer_telescope.getters.kubernetes_client import api_client
+from astronomer_telescope.getters.kubernetes_client import stream
+from astronomer_telescope.getters.kubernetes_client import ApiException
 """,
 )
 log = logging.getLogger(__name__)

@@ -3,8 +3,8 @@ from lazyimport import lazyimport
 lazyimport(
     globals(),
     """
-from telescope.getters.kubernetes_client import kube_client
-from telescope.getters.kubernetes_client import api_client
+from astronomer_telescope.getters.kubernetes_client import kube_client
+from astronomer_telescope.getters.kubernetes_client import api_client
 """,
 )
 

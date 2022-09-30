@@ -4,13 +4,13 @@ import logging
 
 from lazyimport import lazyimport
 
-from telescope.getters import Getter
-from telescope.util import clean_airflow_report_output
+from astronomer_telescope.getters import Getter
+from astronomer_telescope.util import clean_airflow_report_output
 
 lazyimport(
     globals(),
     """
-from telescope.getters.docker_client import docker_client
+from astronomer_telescope.getters.docker_client import docker_client
 """,
 )
 
