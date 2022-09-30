@@ -6,7 +6,7 @@
 
 # Telescope
 <p align="center">
-  <img src="astro.png" alt="Astronomer Telescope Logo" />
+  <img src="https://raw.githubusercontent.com/astronomer/telescope/main/astro.png" alt="Astronomer Telescope Logo" />
 </p>
 
 # What is it?
