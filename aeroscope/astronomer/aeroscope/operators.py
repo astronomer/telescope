@@ -44,5 +44,5 @@ class AeroscopeOperator(BaseOperator):
         }
         upload = requests.put(self.presigned_url, data=json.dumps(content))
         if not upload.ok:
-            logging.error(f"Upload failed with code {upload.status_code}::{upload.json()}")
+            logging.error(f"Upload failed with code {upload.status_code}::{upload.text}")
             upload.raise_for_status()
