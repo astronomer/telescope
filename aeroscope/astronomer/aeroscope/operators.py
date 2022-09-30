@@ -31,7 +31,6 @@ class AeroscopeOperator(BaseOperator):
         import requests
 
         a = "airflow_report.pyz"
-        urlretrieve("https://github.com/astronomer/telescope/releases/latest/download/airflow_report.pyz", a)
         s = io.StringIO()
         with redirect_stdout(s), redirect_stderr(s):
             runpy.run_path(a)
