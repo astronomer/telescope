@@ -95,11 +95,14 @@ jobs:
     - name: Install library
       run: poetry install --no-interaction
 
-    - name: Build wheel and report
+    - name: Build wheel and report, push to pypi
       if: matrix.os == 'ubuntu-18.04'
       run: |
         make build
         make package-report
+        make publish
+      env:
+        POETRY_PYPI_TOKEN_PYPI: ${{ secrets.POETRY_PYPI_TOKEN_PYPI }}
 
     - uses: actions/upload-artifact@v3
       if: matrix.os == 'ubuntu-18.04'
@@ -122,12 +125,6 @@ jobs:
 
     steps:
     - uses: actions/download-artifact@v3
-
-    - name: Telescope - Build + Deploy
-      run: |
-        make publish
-      env:
-        POETRY_PYPI_TOKEN_PYPI: ${{ secrets.POETRY_PYPI_TOKEN_PYPI }}
 
     - name: Release
       uses: softprops/action-gh-release@v1
