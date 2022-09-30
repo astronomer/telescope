@@ -8,14 +8,14 @@ from shlex import split
 import yaml
 from halo import Halo
 
-import telescope
-from telescope.config import AIRGAPPED, REPORT_PACKAGE, REPORT_PACKAGE_URL
-from telescope.functions.astronomer_enterprise import get_helm_info
-from telescope.functions.autodiscover import AUTODISCOVERERS, docker_autodiscover, kube_autodiscover
-from telescope.getters import Getter
-from telescope.getters.docker import LocalDockerGetter
-from telescope.getters.kubernetes import KubernetesGetter
-from telescope.getters.local import LocalGetter
+import astronomer_telescope
+from astronomer_telescope.config import AIRGAPPED, REPORT_PACKAGE, REPORT_PACKAGE_URL
+from astronomer_telescope.functions.astronomer_enterprise import get_helm_info
+from astronomer_telescope.functions.autodiscover import AUTODISCOVERERS, docker_autodiscover, kube_autodiscover
+from astronomer_telescope.getters import Getter
+from astronomer_telescope.getters.docker import LocalDockerGetter
+from astronomer_telescope.getters.kubernetes import KubernetesGetter
+from astronomer_telescope.getters.local import LocalGetter
 
 log = logging.getLogger(__name__)
 log.setLevel(os.getenv("LOG_LEVEL", logging.WARNING))
@@ -47,7 +47,7 @@ def parse_getters_from_hosts_file(hosts: dict, label_selector: str = "") -> Dict
         else:
             log.info(f"Discovered {host_type} host type in hosts file...")
 
-        getter_of_type = telescope.getters.get_for_type(host_type)
+        getter_of_type = astronomer_telescope.getters.get_for_type(host_type)
         getter_type = getter_of_type.get_type()
 
         has_autodiscovery = getter_type in AUTODISCOVERERS.keys()

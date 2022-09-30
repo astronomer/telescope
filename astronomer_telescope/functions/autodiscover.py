@@ -7,15 +7,15 @@ from invoke import run
 from lazyimport import lazyimport
 from retrying import retry
 
-from telescope.getters.docker import LocalDockerGetter
-from telescope.getters.kubernetes import KubernetesGetter
+from astronomer_telescope.getters.docker import LocalDockerGetter
+from astronomer_telescope.getters.kubernetes import KubernetesGetter
 
 lazyimport(
     globals(),
     """
-from telescope.getters.docker_client import docker_client
-from telescope.getters.kubernetes_client import kube_client
-from telescope.getters.kubernetes_client import api_client
+from astronomer_telescope.getters.docker_client import docker_client
+from astronomer_telescope.getters.kubernetes_client import kube_client
+from astronomer_telescope.getters.kubernetes_client import api_client
 """,
 )
 

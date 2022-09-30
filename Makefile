@@ -54,10 +54,10 @@ check-codestyle:
 check-safety:
 	poetry check
 	poetry run safety check --full-report
-	poetry run bandit -ll --recursive telescope tests
+	poetry run bandit -ll --recursive astronomer_telescope tests
 
 .PHONY: lint
-lint: test check-codestyle mypy check-safety
+lint: test check-codestyle check-safety
 
 #* Cleaning
 .PHONY: pycache-remove
@@ -74,7 +74,7 @@ dist-remove:
 
 .PHONY: outputs-remove
 outputs-remove:
-	rm -rf report.json charts report_output.xlsx report_summary.txt telescope-*.whl airflow_report.pyz telescope-*
+	rm -rf report.json charts report_output.xlsx report_summary.txt astronomer_telescope-*.whl airflow_report.pyz astronomer_telescope-*
 
 .PHONY: clean-all
 clean-all: outputs-remove pycache-remove build-remove dist-remove
@@ -95,17 +95,17 @@ package-report: build-remove
 
 .PHONY: package-pyinstaller
 package-pyinstaller: dist-remove
-	poetry run python -m PyInstaller --onefile --noconfirm --clean --specpath dist --name telescope \
-		--hidden-import telescope.getters.kubernetes_client \
-		--hidden-import telescope.getters.docker_client \
-		--recursive-copy-metadata telescope \
-		telescope/__main__.py
-	cp dist/telescope telescope-$(shell uname -s | awk '{print tolower($$0)}' )-$(shell uname -m)
+	poetry run python -m PyInstaller --onefile --noconfirm --clean --specpath dist --name astronomer-telescope \
+		--hidden-import astronomer_telescope.getters.kubernetes_client \
+		--hidden-import astronomer_telescope.getters.docker_client \
+		--recursive-copy-metadata astronomer-telescope \
+		astronomer_telescope/__main__.py
+	cp dist/astronomer-telescope telescope-$(shell uname -s | awk '{print tolower($$0)}' )-$(shell uname -m)
 
 .PHONY: build
 build: build-remove
 	poetry build
-	mv dist/telescope*.whl .
+	mv dist/astronomer_telescope*.whl .
 
 
 .PHONY: publish_test
@@ -142,7 +142,7 @@ local_release: clean-all delete-tag
 	git tag $(TELESCOPE_TAG)
 	git push origin $(TELESCOPE_TAG)
 	gh release create $(TELESCOPE_TAG) \
-		./telescope-$(TELESCOPE_VERSION)-py3-none-any.whl \
+		./astronomer_telescope-$(TELESCOPE_VERSION)-py3-none-any.whl \
 		airflow_report.pyz \
 		--prerelease \
 		--generate-notes

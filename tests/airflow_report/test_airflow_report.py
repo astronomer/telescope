@@ -14,7 +14,7 @@ from docker.models.containers import Container
 
 import airflow_report
 from airflow_report.__main__ import dag_varconn_usage
-from telescope.util import clean_airflow_report_output
+from astronomer_telescope.util import clean_airflow_report_output
 from tests import resources
 from tests.conftest import manual_tests
 

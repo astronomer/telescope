@@ -12,8 +12,8 @@ except ImportError:
 
 from fabric import Connection
 
-from telescope.getters import Getter
-from telescope.util import clean_airflow_report_output
+from astronomer_telescope.getters import Getter
+from astronomer_telescope.util import clean_airflow_report_output
 
 
 class SSHGetter(Getter):

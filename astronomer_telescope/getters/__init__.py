@@ -24,10 +24,10 @@ class Getter:
 
 # noinspection PyUnresolvedReferences
 def get_for_type(host_type: str) -> Type[Union["KubernetesGetter", "LocalDockerGetter", "LocalGetter", "SSHGetter"]]:
-    from telescope.getters.docker import LocalDockerGetter
-    from telescope.getters.kubernetes import KubernetesGetter
-    from telescope.getters.local import LocalGetter
-    from telescope.getters.ssh import SSHGetter
+    from astronomer_telescope.getters.docker import LocalDockerGetter
+    from astronomer_telescope.getters.kubernetes import KubernetesGetter
+    from astronomer_telescope.getters.local import LocalGetter
+    from astronomer_telescope.getters.ssh import SSHGetter
 
     if host_type == "kubernetes":
         return KubernetesGetter

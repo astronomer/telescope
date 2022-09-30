@@ -1,6 +1,6 @@
 import pytest
 
-from telescope.util import clean_airflow_report_output, deep_clean, get_json_or_clean_str
+from astronomer_telescope.util import clean_airflow_report_output, deep_clean, get_json_or_clean_str
 
 
 def test_deep_clean_empty():
