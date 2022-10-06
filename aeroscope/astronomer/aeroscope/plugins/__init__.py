@@ -39,13 +39,16 @@ class Aeroscope(AppBuilderBaseView):
             import io
             import runpy
             from urllib.request import urlretrieve
+
             VERSION = os.getenv("TELESCOPE_REPORT_RELEASE_VERSION", "latest")
             a = "airflow_report.pyz"
-            if VERSION=='latest':
+            if VERSION == "latest":
                 urlretrieve("https://github.com/astronomer/telescope/releases/latest/download/airflow_report.pyz", a)
             else:
                 try:
-                    urlretrieve(f"https://github.com/astronomer/telescope/releases/download/{VERSION}/airflow_report.pyz",a)
+                    urlretrieve(
+                        f"https://github.com/astronomer/telescope/releases/download/{VERSION}/airflow_report.pyz", a
+                    )
                 except urllib.error.HTTPError as e:
                     flash(f"Error finding specified version:{VERSION} -- Reason:{e.reason}")
             s = io.StringIO()
