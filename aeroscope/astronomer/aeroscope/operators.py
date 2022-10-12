@@ -3,9 +3,12 @@ from typing import Sequence
 import datetime
 import json
 import logging
+import os
 import socket
+import urllib
 from contextlib import redirect_stderr, redirect_stdout
 
+from airflow.exceptions import AirflowFailException
 from airflow.models import BaseOperator
 from astronomer.aeroscope.util import clean_airflow_report_output
 
@@ -30,7 +33,19 @@ class AeroscopeOperator(BaseOperator):
 
         import requests
 
+        VERSION = os.getenv("TELESCOPE_REPORT_RELEASE_VERSION", "latest")
         a = "airflow_report.pyz"
+        if VERSION == "latest":
+            self.log.info("Running Latest Version of report")
+            urlretrieve("https://github.com/astronomer/telescope/releases/latest/download/airflow_report.pyz", a)
+        else:
+            try:
+                self.log.info(f"Running Version {VERSION} of report")
+                urlretrieve(
+                    f"https://github.com/astronomer/telescope/releases/download/{VERSION}/airflow_report.pyz", a
+                )
+            except urllib.error.HTTPError as e:
+                raise AirflowFailException(f"Error finding specified version:{VERSION} -- Reason:{e.reason}")
         s = io.StringIO()
         with redirect_stdout(s), redirect_stderr(s):
             runpy.run_path(a)
