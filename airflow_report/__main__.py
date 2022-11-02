@@ -460,7 +460,7 @@ def user_report(session):
             )
         )
     else:
-        sql = text("""SELECT COUNT(id) AS "total_users" FROM "users";""")
+        sql = text("""SELECT COUNT(id) AS "total_users" FROM users;""")
     for r in session.execute(sql):
         return dict(r)
     return {}
