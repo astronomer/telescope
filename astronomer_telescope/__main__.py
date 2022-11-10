@@ -11,6 +11,7 @@ from functools import partial
 from urllib.request import urlopen
 
 import click as click
+import requests
 from click import Path, echo
 from click.exceptions import Exit, UsageError
 from halo import Halo
@@ -91,6 +92,13 @@ def version(ctx, self, value):
     type=Path(),
     help="Data file to write intermediate gathered data, can be '-' for stdout",
 )
+@click.option(
+    "-u",
+    "--presigned-url",
+    **d,
+    type=str,
+    help="URL to write data directly to - given by an Astronomer Representative",
+)
 def cli(
     use_local: bool,
     use_docker: bool,
@@ -102,6 +110,7 @@ def cli(
     parallelism: int,
     organization_name: str,
     data_file: str,
+    presigned_url: str,
 ) -> None:
     """Telescope - A tool to observe distant (or local!) Airflow installations, and gather usage metadata"""
     # date is today
@@ -217,6 +226,9 @@ def cli(
     log.info(f"Writing data to {data_file} ...")
     with click.open_file(data_file, "w") as output:
         output.write(json.dumps(data, default=str))
+    if presigned_url:
+        log.info(f"Uploading to {presigned_url} ...")
+        requests.put(url=presigned_url, data=open(data_file))
 
 
 if __name__ == "__main__":
