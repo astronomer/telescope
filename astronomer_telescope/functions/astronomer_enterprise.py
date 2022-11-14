@@ -43,8 +43,9 @@ def get_helm_info(namespace: Optional[str] = None):
                 ).decode()
             )
             # filter to only astronomer/airflow helm charts and only the most recent version
-            if helm_contents["info"]["status"] == "deployed" or any(
-                [word in helm_contents["chart"]["metadata"]["name"] for word in ["astronomer", "airflow"]]
+            if helm_contents["info"]["status"] == "deployed" and (
+                "astronomer" in helm_contents["chart"]["metadata"]["name"]
+                or "airflow" in helm_contents["chart"]["metadata"]["name"]
             ):
                 try:
                     for v in [
