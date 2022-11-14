@@ -144,11 +144,6 @@ def cli(
 
     # Check for helm secrets or get cluster info if we know we are running with Kubernetes
     if any(type(g) == KubernetesGetter for g in all_getters):
-        helm_spinner = Halo(
-            text="Verifying helm chart info",
-            spinner="dots",
-        )
-        helm_spinner.start()
         cluster_spinner = Halo(
             text="Gathering cluster info",
             spinner="dots",
