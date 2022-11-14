@@ -144,21 +144,6 @@ def cli(
 
     # Check for helm secrets or get cluster info if we know we are running with Kubernetes
     if any(type(g) == KubernetesGetter for g in all_getters):
-        helm_spinner = Halo(
-            text="Verifying helm chart info",
-            spinner="dots",
-        )
-        helm_spinner.start()
-        # Feature gate "verify"
-        if os.getenv("TELESCOPE_SHOULD_VERIFY", True):
-            try:
-                data["verify"] = get_helm_info()
-                helm_spinner.succeed()
-            except Exception as e:
-                helm_spinner.warn("verifying helm info failed")
-                log.debug(e)
-                data["verify"] = {"error": str(e)}
-
         cluster_spinner = Halo(
             text="Gathering cluster info",
             spinner="dots",

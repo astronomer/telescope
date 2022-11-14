@@ -43,8 +43,9 @@ def get_helm_info(namespace: Optional[str] = None):
                 ).decode()
             )
             # filter to only astronomer/airflow helm charts and only the most recent version
-            if helm_contents["info"]["status"] == "deployed" or any(
-                [word in helm_contents["chart"]["metadata"]["name"] for word in ["astronomer", "airflow"]]
+            if helm_contents["info"]["status"] == "deployed" and (
+                "astronomer" in helm_contents["chart"]["metadata"]["name"]
+                or "airflow" in helm_contents["chart"]["metadata"]["name"]
             ):
                 try:
                     for v in [
@@ -56,7 +57,14 @@ def get_helm_info(namespace: Optional[str] = None):
                         ["registry", "connection", "pass"],
                         ["webserver", "defaultUser", "password"],
                     ]:
-                        deep_clean(v, helm_contents["chart"]["values"])
+                        try:
+                            deep_clean(v, helm_contents["chart"]["values"])
+                        except Exception as e:
+                            log.debug(e)
+                        try:
+                            deep_clean(v, helm_contents["config"]["airflow"])
+                        except Exception as e:
+                            log.debug(e)
                 except Exception as e:
                     log.exception(e)
                 output[namespace] = {
@@ -64,6 +72,7 @@ def get_helm_info(namespace: Optional[str] = None):
                     "last_deployed": helm_contents["info"]["last_deployed"],
                     "chart_metadata": helm_contents["chart"]["metadata"],
                     "chart_values": helm_contents["chart"]["values"],
+                    "config": helm_contents["config"],
                 }
         except Exception as e:
             log.debug(e)
