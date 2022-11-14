@@ -412,16 +412,16 @@ def usage_stats_report(session):
         """
         SELECT
             dag_id,
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id) as "1_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id) as "1_days_failed",
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id) as "7_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id) as "7_days_failed",
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id) as "30_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id) as "30_days_failed",
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id) as "365_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id) as "365_days_failed",
-            (select count(1) from task_instance as sti where state = 'success' and sti.dag_id = ti.dag_id) as "all_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' and sti.dag_id = ti.dag_id) as "all_days_failed"
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "1_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "1_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "7_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "7_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "30_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "30_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "365_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "365_days_failed",
+            (select count(1) from task_instance as sti where state = 'success' and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "all_days_success",
+            (select count(1) from task_instance as sti where state = 'failed' and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "all_days_failed"
         FROM task_instance as ti
         GROUP BY 1;
     """.format(
