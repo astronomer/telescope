@@ -84,7 +84,7 @@ package-report: build-remove
 	mkdir -p build
 	poetry run python -m pip install -r airflow_report/requirements.txt --target build
 	cp -r airflow_report build
-	rm -f build/*.dist-info/*
+	rm -rf build/*.dist-info/*
 	rmdir build/*.dist-info
 	poetry run python -m zipapp \
 		--compress \
