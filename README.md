@@ -97,6 +97,17 @@ telescope -f hosts.yaml --organization-name <My Organization>
 ```
 You should now have a file ending in `*.data.json` - which is an intermediate data payload
 
+# Presigned URL Upload
+For both the Telescope CLI and Aeroscope Airflow Plugin, you have the option to upload the data payload via a presigned upload url. Please contact an Astronomer Representative to acquire a presigned url.
+
+You can utilize this in the Telescope CLI as follows
+```shell
+telescope --kubernetes --organization-name <My Organization> --presigned-url https://storage.googleapis.com/astronomer-telescope............c32f043eae2974d847541bbaa1618825a80ed80f58f0ba3
+```
+Make sure to change `--kubernetes` to the correct method of operation to access your Airflow, and the contents of `--presigned-url` to the actual URL supplied to you.
+
+*Note:* Presigned URLs generally only last for up to a day, make sure to use yours soon after receiving it or request another when you are able.
+
 # Data Collected
 The following Data is collected:
 
@@ -158,6 +169,8 @@ Options:
                                 company name
   -o, --data-file PATH          Data file to write intermediate gathered data,
                                 can be '-' for stdout
+  -u, --presigned-url TEXT      URL to write data directly to - given by an
+                                Astronomer Representative
   --help                        Show this message and exit.
 ```
 
