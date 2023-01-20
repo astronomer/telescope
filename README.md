@@ -262,6 +262,8 @@ There is an intermediate output ending in `*.data.json` which contains all data 
 | user report               | Number of active users over the last 1, 7, 30 and 365 days                               |
 | variables report          | List of all Airflow variables (keys only)                                                |
 
+### Column Description and Examples
+[Click on this link](./docs/output.md) for detailed column-by-column report outputs. Column descriptions and examples are provided.
 
 # Extra Functionality
 ## Label Selection
