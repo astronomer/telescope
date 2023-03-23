@@ -265,7 +265,9 @@ def pools_report():
 @provide_session
 def dags_report(session):
     # type: (Any) -> List[dict]
-    from airflow.models import DagModel, TaskInstance
+    import ast
+
+    from airflow.models import DagBag, DagModel, TaskInstance
     from sqlalchemy import distinct, func, literal_column
 
     # Use string_agg if it's postgresql, use group_concat otherwise (sqlite, mysql, ?mssql?)
@@ -284,6 +286,11 @@ def dags_report(session):
             DagModel.is_subdag,
             DagModel.fileloc,
             DagModel.owners,
+            DagModel.tags,
+            DagModel.max_active_tasks,
+            DagModel.max_active_runs,
+            DagModel.has_task_concurrency_limits,
+            DagModel.has_import_errors,
         ]
     except AttributeError:
         # some fields didn't exist in airflow 1.10.2
@@ -306,9 +313,37 @@ def dags_report(session):
         .group_by(*dag_model_fields)
         # .filter(DagModel.is_active == True)
     )
+    try:
+        dagbag = DagBag()
+        stats = {
+            x.file: {
+                "file": x.file,
+                "duration": x.duration,
+                "dag_num": x.dag_num,
+                "task_num": x.task_num,
+                "dags": sorted(ast.literal_eval(x.dags)),
+            }
+            for x in dagbag.dagbag_stats
+        }
+    except:
+        stats = {}
+
     dags = [dict(zip([desc["name"] for desc in q.column_descriptions], res)) for res in q.all()]
     for dag in dags:
+        session.query().first()
+        # TODO - K8s stuff
+        try:
+            from airflow.models import RenderedTaskInstanceFields
+
+            # func.count(distinct(TaskInstance.task_id)).label("num_tasks"),
+            # also - TaskInstance.executor_config (via dag_id, task_id)
+            # RenderedTaskInstanceFields.k8s_pod_yaml (via dag_id, task_id)
+            # in last 30 days, any tasks in this DAG w/ CPU limit/overrides, volume mounts?
+        except:
+            pass
+
         if dag["fileloc"]:
+            dag["parsing_duration"] = stats.get(dag["fileloc"], {}).get("duration", -1)
             try:
                 dag["variables"], dag["connections"] = dag_varconn_usage(dag["fileloc"])
             except:
