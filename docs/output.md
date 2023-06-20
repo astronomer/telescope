@@ -155,7 +155,7 @@ Example:
 
 # Usage Statistics Report
 
-Execution statistics (success & failures) over the last 1, 7, 30, 365 days, and all time.
+Execution statistics (success & failure task counts) over the last 1, 7, 30, 365 days, and all time.
 
 | Field Name       | Description                                          | Example Value     |
 |------------------|------------------------------------------------------|-------------------|
@@ -170,6 +170,24 @@ Execution statistics (success & failures) over the last 1, 7, 30, 365 days, and 
 | 365_days_failed  | Number of failed task runs in the last 365 days.     | 30                |
 | all_days_success | Number of all time successful task runs.             | 1672              |
 | all_days_failed  | Number of all time failed task runs.                 | 48                |
+
+# Usage Statistics DAG Rollup Report
+
+Execution statistics (success & failure dag run counts) over the last 1, 7, 30, 365 days, and all time.
+
+| Field Name       | Description                                         | Example Value     |
+|------------------|-----------------------------------------------------|-------------------|
+| dag_id           | The id of the dag                                   | example_dag_basic |
+| 1_days_success   | Number of successful dag runs in the last day.      | 2                 |
+| 1_days_failed    | Number of failed dag runs in the last  day.         | 0                 |
+| 7_days_success   | Number of successful dag runs in the last 7 days.   | 13                |
+| 7_days_failed    | Number of failed dag runs in the last 7 days.       | 1                 |
+| 30_days_success  | Number of successful dag runs in the last 30 days.  | 33                |
+| 30_days_failed   | Number of failed dag runs in the last 30 days.      | 6                 |
+| 365_days_success | Number of successful dag runs in the last 365 days. | 250               |
+| 365_days_failed  | Number of failed dag runs in the last 365 days.     | 20                |
+| all_days_success | Number of all time successful dag runs.             | 300               |
+| all_days_failed  | Number of all time failed dag runs.                 | 24                |
 
 # Users Report
 

@@ -247,20 +247,21 @@ There is an intermediate output ending in `*.data.json` which contains all data 
 
 ### Output file includes the following sections:
 
-| Report                    | Description                                                                              |
-|---------------------------|------------------------------------------------------------------------------------------|
-| airflow version report    | Airflow Deployment version                                                               |
-| configuration report      | Airflow runtime configuration (airflow.cfg)                                              |
-| connections report        | List of all Airflow connections (IDs only)                                               |
-| dags report               | List of DAGs, including code quality metrics                                             |
-| env vars report           | List of airflow-related environment variables                                            |
-| hostname report           | Airflow Hostname configuration                                                           |
-| installed packages report | List of all installed packages                                                           |
-| pools report              | List of Airflow pools and associated configuration                                       |
-| providers report          | List of all installed providers                                                          |
-| usage stats report        | Execution statistics (success & failures) over the last 1, 7, 30, 365 days and all time. |
-| user report               | Number of active users over the last 1, 7, 30 and 365 days                               |
-| variables report          | List of all Airflow variables (keys only)                                                |
+| Report                        | Description                                                                                            |
+|-------------------------------|--------------------------------------------------------------------------------------------------------|
+| airflow version report        | Airflow Deployment version                                                                             |
+| configuration report          | Airflow runtime configuration (airflow.cfg)                                                            |
+| connections report            | List of all Airflow connections (IDs only)                                                             |
+| dags report                   | Lisst of DAGs, including code quality metrics                                                          |
+| env vars report               | List of airflow-related environment variables                                                          |
+| hostname report               | Airflow Hostname configuration                                                                         |
+| installed packages report     | List of all installed packages                                                                         |
+| pools report                  | List of Airflow pools and associated configuration                                                     |
+| providers report              | List of all installed providers                                                                        |
+| usage stats report            | Execution statistics (success & failure task counts) over the last 1, 7, 30, 365 days and all time.    |
+| usage stats dag rollup report | Execution statistics (success & failure dag run counts) over the last 1, 7, 30, 365 days and all time. |
+| user report                   | Number of active users over the last 1, 7, 30 and 365 days                                             |
+| variables report              | List of all Airflow variables (keys only)                                                              |
 
 ### Column Description and Examples
 [Click on this link](./docs/output.md) for detailed column-by-column report outputs. Column descriptions and examples are provided.
