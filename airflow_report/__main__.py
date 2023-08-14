@@ -468,7 +468,7 @@ def usage_stats_report(session):
             days_ago(dialect, 365),
             days_ago(dialect, 365),
             days_ago(dialect, 365),
-            days_ago(dialect, 365)
+            days_ago(dialect, 365),
         )
     )
     return [dict(r) for r in session.execute(sql)]
