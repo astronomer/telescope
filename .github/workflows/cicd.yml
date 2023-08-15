@@ -42,6 +42,12 @@ jobs:
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
       run: poetry install --no-interaction --no-root
 
+    - name: Run pre-commit
+      run: |
+        pip install pre-commit
+        git fetch origin
+        pre-commit run --from-ref origin/${{ github.event.pull_request.base.ref }} --to-ref ${{ github.event.pull_request.head.sha }}
+
     - name: Run style checks
       run: |
         make check-codestyle
