@@ -150,6 +150,34 @@ def test_airflow_report(docker_scheduler: Container):
     assert (
         type(report["usage_stats_report"]) == list
     ), f'usage_stats_report: {report["usage_stats_report"]} - {type(report["usage_stats_report"])} != list'
+    assert list(report["usage_stats_report"][0].keys()) in [
+        "dag_id",
+        "1_days_success",
+        "1_days_failed",
+        "min_duration_1_days_success",
+        "max_duration_1_days_success",
+        "avg_duration_1_days_success",
+        "7_days_success",
+        "7_days_failed",
+        "min_duration_7_days_success",
+        "max_duration_7_days_success",
+        "avg_duration_7_days_success",
+        "30_days_success",
+        "30_days_failed",
+        "min_duration_30_days_success",
+        "max_duration_30_days_success",
+        "avg_duration_30_days_success",
+        "365_days_success",
+        "365_days_failed",
+        "min_duration_365_days_success",
+        "max_duration_365_days_success",
+        "avg_duration_365_days_success",
+        "all_days_success",
+        "all_days_failed",
+        "min_duration_all_days_success",
+        "max_duration_all_days_success",
+        "avg_duration_all_days_success",
+    ]
 
     assert "connections_report" in report
     assert (
