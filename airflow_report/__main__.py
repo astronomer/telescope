@@ -1,5 +1,3 @@
-from typing import Any, List, Optional
-
 import base64
 import json
 import logging
@@ -15,13 +13,13 @@ logging.getLogger("google.cloud.bigquery.opentelemetry_tracing").setLevel(loggin
 try:
     from airflow.utils.session import provide_session
 except:
-    from typing import Callable, Iterator, TypeVar
+    from typing import TypeVar
 
     import contextlib
     from functools import wraps
     from inspect import signature
 
-    from airflow import DAG, settings
+    from airflow import settings
 
     RT = TypeVar("RT")
 
@@ -464,6 +462,7 @@ def usage_stats_report(session):
     )
     return [dict(r) for r in session.execute(sql)]
 
+
 # noinspection SqlResolve
 @provide_session
 def usage_stats_dag_rollup_report(session):
@@ -498,12 +497,12 @@ def usage_stats_dag_rollup_report(session):
     )
     return [dict(r) for r in session.execute(sql)]
 
+
 # noinspection SqlResolve
 @provide_session
 def user_report(session):
     # type: (Any) -> dict
     from airflow.version import version
-    from sqlalchemy.exc import OperationalError
 
     dialect = session.bind.dialect.name
     if version >= "1.10.5":
