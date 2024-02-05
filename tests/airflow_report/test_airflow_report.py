@@ -151,6 +151,11 @@ def test_airflow_report(docker_scheduler: Container):
         type(report["usage_stats_report"]) == list
     ), f'usage_stats_report: {report["usage_stats_report"]} - {type(report["usage_stats_report"])} != list'
 
+    assert "usage_stats_dag_rollup_report" in report
+    assert (
+        type(report["usage_stats_dag_rollup_report"]) == list
+    ), f'usage_stats_dag_rollup_report: {report["usage_stats_dag_rollup_report"]} - {type(report["usage_stats_dag_rollup_report"])} != list'
+
     assert "connections_report" in report
     assert (
         type(report["connections_report"]) == list

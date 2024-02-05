@@ -437,6 +437,39 @@ def usage_stats_report(session):
     )
     return [dict(r) for r in session.execute(sql)]
 
+# noinspection SqlResolve
+@provide_session
+def usage_stats_dag_rollup_report(session):
+    # type: (Any) -> Any
+    dialect = session.bind.dialect.name
+    sql = text(
+        """
+        SELECT
+            dag_id,
+            (select count(1) from dag_run as sdr where state = 'success' AND start_date > {} and sdr.dag_id = dr.dag_id) as "1_days_success",
+            (select count(1) from dag_run as sdr where state = 'failed' AND start_date > {} and sdr.dag_id = dr.dag_id) as "1_days_failed",
+            (select count(1) from dag_run as sdr where state = 'success' AND start_date > {} and sdr.dag_id = dr.dag_id) as "7_days_success",
+            (select count(1) from dag_run as sdr where state = 'failed' AND start_date > {} and sdr.dag_id = dr.dag_id) as "7_days_failed",
+            (select count(1) from dag_run as sdr where state = 'success' AND start_date > {} and sdr.dag_id = dr.dag_id) as "30_days_success",
+            (select count(1) from dag_run as sdr where state = 'failed' AND start_date > {} and sdr.dag_id = dr.dag_id) as "30_days_failed",
+            (select count(1) from dag_run as sdr where state = 'success' AND start_date > {} and sdr.dag_id = dr.dag_id) as "365_days_success",
+            (select count(1) from dag_run as sdr where state = 'failed' AND start_date > {} and sdr.dag_id = dr.dag_id) as "365_days_failed",
+            (select count(1) from dag_run as sdr where state = 'success' and sdr.dag_id = dr.dag_id) as "all_days_success",
+            (select count(1) from dag_run as sdr where state = 'failed' and sdr.dag_id = dr.dag_id) as "all_days_failed"
+        FROM dag_run as dr
+        GROUP BY 1;
+    """.format(
+            days_ago(dialect, 1),
+            days_ago(dialect, 1),
+            days_ago(dialect, 7),
+            days_ago(dialect, 7),
+            days_ago(dialect, 30),
+            days_ago(dialect, 30),
+            days_ago(dialect, 365),
+            days_ago(dialect, 365),
+        )
+    )
+    return [dict(r) for r in session.execute(sql)]
 
 # noinspection SqlResolve
 @provide_session
@@ -476,6 +509,7 @@ reports = [
     pools_report,
     dags_report,
     usage_stats_report,
+    usage_stats_dag_rollup_report,
     connections_report,
     variables_report,
     user_report,
