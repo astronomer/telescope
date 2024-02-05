@@ -1,13 +1,48 @@
-  [![Build status](https://github.com/astronomer/telescope/workflows/build/badge.svg?branch=main&event=push)](https://github.com/astronomer/telescope/actions?query=workflow%3Alint-test-build-release)
-  [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-  [![Security: bandit](https://img.shields.io/badge/security-bandit-green.svg)](https://github.com/PyCQA/bandit)
-  [![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/astronomer/telescope/blob/main/.pre-commit-config.yaml)
-  [![Semantic Versions](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--versions-e10079.svg)](https://github.com/astronomer/telescope/releases)
-
 # Telescope
+<!--suppress HtmlDeprecatedAttribute -->
 <p align="center">
-  <img src="https://raw.githubusercontent.com/astronomer/telescope/main/astro.png" alt="Astronomer Telescope Logo" />
+  <img src="https://raw.githubusercontent.com/astronomer/telescope/main/telescope.svg" alt="Astronomer Telescope Logo" />
 </p>
+
+<!-- TOC -->
+* [Telescope](#telescope)
+* [What is it?](#what-is-it)
+* [Installation Method 1) via Binary](#installation-method-1-via-binary)
+* [Installation Method 2) via PIP](#installation-method-2-via-pip)
+* [Quickstart - Kubernetes Autodiscovery Assessment Mode](#quickstart---kubernetes-autodiscovery-assessment-mode)
+* [Quickstart - SSH Assessment Mode](#quickstart---ssh-assessment-mode)
+* [Presigned URL Upload](#presigned-url-upload)
+* [Data Collected](#data-collected)
+  * [`cluster_info`](#cluster_info)
+  * [`verify`](#verify)
+  * [`Airflow Report`](#airflow-report)
+* [Usage](#usage)
+* [Requirements](#requirements)
+  * [Locally - via PIP](#locally---via-pip)
+  * [Locally - Docker or Kubernetes or SSH Airflow Assessment modes](#locally---docker-or-kubernetes-or-ssh-airflow-assessment-modes)
+  * [Remote Airflow Requirements](#remote-airflow-requirements)
+* [Input](#input)
+  * [Local autodiscovery](#local-autodiscovery)
+  * [Docker autodiscovery](#docker-autodiscovery)
+  * [Kubernetes autodiscovery](#kubernetes-autodiscovery)
+  * [Example `hosts.yaml` input](#example-hostsyaml-input)
+* [Output](#output)
+  * [`*.data.json`](#datajson)
+    * [Output file includes the following sections:](#output-file-includes-the-following-sections)
+    * [Column Description and Examples](#column-description-and-examples)
+* [Extra Functionality](#extra-functionality)
+  * [Label Selection](#label-selection)
+  * [Airflow Report Command](#airflow-report-command)
+  * [DAG Obfuscation](#dag-obfuscation)
+    * [Custom Obfuscation Function](#custom-obfuscation-function)
+  * [Optional Environmental Variables](#optional-environmental-variables)
+* [Alternative Methods](#alternative-methods-)
+* [Install from Source](#install-from-source)
+  * [As a zip](#as-a-zip)
+  * [With git](#with-git)
+* [Compatibility Matrix](#compatibility-matrix)
+* [Security Notice](#security-notice)
+<!-- TOC -->
 
 # What is it?
 
@@ -45,7 +80,7 @@ chmod +x telescope-linux-x86_64
 wget https://github.com/astronomer/telescope/releases/latest/download/telescope-darwin-x86_64
 chmod +x telescope-darwin-x86_64
 ```
-Note: For Mac, you will get a Security error when you first run Telescope via the CLI binary - you can bypass this in `System Preferences -> Security & Privacy -> General` and hitting `Allow` 
+Note: For Mac, you will get a Security error when you first run Telescope via the CLI binary - you can bypass this in `System Preferences -> Security & Privacy -> General` and hitting `Allow`
 
 - **for Windows (x86_64)**
 ```shell
@@ -65,7 +100,7 @@ source venv/bin/activate
 Install Telescope using Pip from Github
 
 ```shell
-python -m pip install astronomer-telescope 
+python -m pip install astronomer-telescope
 ```
 
 # Quickstart - Kubernetes Autodiscovery Assessment Mode
@@ -286,7 +321,7 @@ If your `python` is called something other than `python` (e.g. `python3`):
 TELESCOPE_AIRFLOW_REPORT_CMD=$(cat <<'EOF'
 python3 -W ignore -c "import runpy,os;from urllib.request import urlretrieve as u;a='airflow_report.pyz';u('https://github.com/astronomer/telescope/releases/latest/download/airflow_report.pyz',a);runpy.run_path(a);os.remove(a)"
 EOF
-) telescope -f hosts.yaml 
+) telescope -f hosts.yaml
 ```
 
 or if you need to activate a `python` (such as with RedHat Linux) prior to running, and want to copy the telescope Manifest up to the host independently:
@@ -322,8 +357,8 @@ fileloc="/a/b/c/d/filepath.py" -> "th.py"
 - `TELESCOPE_SHOULD_VERIFY=false` - turn off helm chart collection - required to gather some data about Airflow in Kubernetes
 - `TELESCOPE_REPORT_PACKAGE_URL` - sets the URL that both the local CLI AND `TELESCOPE_AIRFLOW_REMOTE_CMD` will use (unless `TELESCOPE_AIRFLOW_REMOTE_CMD` is set directly)
 
-# Alternative Methods 
-Telescope can also be installed as an Airflow plugin and has an `AeroscopeOperator` 
+# Alternative Methods
+Telescope can also be installed as an Airflow plugin and has an `AeroscopeOperator`
 This is helpful in instances where shell access is unable to be acquired - such as with Google Cloud Composer (GCC) or AWS' Managed Apache Airflow (MWAA).
 
 To install Telescope this way, please review instructions [here](./aeroscope/README.md).
@@ -331,8 +366,8 @@ To install Telescope this way, please review instructions [here](./aeroscope/REA
 
 # Install from Source
 If neither the [pip installation method](#installation-method-2-via-pip)
-or [binary installation](#installation-method-1-via-binary)
-methods work - you can download the source and execute directly as a python module
+nor [binary installation](#installation-method-1-via-binary) methods work - you can download the source
+and execute directly as a python module
 
 ## As a zip
 ```shell
@@ -372,3 +407,15 @@ Telescope is tested on the following Operating Systems:
 - Ubuntu
 - Mac (arm64, amd64)
 - Windows
+
+# Security Notice
+This project, by default, executes a python script downloaded from the internet on each Airflow it connects to.
+This is by design. Please fully understand this and take any steps required to protect your environment
+before running Telescope.
+
+---
+
+**Artwork**
+Orbiter logo [by b farias](https://thenounproject.com/bfarias/) used with permission
+from [The Noun Project](https://thenounproject.com/icon/telescope-1187570/)
+under [Creative Commons](https://creativecommons.org/licenses/by/3.0/us/legalcode).

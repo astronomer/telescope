@@ -1,0 +1,20 @@
+name: Deploy
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch: {}
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v5
+      - uses: extractions/setup-just@v1
+      - name: Run pre-commit
+        run: |
+          git fetch origin
+          just deploy-docs
+      - name: Deploy to PyPi
+        run: |
+          just deploy
