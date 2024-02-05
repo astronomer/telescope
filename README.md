@@ -319,6 +319,7 @@ fileloc="/a/b/c/d/filepath.py" -> "th.py"
 - `TELESCOPE_KUBERNETES_AIRGAPPED=true` - executes the airflow report in airgapped mode (i.e copies report binary from local to pod)
 - `LOG_LEVEL=DEBUG` - can be any support Python logging level `[CRITICAL, FATAL, ERROR, WARN, WARNING, INFO, DEBUG, NOTSET]`
 - `TELESCOPE_SHOULD_VERIFY=false` - turn off helm chart collection - required to gather some data about Airflow in Kubernetes
+- `TELESCOPE_REPORT_PACKAGE_URL` - sets the URL that both the local CLI AND `TELESCOPE_AIRFLOW_REMOTE_CMD` will use (unless `TELESCOPE_AIRFLOW_REMOTE_CMD` is set directly)
 
 # Alternative Methods 
 Telescope can also be installed as an Airflow plugin and has an `AeroscopeOperator` 
