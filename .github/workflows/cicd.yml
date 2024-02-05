@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         os: [ "ubuntu-latest" ]
-        python-version: ["3.7", "3.9", "3.10"]
+        python-version: ["3.7", "3.8","3.9", "3.10"]
     runs-on: ${{ matrix.os }}
 
     defaults:
@@ -19,7 +19,7 @@ jobs:
 
     - name: Set up python ${{ matrix.python-version }}
       id: setup-python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -40,7 +40,13 @@ jobs:
 
     - name: Install dependencies
       if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction --no-root
+      run: poetry install --no-interaction --no-root --with=dev
+
+    - name: Run pre-commit
+      if: github.event_name == 'pull_request'
+      run: |
+        git fetch origin
+        pre-commit run --from-ref origin/${{ github.event.pull_request.base.ref }} --to-ref ${{ github.event.pull_request.head.sha }}
 
     - name: Run style checks
       run: |
