@@ -2,7 +2,7 @@
 <p align="center">
   <img
     width="200px" height="200px"
-    src="https://raw.githubusercontent.com/astronomer/telescope/dev/telescope.svg"
+    src="https://raw.githubusercontent.com/astronomer/telescope/main/telescope.svg"
     alt="Astronomer Telescope Logo"
   />
 </p>
