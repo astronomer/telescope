@@ -30,8 +30,13 @@ jobs:
           just build
           just package-report
       - uses: pypa/gh-action-pypi-publish@v1
+        if: matrix.os == 'ubuntu-18.04'
         with:
           password: ${{ secrets.TWINE_TOKEN }}
+      - uses: mhausenblas/mkdocs-deploy-gh-pages@1.26
+        if: matrix.os == 'ubuntu-18.04'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v3
         if: matrix.os == 'ubuntu-18.04'
         with:
