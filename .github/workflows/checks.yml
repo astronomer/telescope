@@ -5,19 +5,16 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v5
         with:
+          python-version: '3.10'
           cache: 'pip'
       - uses: extractions/setup-just@v1
-      - name: Install dependencies
-        run: |
-          python -m venv venv
-          source venv/bin/activate
-          just install
-      - name: Run pre-commit
-        run: |
+      - run: just install
+      - run: |
           git fetch origin
           pre-commit run --from-ref origin/${{ github.event.pull_request.base.ref }} --to-ref ${{ github.event.pull_request.head.sha }}
 
@@ -41,14 +38,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
       - uses: extractions/setup-just@v1
-      - name: Install dependencies
-        run: |
-          python -m venv venv
-          source venv/bin/activate
-          just install
-
-      - name: Test with pytest
-        run: just test-with-coverage
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
+      - run: just install
+      - run: just test-with-coverage
+      - uses: codecov/codecov-action@v3

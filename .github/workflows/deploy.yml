@@ -23,16 +23,15 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
       - uses: extractions/setup-just@v1
-      - run: |
-          python -m venv venv
-          source venv/bin/activate
-          just install
+      - run: just install
       - name: Build report and package
         if: matrix.os == 'ubuntu-18.04'
         run: |
           just build
           just package-report
-          just upload-pypi
+      - uses: pypa/gh-action-pypi-publish@v1
+        with:
+          password: ${{ secrets.TWINE_TOKEN }}
       - uses: actions/upload-artifact@v3
         if: matrix.os == 'ubuntu-18.04'
         with:
