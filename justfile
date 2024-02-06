@@ -5,7 +5,7 @@ BRANCH := `git branch --show-current`
 EXTRAS := "dev"
 SRC_DIR := "astronomer_telescope"
 DOCS_DIR := "docs"
-VERSION := `echo v$(python -c 'from astronomer_telescope import __version__; print(__version__)')`
+VERSION := `echo $(python -c 'from astronomer_telescope import __version__; print(__version__)')`
 
 default:
   @just --choose
@@ -55,11 +55,10 @@ deploy-docs UPSTREAM="origin": clean
 
 # Tag as v$(<src>.__version__) and push to GH
 tag: clean
-    #!/usr/bin/env sh
     # Delete tag if it already exists
-    -git tag -d $VERSION
+    git tag -d v{{VERSION}} || true
     # Tag and push
-    git tag $VERSION
+    git tag v{{VERSION}}
 
 # Remove temporary or build folders
 clean:
@@ -72,7 +71,7 @@ upload-tag: tag
 # Build the project
 build: install clean
     python -m build
-    mv dist/{{SRC_DIR}}*.whl .
+    cp dist/{{SRC_DIR}}*.whl .
 
 # Upload to TestPyPi for testing (note: you can only use each version once)
 upload-testpypi: build install clean
@@ -107,18 +106,18 @@ package-pyinstaller: clean
     --hidden-import astronomer_telescope.getters.docker_client \
     --recursive-copy-metadata astronomer-telescope \
     astronomer_telescope/__main__.py
-  cp dist/astronomer-telescope telescope-$(shell uname -s | awk '{print tolower($$0)}' )-$(shell uname -m)
+  cp dist/astronomer-telescope telescope-$(uname -s | awk '{print tolower($0)}' )-$(uname -m)
 
 # Release to GitHub - DO NOT USE THIS, GHA DOES THIS AUTOMATICALLY
 local_release: clean
   $(just) build
   $(just) package-report
   $(just) package-pyinstaller
-  -gh release delete -y $(TELESCOPE_TAG)
-  git tag $(TELESCOPE_TAG)
-  git push origin $(TELESCOPE_TAG)
-  gh release create $(TELESCOPE_TAG) \
-    ./astronomer_telescope-$(TELESCOPE_VERSION)-py3-none-any.whl \
+  gh release delete -y v$(VERSION)
+  git tag v$(VERSION)
+  git push origin v$(VERSION)
+  gh release create v$(VERSION) \
+    ./astronomer_telescope-$(VERSION)-py3-none-any.whl \
     airflow_report.pyz \
     --prerelease \
     --generate-notes

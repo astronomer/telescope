@@ -11,51 +11,56 @@ jobs:
         python-version: ["3.9"]
         os:
           # --8<-- [start:oses]
-          - "ubuntu-18.04"
+          - "ubuntu-20.04"
           - "windows-latest"
           - "macos-latest"
           # --8<-- [end:oses]
     runs-on: ${{ matrix.os }}
+    environment:
+      name: pypi
+      url: https://pypi.org/p/astronomer-telescope
+    permissions:
+      id-token: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
       - uses: extractions/setup-just@v1
       - run: just install
-      - name: Build report and package
-        if: matrix.os == 'ubuntu-18.04'
-        run: |
-          just build
-          just package-report
-      - uses: pypa/gh-action-pypi-publish@v1
-        if: matrix.os == 'ubuntu-18.04'
+      - run: just build
+        if: matrix.os == 'ubuntu-20.04'
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        if: matrix.os == 'ubuntu-20.04'
         with:
-          password: ${{ secrets.TWINE_TOKEN }}
-      - uses: mhausenblas/mkdocs-deploy-gh-pages@1.26
-        if: matrix.os == 'ubuntu-18.04'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - uses: actions/upload-artifact@v3
-        if: matrix.os == 'ubuntu-18.04'
+          skip-existing: true
+      - run: just package-report
+        if: matrix.os == 'ubuntu-20.04'
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-20.04'
         with:
           path: airflow_report.pyz
+          name: airflow_report
+          retention-days: 5
       - run: just package-pyinstaller
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: |
             telescope-*
+          name: binary-${{ matrix.os }}
+          retention-days: 5
 
   release:
     needs: build
     runs-on: "ubuntu-latest"
     steps:
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
+    - run: ls -R
     - uses: softprops/action-gh-release@v1
       with:
-        prerelease: false
+        prerelease: true
         generate_release_notes: true
         files: |
-          artifact/airflow_report.pyz
-          artifact/telescope-*
+          airflow_report/airflow_report.pyz
+          binary-*/telescope-*
