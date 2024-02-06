@@ -139,7 +139,6 @@ def get_from_getter(
     airflow_spinner = Halo(spinner="simpleDots", enabled=False)
     airflow_spinner.start()
     try:
-        print(AIRFLOW_REPORT_CMD)
         result: Union[Dict[Any, Any], str] = getter.get(AIRFLOW_REPORT_CMD)
 
         # bubble up exception to except clause
