@@ -33,12 +33,15 @@ def test_deep_clean_nested():
         ("", ""),
         ("a\nb\nc", "a\nb\nc"),
         (
-            "INFO 123 - xyz - abc\n\n\nERROR - 1234\n2019-02-17 12:40:14,798 : CRITICAL : __main__ : Fatal error. Cannot continue\n%%%%%%%\ne30=",
+            "INFO 123 - xyz - abc\n\n\nERROR - 1234"
+            "\n2019-02-17 12:40:14,798 : CRITICAL : __main__ : Fatal error. Cannot continue\n%%%%%%%\ne30=",
             {},
         ),
         (
-            "INFO 123 - xyz - abc\n\n\nERROR - 1234\n2019-02-17 12:40:14,798 : CRITICAL : __main__ : Fatal error. Cannot continue",
-            "INFO 123 - xyz - abc\n\n\nERROR - 1234\n2019-02-17 12:40:14,798 : CRITICAL : __main__ : Fatal error. Cannot continue",
+            "INFO 123 - xyz - abc\n\n\nERROR - 1234"
+            "\n2019-02-17 12:40:14,798 : CRITICAL : __main__ : Fatal error. Cannot continue",
+            "INFO 123 - xyz - abc\n\n\nERROR - 1234"
+            "\n2019-02-17 12:40:14,798 : CRITICAL : __main__ : Fatal error. Cannot continue",
         ),
     ],
 )

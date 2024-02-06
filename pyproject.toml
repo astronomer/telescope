@@ -12,8 +12,30 @@ authors = [
     { name = "CETA Team", email = "ceta@astronomer.io" },
     { name = "Astronomer", email = "humans@astronomer.io" }
 ]
-license = "Proprietary"
 requires-python = ">=3.6.2"
+dependencies = [
+
+  # for kubernetes mode
+  "kubernetes >= 21.7",
+
+  # for ssh mode
+  "fabric >= 2.6.0",
+
+  # for docker mode
+  "docker >= 5.0.3",
+
+  # for local mode
+  "invoke >= 1.6.0",
+
+  # General
+  "PyYAML >= 6.0",
+  "click >= 8.0.3", # CLI
+  "lazyimport >= 0.0.4", # don't load kube/docker unless we need to
+  "halo >= 0.0.31",  # loady-spinny
+  "retrying >= 1.3.3",
+  "importlib_metadata; python_version < '3.8'",
+  "rich >= 11.1.0",
+]
 
 [project.urls]
 Homepage = "https://astronomer.io"
@@ -23,7 +45,6 @@ Source = "https://github.com/astronomer/telescope/"
 #include-package-data = true
 
 [tool.setuptools.packages.find]
-include = ["astronomer_telescope"]
 exclude = [
     "*venv", "*venv.*",
     "*tests.*", "*tests",
@@ -34,24 +55,20 @@ exclude = [
 [tool.setuptools.dynamic]
 version = { attr = "astronomer_telescope.__version__" }
 
-[project.entry-points."airflow.plugins"]
+
+[project.entry-points.console_scripts]
 "telescope" =  "astronomer_telescope.__main__:cli"
 
-[project.dependencies]
-"importlib_metadata" = { version = "^4.5.0", python = "<3.8" }
-"rich" = "^11.1.0"
-"kubernetes" = "^21.7"
-"fabric" = "^2.6.0"
-"docker" = "^5.0.3"
-"invoke" = "^1.6.0"
-"PyYAML" = "^6.0"
-"click" = "^8.0.3"
-"lazyimport" = "^0.0.4"
-"halo" = "^0.0.31"
-"retrying" = "^1.3.3"
+[project.scripts]
+"telescope" =  "astronomer_telescope.__main__:cli"
 
 [project.optional-dependencies]
 dev = [
+  # build
+  "pyinstaller >= 4.10",
+  "build",
+  "twine",
+
   # pre-commit
   "pre-commit >= 2.14",
   "ruff",
@@ -70,10 +87,8 @@ dev = [
   "pytest",
   "pytest-cov",
   "pytest-sugar",
-  "pytest-integration",
   "pytest-mock",
   "apache-airflow",
-  "pyinstaller >= 4.10"
 ]
 
 
@@ -96,6 +111,12 @@ exclude = '''
 
 [tool.bandit]
 exclude_dirs = ["tests"]
+skips = [
+    "B307", # eval for dag obfuscation
+    "B310", # urlopen in for airflow_Report.pyz
+    "B608"  # SQL Injection in airflow_report.pyz
+]
+
 
 [tool.ruff]
 line-length = 120
@@ -126,7 +147,6 @@ addopts = [
   "--strict-markers",
   "--tb=short",
   "--disable-warnings",
-  "--numprocesses=auto",
   "--no-header",
   "--doctest-modules",
   "--doctest-continue-on-failure",

@@ -425,31 +425,131 @@ def usage_stats_report(session):
         """
         SELECT
             dag_id,
-            (SELECT COUNT(1) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "1_days_success",
-            (SELECT COUNT(1) FROM task_instance AS sti  WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "1_days_failed",
-            (SELECT MIN(duration) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "min_duration_1_days_success",
-            (SELECT MAX(duration) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "max_duration_1_days_success",
-            (SELECT AVG(duration) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "avg_duration_1_days_success",
-            (SELECT COUNT(1) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "7_days_success",
-            (SELECT COUNT(1) FROM task_instance AS sti  WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "7_days_failed",
-            (SELECT MIN(duration) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "min_duration_7_days_success",
-            (SELECT MAX(duration) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "max_duration_7_days_success",
-            (SELECT AVG(duration) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "avg_duration_7_days_success",
-            (SELECT COUNT(1) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "30_days_success",
-            (SELECT COUNT(1) FROM task_instance AS sti  WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "30_days_failed",
-            (SELECT MIN(duration) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "min_duration_30_days_success",
-            (SELECT MAX(duration) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "max_duration_30_days_success",
-            (SELECT AVG(duration) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "avg_duration_30_days_success",
-            (SELECT COUNT(1) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "365_days_success",
-            (SELECT COUNT(1) FROM task_instance AS sti  WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "365_days_failed",
-            (SELECT MIN(duration) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "min_duration_365_days_success",
-            (SELECT MAX(duration) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "max_duration_365_days_success",
-            (SELECT AVG(duration) FROM task_instance AS sti  WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "avg_duration_365_days_success",
-            (SELECT COUNT(1) FROM task_instance AS sti  WHERE state = 'success' AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "all_days_success",
-            (SELECT COUNT(1) FROM task_instance AS sti  WHERE state = 'failed' AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "all_days_failed",
-            (SELECT MIN(duration) FROM task_instance AS sti  WHERE state = 'success' AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "min_duration_all_days_success",
-            (SELECT MAX(duration) FROM task_instance AS sti  WHERE state = 'success' AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "max_duration_all_days_success",
-            (SELECT AVG(duration) FROM task_instance AS sti  WHERE state = 'success' AND sti.dag_id = ti.dag_id AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator') AS "avg_duration_all_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "1_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "1_days_failed",
+            (
+                SELECT MIN(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "min_duration_1_days_success",
+            (
+                SELECT MAX(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "max_duration_1_days_success",
+            (
+                SELECT AVG(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "avg_duration_1_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "7_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "7_days_failed",
+            (
+                SELECT MIN(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "min_duration_7_days_success",
+            (
+                SELECT MAX(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "max_duration_7_days_success",
+            (
+                SELECT AVG(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "avg_duration_7_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "30_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "30_days_failed",
+            (
+                SELECT MIN(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "min_duration_30_days_success",
+            (
+                SELECT MAX(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "max_duration_30_days_success",
+            (
+                SELECT AVG(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "avg_duration_30_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "365_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "365_days_failed",
+            (
+                SELECT MIN(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "min_duration_365_days_success",
+            (
+                SELECT MAX(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "max_duration_365_days_success",
+            (
+                SELECT AVG(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "avg_duration_365_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'success' AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "all_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'failed' AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "all_days_failed",
+            (
+                SELECT MIN(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "min_duration_all_days_success",
+            (
+                SELECT MAX(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "max_duration_all_days_success",
+            (
+                SELECT AVG(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "avg_duration_all_days_success"
         FROM task_instance as ti
         GROUP BY 1;
     """.format(

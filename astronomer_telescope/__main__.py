@@ -5,7 +5,6 @@ import logging
 import multiprocessing
 import os
 import shutil
-import urllib
 from datetime import datetime
 from functools import partial
 from urllib.request import urlopen
@@ -18,7 +17,6 @@ from halo import Halo
 
 import astronomer_telescope
 from astronomer_telescope.config import AIRGAPPED, REPORT_PACKAGE, REPORT_PACKAGE_URL
-from astronomer_telescope.functions.astronomer_enterprise import get_helm_info
 from astronomer_telescope.functions.cluster_info import cluster_info
 from astronomer_telescope.getter_util import gather_getters, get_from_getter
 from astronomer_telescope.getters.kubernetes import KubernetesGetter
@@ -167,7 +165,7 @@ def cli(
             data["cluster_info"] = {"error": str(e)}
 
         if AIRGAPPED:
-            with urllib.request.urlopen(REPORT_PACKAGE_URL) as response, open(REPORT_PACKAGE, "wb") as out_file:
+            with urlopen(REPORT_PACKAGE_URL) as response, open(REPORT_PACKAGE, "wb") as out_file:
                 shutil.copyfileobj(response, out_file)
 
     # get all the Airflow Reports at once, in parallel

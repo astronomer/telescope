@@ -1,17 +1,21 @@
 name: Check
-on:
-  - pull_request
-
+on: [push, pull_request]
+permissions:
+  contents: write
 jobs:
-  pre-commit:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v5
+        with:
+          cache: 'pip'
       - uses: extractions/setup-just@v1
+      - name: Install dependencies
+        run: |
+          just install
       - name: Run pre-commit
         run: |
-          just install install-precommit
           git fetch origin
           pre-commit run --from-ref origin/${{ github.event.pull_request.base.ref }} --to-ref ${{ github.event.pull_request.head.sha }}
 
@@ -20,160 +24,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ "3.10", "3.11" ]
+        python-version: ["3.7", "3.8","3.9", "3.10"]
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        id: setup-python
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'pip'
       - uses: extractions/setup-just@v1
       - name: Install dependencies
-        run: just install
+        run: |
+          just install
 
       - name: Test with pytest
         run: just test-with-coverage
 
       - name: Upload coverage
         uses: codecov/codecov-action@v3
-
-
-
-
-name: checks
-on: [push, pull_request]
-permissions:
-  contents: write
-jobs:
-  lint-test:
-    strategy:
-      matrix:
-        os: [ ]
-        python-version: ["3.7", "3.8","3.9", "3.10"]
-    runs-on: "ubuntu-latest"
-
-    defaults:
-      run:
-        shell: bash
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up python ${{ matrix.python-version }}
-      id: setup-python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Load cached venv
-      id: cached-poetry-dependencies
-      uses: actions/cache@v2
-      with:
-        path: .venv
-        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
-    - name: Install dependencies
-      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction --no-root --with=dev
-
-    - name: Run pre-commit
-      if: github.event_name == 'pull_request'
-      run: |
-        git fetch origin
-        pre-commit run --from-ref origin/${{ github.event.pull_request.base.ref }} --to-ref ${{ github.event.pull_request.head.sha }}
-
-    - name: Run style checks
-      run: |
-        make check-codestyle
-
-    - name: Run tests
-      run: |
-        make test-with-coverage
-
-    - name: Upload coverage
-      uses: codecov/codecov-action@v3
-
-  build:
-    needs: lint-test
-    strategy:
-      matrix:
-        python-version: ["3.9"]
-        os: ["ubuntu-18.04", "windows-latest", "macos-latest"]
-    runs-on: ${{ matrix.os }}
-    if: startsWith(github.ref, 'refs/tags/v')
-    defaults:
-      run:
-        shell: bash
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up python ${{ matrix.python-version }}
-      id: setup-python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    - name: Install Poetry
-      uses: snok/install-poetry@v1
-      with:
-        virtualenvs-create: true
-        virtualenvs-in-project: true
-        installer-parallel: true
-
-    - name: Load cached venv
-      id: cached-poetry-dependencies
-      uses: actions/cache@v3
-      with:
-        path: .venv
-        key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
-
-    - name: Install dependencies
-      if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-      run: poetry install --no-interaction --no-root
-
-    - name: Install library
-      run: poetry install --no-interaction
-
-    - name: Build wheel and report, push to pypi
-      if: matrix.os == 'ubuntu-18.04'
-      run: |
-        make build
-        make package-report
-        make publish
-      env:
-        POETRY_PYPI_TOKEN_PYPI: ${{ secrets.POETRY_PYPI_TOKEN_PYPI }}
-
-    - uses: actions/upload-artifact@v3
-      if: matrix.os == 'ubuntu-18.04'
-      with:
-        path: airflow_report.pyz
-
-    - name: Build binary
-      run: |
-        source $VENV
-        make package-pyinstaller
-
-    - uses: actions/upload-artifact@v3
-      with:
-        path: |
-          telescope-*
-
-  release:
-    needs: build
-    runs-on: "ubuntu-latest"
-    if: startsWith(github.ref, 'refs/tags/v')
-
-    steps:
-    - uses: actions/download-artifact@v3
-
-    - name: Release
-      uses: softprops/action-gh-release@v1
-      with:
-        prerelease: true
-        generate_release_notes: true
-        files: |
-          artifact/airflow_report.pyz
-          artifact/telescope-*

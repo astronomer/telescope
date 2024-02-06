@@ -1,27 +1,22 @@
 import json
 import os
 import pprint
-
-try:
-    from importlib.resources import path
-except ModuleNotFoundError:
-    from importlib_resources import path
-
+from pathlib import Path
 import pytest
-
-from tests import resources
 
 manual_tests = pytest.mark.skipif(not bool(os.getenv("MANUAL_TESTS")), reason="requires env setup")
 
 
-@pytest.fixture
-def sample_report():
-    with path(resources, "report.json") as p:
-        report = str(p.resolve())
+@pytest.fixture(scope="session")
+def project_root() -> Path:
+    return Path(__file__).parent.parent
 
-        with open(report) as f:
-            input_report = json.load(f)
-            return input_report
+
+@pytest.fixture
+def sample_report(project_root):
+    with open(project_root / "tests/resources/report.json") as f:
+        input_report = json.load(f)
+        return input_report
 
 
 @pytest.hookimpl(tryfirst=True)

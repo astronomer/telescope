@@ -33,6 +33,9 @@ test:
 test-with-coverage:
     pytest -c pyproject.toml --cov=./ --cov-report=xml
 
+test-cicd:
+  act pull-request -W .github/workflows/checks.yml --container-architecture linux/amd64
+
 # Run ruff and black (normally done with pre-commit)
 lint:
     ruff check .
@@ -67,6 +70,8 @@ upload-testpypi: build install clean
 upload-pypi: build install clean
     python -m twine check dist/*
     TWINE_USER=${TWINE_USER} TWINE_PASS=${TWINE_PASS} python -m twine upload dist/*
+
+deploy: upload-pypi
 
 # Package the `airflow_report.pyz`
 package-report: clean

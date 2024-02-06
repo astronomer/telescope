@@ -53,7 +53,7 @@ def parse_getters_from_hosts_file(hosts: dict, label_selector: str = "") -> Dict
         has_autodiscovery = getter_type in AUTODISCOVERERS.keys()
 
         # If the entry is a list, or we can autodiscover (it's probably empty)
-        if type(hosts_of_type) == list or has_autodiscovery:
+        if isinstance(hosts_of_type, list) or has_autodiscovery:
             # If we have an "autodiscovery" as a method, and the list is empty, do it
             if len(hosts_of_type) == 0 and has_autodiscovery:
                 log.info(f"Attempting autodiscovery for {host_type} hosts...")
@@ -132,16 +132,18 @@ def get_from_getter(
     log.debug(f"Fetching 'report[{full_key}]'...")
 
     # We might not have a namespace - if we aren't using --kubernetes
+    # noinspection PyTestUnpassedFixture
     friendly_name = getter_key.split("|")[0] if "|" in getter_key else getter_key
 
     # get airflow report
     airflow_spinner = Halo(spinner="simpleDots", enabled=False)
     airflow_spinner.start()
     try:
+        print(AIRFLOW_REPORT_CMD)
         result: Union[Dict[Any, Any], str] = getter.get(AIRFLOW_REPORT_CMD)
 
         # bubble up exception to except clause
-        if type(result) == str:
+        if isinstance(result, str):
             log.debug(result)
             raise RuntimeError(result)
 
