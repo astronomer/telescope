@@ -9,7 +9,12 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.9"]
-        os: ["ubuntu-18.04", "windows-latest", "macos-latest"]
+        os:
+          # --8<-- [start:oses]
+          - "ubuntu-18.04"
+          - "windows-latest"
+          - "macos-latest"
+          # --8<-- [end:oses]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3

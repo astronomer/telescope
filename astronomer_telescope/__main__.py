@@ -97,7 +97,7 @@ def version(ctx, self, value):
     type=str,
     help="URL to write data directly to - given by an Astronomer Representative",
 )
-def cli(
+def telescope(
     use_local: bool,
     use_docker: bool,
     use_kubernetes: bool,
@@ -216,4 +216,4 @@ def cli(
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
-    cli(auto_envvar_prefix="TELESCOPE")
+    telescope(auto_envvar_prefix="TELESCOPE")

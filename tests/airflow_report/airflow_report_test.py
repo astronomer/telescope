@@ -14,6 +14,7 @@ from astronomer_telescope.util import clean_airflow_report_output
 from tests.conftest import manual_tests
 
 AIRFLOW_IMAGES = [
+    # --8<-- [start:airflow-images]
     "apache/airflow:slim-2.8.1",
     "apache/airflow:slim-2.7.3",
     "apache/airflow:slim-2.6.0",
@@ -26,6 +27,7 @@ AIRFLOW_IMAGES = [
     "apache/airflow:1.10.15",
     "apache/airflow:1.10.10",
     "bitnami/airflow:1.10.2",
+    # --8<-- [end:airflow-images]
 ]
 
 

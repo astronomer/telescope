@@ -1,0 +1,65 @@
+site_name: Telescope
+repo_url: https://github.com/astronomer/telescope
+edit_uri: edit/main/docs/
+site_url: https://astronomer.github.io/telescope/
+
+theme:
+    name: material
+
+    palette:
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+    font:
+      text: Roboto
+      code: Roboto Mono
+
+    features:
+      - navigation.path
+      - navigation.sections
+      - navigation.tabs
+      - navigation.tabs.sticky
+      - navigation.top
+      - navigation.instant
+      - navigation.instant.progress
+      - toc.follow
+      - toc.integrate
+      - content.tabs.link
+      - content.action.edit
+      - content.code.copy
+      - search.share
+      - search.highlight
+      - search.suggest
+
+markdown_extensions:
+# Auto-documents click
+- mkdocs-click
+- pymdownx.superfences
+
+# Snippets provides the -8<-- syntax https://facelessuser.github.io/pymdown-extensions/extensions/snippets/
+- pymdownx.snippets
+
+# https://facelessuser.github.io/pymdown-extensions/extensions/magiclink/
+- pymdownx.magiclink
+- pymdownx.saneheaders
+
+- pymdownx.highlight:
+    use_pygments: true
+    anchor_linenums: true
+- pymdownx.inlinehilite
+
+plugins:
+- search

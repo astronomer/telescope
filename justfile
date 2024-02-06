@@ -4,6 +4,7 @@ set dotenv-load := true
 BRANCH := `git branch --show-current`
 EXTRAS := "dev"
 SRC_DIR := "astronomer_telescope"
+DOCS_DIR := "docs"
 VERSION := `echo v$(python -c 'from astronomer_telescope import __version__; print(__version__)')`
 
 default:
@@ -39,6 +40,18 @@ test-cicd:
 # Run ruff and black (normally done with pre-commit)
 lint:
     ruff check .
+
+# Render and serve documentation locally
+serve-docs:
+    mkdocs serve -w {{DOCS_DIR}} -w {{SRC_DIR}}
+
+# Build documentation locally (likely unnecessary)
+build-docs: clean
+    mkdocs build
+
+# Deploy documentation to GitHub pages (GHA does this automatically)
+deploy-docs UPSTREAM="origin": clean
+    mkdocs gh-deploy -r {{UPSTREAM}}
 
 # Tag as v$(<src>.__version__) and push to GH
 tag: clean

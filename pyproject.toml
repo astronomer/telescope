@@ -57,10 +57,10 @@ version = { attr = "astronomer_telescope.__version__" }
 
 
 [project.entry-points.console_scripts]
-"telescope" =  "astronomer_telescope.__main__:cli"
+"telescope" =  "astronomer_telescope.__main__:telescope"
 
 [project.scripts]
-"telescope" =  "astronomer_telescope.__main__:cli"
+"telescope" =  "astronomer_telescope.__main__:telescope"
 
 [project.optional-dependencies]
 dev = [
@@ -80,7 +80,6 @@ dev = [
   "mkdocs",
   "mkdocs-click",
   "mkdocs-material",
-  "mkdocstrings[python]",
   "pygments",
 
   # test
