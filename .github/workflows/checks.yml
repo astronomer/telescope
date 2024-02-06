@@ -13,6 +13,8 @@ jobs:
       - uses: extractions/setup-just@v1
       - name: Install dependencies
         run: |
+          python -m venv venv
+          source venv/bin/activate
           just install
       - name: Run pre-commit
         run: |
@@ -41,6 +43,8 @@ jobs:
       - uses: extractions/setup-just@v1
       - name: Install dependencies
         run: |
+          python -m venv venv
+          source venv/bin/activate
           just install
 
       - name: Test with pytest
