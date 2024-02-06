@@ -65,8 +65,10 @@ clean:
     rm -rf build dist site *.egg-info
     find . | grep -E "(__pycache__|\.pyc|\.pyo$$)" | xargs rm -rf
 
-upload-tag: tag
-    git push origin --tags
+deploy-tag: tag
+    git push origin v{{VERSION}}
+
+deploy: deploy-tag
 
 # Build the project
 build: install clean
@@ -82,8 +84,6 @@ upload-testpypi: build install clean
 upload-pypi: build install clean
     python -m twine check dist/*
     TWINE_USER=${TWINE_USER} TWINE_PASS=${TWINE_PASS} python -m twine upload dist/*
-
-deploy: upload-pypi
 
 # Package the `airflow_report.pyz`
 package-report: clean
