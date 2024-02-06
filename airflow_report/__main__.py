@@ -1,5 +1,3 @@
-from typing import Any, List, Optional
-
 import base64
 import json
 import logging
@@ -14,17 +12,18 @@ logging.getLogger("google.cloud.bigquery.opentelemetry_tracing").setLevel(loggin
 
 try:
     from airflow.utils.session import provide_session
-except:
-    from typing import Callable, Iterator, TypeVar
+except ImportError:
+    from typing import TypeVar
 
     import contextlib
     from functools import wraps
     from inspect import signature
 
-    from airflow import DAG, settings
+    from airflow import settings
 
     RT = TypeVar("RT")
 
+    # noinspection PyUnresolvedReferences
     def find_session_idx(func):
         # type: (Callable[..., RT]) -> int
         """Find session index in function call parameter."""
@@ -37,6 +36,7 @@ except:
 
         return session_args_idx
 
+    # noinspection PyUnresolvedReferences
     @contextlib.contextmanager
     def create_session():
         """Contextmanager that will create and teardown a session."""
@@ -50,6 +50,7 @@ except:
         finally:
             session.close()
 
+    # noinspection PyUnresolvedReferences
     def provide_session(func):
         # type: (Callable[..., RT]) -> Callable[..., RT]
         """
@@ -60,6 +61,7 @@ except:
         """
         session_args_idx = find_session_idx(func)
 
+        # noinspection PyTypeHints
         @wraps(func)
         def wrapper(*args, **kwargs):
             # type: () -> RT
@@ -72,12 +74,13 @@ except:
         return wrapper
 
 
+# noinspection PyExceptClausesOrder
 try:
     from airflow.utils.log.secrets_masker import should_hide_value_for_key
 except ImportError:
-    should_hide_value_for_key = lambda x: False  # too old version
+    should_hide_value_for_key = lambda x: False  # too old version  # noqa: E731
 except ModuleNotFoundError:
-    should_hide_value_for_key = lambda x: False  # too old version
+    should_hide_value_for_key = lambda x: False  # too old version  # noqa: E731
 
 
 def airflow_version_report():
@@ -87,9 +90,11 @@ def airflow_version_report():
     return version
 
 
+# noinspection PyUnresolvedReferences
 def providers_report():
     # type: () -> Optional[dict]
     """Return dict of providers packages {package name: version}"""
+    # noinspection PyExceptClausesOrder
     try:
         from airflow.providers_manager import ProvidersManager
 
@@ -178,6 +183,7 @@ def env_vars_report():
     return {"config_options": config_options, "connections": connections, "variables": variables}
 
 
+# noinspection PyUnresolvedReferences
 def pools_report():
     # type: () -> Any
     from airflow.models import Pool
@@ -186,13 +192,14 @@ def pools_report():
         return Pool.slots_stats()
     except AttributeError:
         try:
-            from typing import Dict, Iterable, Optional, Tuple
+            from typing import Dict, Iterable, Optional, Tuple  # noqa: F401
 
             from airflow.exceptions import AirflowException
             from airflow.models import Pool
             from airflow.utils.state import State
-            from sqlalchemy.orm.session import Session
+            from sqlalchemy.orm.session import Session  # noqa: F401
 
+            # noinspection PyPep8Naming
             EXECUTION_STATES = {
                 State.RUNNING,
                 State.QUEUED,
@@ -213,6 +220,7 @@ def pools_report():
 
                 pools = {}  # type: Dict[str, dict]
 
+                # noinspection PyTypeChecker
                 query = session.query(Pool.pool, Pool.slots)
 
                 pool_rows = query.all()  # type: Iterable[Tuple[str, int]]
@@ -221,6 +229,7 @@ def pools_report():
                         total_slots = float("inf")  # type: ignore
                     pools[pool_name] = dict(total=total_slots, running=0, queued=0, open=0)
 
+                # noinspection PyTypeChecker,PyUnresolvedReferences
                 state_count_by_pool = (
                     session.query(TaskInstance.pool, TaskInstance.state).filter(
                         TaskInstance.state.in_(list(EXECUTION_STATES))
@@ -261,7 +270,7 @@ def pools_report():
             return [p.to_json() for p in get_pools()]
 
 
-# noinspection SqlNoDataSourceInspection,PyBroadException
+# noinspection SqlNoDataSourceInspection,PyBroadException,PyUnresolvedReferences
 @provide_session
 def dags_report(session):
     # type: (Any) -> List[dict]
@@ -311,7 +320,7 @@ def dags_report(session):
         if dag["fileloc"]:
             try:
                 dag["variables"], dag["connections"] = dag_varconn_usage(dag["fileloc"])
-            except:
+            except:  # noqa: E722
                 dag["variables"] = None
                 dag["connections"] = None
             try:
@@ -319,19 +328,21 @@ def dags_report(session):
                     dag["fileloc"]
                 ).items():
                     dag[dag_complexity_metric_name] = dag_complexity_metric_value
-            except:
+            except:  # noqa: E722
                 dag["cc_rank"] = None
                 dag["mi_rank"] = None
                 dag["analysis"] = None
     return dags
 
 
+# noinspection RegExpAnonymousGroup
 var_patterns = [
     re.compile(r"{{[\s]*var.value.([a-zA-Z-_]+)[\s]*}}"),  # "{{ var.value.<> }}"
     re.compile(r"{{[\s]*var.json.([a-zA-Z-_]+)[\s]*}}"),  # "{{ var.json.<> }}"
     re.compile(r"""Variable.get[(]["']([a-zA-Z-_]+)["'][)]"""),  # "Variable.get(<>)"
 ]
 
+# noinspection RegExpAnonymousGroup
 conn_patterns = [
     re.compile(r"""(?=[\w]*[_])conn_id=["']([a-zA-Z-_]+)["']"""),  # "conn_id=<>"
     re.compile(r"[{]{2}[\s]*conn[.]([a-zA-Z-_]+)[.]?"),  # "{{ conn.<> }}"
@@ -369,6 +380,7 @@ def dag_complexity_report(dag_path):
         }
 
 
+# noinspection PyUnresolvedReferences
 @provide_session
 def connections_report(session):
     # type: (Any) -> List[str]
@@ -381,12 +393,13 @@ def connections_report(session):
     return [conn_id for (conn_id,) in session.query(Connection.conn_id)]
 
 
+# noinspection PyUnresolvedReferences
 @provide_session
 def variables_report(session):
     # type: (Any) -> List[str]
     try:
         from airflow.models.variable import Variable
-    except:
+    except:  # noqa: E722
         # airflow 1.10.2 has a different import path
         from airflow.models import Variable
     return [key for (key,) in session.query(Variable.key)]
@@ -403,7 +416,7 @@ def days_ago(dialect, days):
         return "now() - interval '{} days'".format(days)
 
 
-# noinspection SqlResolve
+# noinspection SqlResolve,PyUnresolvedReferences,SqlMissingColumnAliases
 @provide_session
 def usage_stats_report(session):
     # type: (Any) -> Any
@@ -412,17 +425,219 @@ def usage_stats_report(session):
         """
         SELECT
             dag_id,
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "1_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "1_days_failed",
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "7_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "7_days_failed",
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "30_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "30_days_failed",
-            (select count(1) from task_instance as sti where state = 'success' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "365_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' AND start_date > {} and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "365_days_failed",
-            (select count(1) from task_instance as sti where state = 'success' and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "all_days_success",
-            (select count(1) from task_instance as sti where state = 'failed' and sti.dag_id = ti.dag_id and sti.operator != 'EmptyOperator' and sti.operator != 'DummyOperator') as "all_days_failed"
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "1_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "1_days_failed",
+            (
+                SELECT MIN(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "min_duration_1_days_success",
+            (
+                SELECT MAX(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "max_duration_1_days_success",
+            (
+                SELECT AVG(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "avg_duration_1_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "7_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "7_days_failed",
+            (
+                SELECT MIN(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "min_duration_7_days_success",
+            (
+                SELECT MAX(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "max_duration_7_days_success",
+            (
+                SELECT AVG(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "avg_duration_7_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "30_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "30_days_failed",
+            (
+                SELECT MIN(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "min_duration_30_days_success",
+            (
+                SELECT MAX(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "max_duration_30_days_success",
+            (
+                SELECT AVG(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "avg_duration_30_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "365_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "365_days_failed",
+            (
+                SELECT MIN(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "min_duration_365_days_success",
+            (
+                SELECT MAX(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "max_duration_365_days_success",
+            (
+                SELECT AVG(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "avg_duration_365_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'success' AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "all_days_success",
+            (
+                SELECT COUNT(1) FROM task_instance AS sti
+                WHERE state = 'failed' AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "all_days_failed",
+            (
+                SELECT MIN(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "min_duration_all_days_success",
+            (
+                SELECT MAX(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "max_duration_all_days_success",
+            (
+                SELECT AVG(duration) FROM task_instance AS sti
+                WHERE state = 'success' AND sti.dag_id = ti.dag_id
+                AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
+            ) AS "avg_duration_all_days_success"
         FROM task_instance as ti
+        GROUP BY 1;
+    """.format(
+            days_ago(dialect, 1),
+            days_ago(dialect, 1),
+            days_ago(dialect, 1),
+            days_ago(dialect, 1),
+            days_ago(dialect, 1),
+            days_ago(dialect, 7),
+            days_ago(dialect, 7),
+            days_ago(dialect, 7),
+            days_ago(dialect, 7),
+            days_ago(dialect, 7),
+            days_ago(dialect, 30),
+            days_ago(dialect, 30),
+            days_ago(dialect, 30),
+            days_ago(dialect, 30),
+            days_ago(dialect, 30),
+            days_ago(dialect, 365),
+            days_ago(dialect, 365),
+            days_ago(dialect, 365),
+            days_ago(dialect, 365),
+            days_ago(dialect, 365),
+        )
+    )
+    return [dict(r) for r in session.execute(sql)]
+
+
+# noinspection SqlResolve, SqlMissingColumnAliases,PyUnresolvedReferences
+@provide_session
+def usage_stats_dag_rollup_report(session):
+    # type: (Any) -> Any
+    dialect = session.bind.dialect.name
+    sql = text(
+        """
+        SELECT
+            dag_id,
+            (
+                select count(1) from dag_run as sdr
+                where state = 'success' AND start_date > {}
+                and sdr.dag_id = dr.dag_id
+            ) as "1_days_success",
+            (
+                select count(1) from dag_run as sdr
+                where state = 'failed' AND start_date > {}
+                and sdr.dag_id = dr.dag_id
+            ) as "1_days_failed",
+            (
+                select count(1) from dag_run as sdr
+                where state = 'success' AND start_date > {}
+                and sdr.dag_id = dr.dag_id
+            ) as "7_days_success",
+            (
+                select count(1) from dag_run as sdr
+                where state = 'failed' AND start_date > {}
+                and sdr.dag_id = dr.dag_id
+            ) as "7_days_failed",
+            (
+                select count(1) from dag_run as sdr
+                where state = 'success' AND start_date > {}
+                and sdr.dag_id = dr.dag_id
+            ) as "30_days_success",
+            (
+                select count(1) from dag_run as sdr
+                where state = 'failed' AND start_date > {}
+                and sdr.dag_id = dr.dag_id
+            ) as "30_days_failed",
+            (
+                select count(1) from dag_run as sdr
+                where state = 'success' AND start_date > {}
+                and sdr.dag_id = dr.dag_id
+            ) as "365_days_success",
+            (
+                select count(1) from dag_run as sdr
+                where state = 'failed' AND start_date > {}
+                and sdr.dag_id = dr.dag_id
+            ) as "365_days_failed",
+            (
+                select count(1) from dag_run as sdr
+                where state = 'success'
+                and sdr.dag_id = dr.dag_id
+            ) as "all_days_success",
+            (
+                select count(1) from dag_run as sdr
+                where state = 'failed'
+                and sdr.dag_id = dr.dag_id
+            ) as "all_days_failed"
+        FROM dag_run as dr
         GROUP BY 1;
     """.format(
             days_ago(dialect, 1),
@@ -438,12 +653,11 @@ def usage_stats_report(session):
     return [dict(r) for r in session.execute(sql)]
 
 
-# noinspection SqlResolve
+# noinspection SqlResolve,SqlMissingColumnAliases,PyUnresolvedReferences
 @provide_session
 def user_report(session):
     # type: (Any) -> dict
     from airflow.version import version
-    from sqlalchemy.exc import OperationalError
 
     dialect = session.bind.dialect.name
     if version >= "1.10.5":
@@ -476,6 +690,7 @@ reports = [
     pools_report,
     dags_report,
     usage_stats_report,
+    usage_stats_dag_rollup_report,
     connections_report,
     variables_report,
     user_report,
