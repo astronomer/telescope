@@ -63,3 +63,5 @@ markdown_extensions:
 
 plugins:
 - search
+
+copyright: "Apache Airflow® is a trademark of the Apache Software Foundation"
