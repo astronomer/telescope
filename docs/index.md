@@ -90,6 +90,6 @@ Telescope `eval`'s any custom DAG obfuscation function passed to it.
 ---
 
 **Artwork**
-Orbiter logo [by b farias](https://thenounproject.com/bfarias/) used with permission
+Telescope logo [by b farias](https://thenounproject.com/bfarias/) used with permission
 from [The Noun Project](https://thenounproject.com/icon/telescope-1187570/)
 under [Creative Commons](https://creativecommons.org/licenses/by/3.0/us/legalcode).
