@@ -7,6 +7,7 @@ name = "astronomer-telescope"
 dynamic = ["version"]
 description = "A tool to observe distant (or local!) Airflow installations, and gather metadata or other required data."
 readme = "README.md"
+license = {file = "LICENSE"}
 authors = [
     { name = "Fritz Davenport", email = "fritz@astronomer.io" },
     { name = "CETA Team", email = "ceta@astronomer.io" },
