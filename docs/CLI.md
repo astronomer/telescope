@@ -76,7 +76,7 @@ use `--label-selector "role=scheduler"`.
 python -W ignore -c "import runpy,os;from urllib.request import urlretrieve as u;a='airflow_report.pyz';u('https://github.com/astronomer/telescope/releases/latest/download/'+a,a);runpy.run_path(a);os.remove(a)"
 ```
 
-This can be used, for instance, if there is no access to Github on the remote box, or a custom directory is needed to run,
+This can be used, for instance, if there is no access to GitHub on the remote box, or a custom directory is needed to run,
 or environment activation is required ahead of time.
 
 If your `python` is called something other than `python` (e.g. `python3`):
@@ -87,7 +87,7 @@ EOF
 ) telescope -f hosts.yaml
 ```
 
-or if you need to activate a `python` (such as with RedHat Linux) prior to running, and want to copy the telescope Manifest up to the host independently:
+Or if you need to activate a `python` (such as with RedHat Linux) prior to running, and want to copy the Telescope Manifest up to the host independently:
 ```shell
 scp airflow_report.pyz remote_user@remote_host:airflow_report.pyz
 TELESCOPE_AIRFLOW_REPORT_CMD="scl enable rh-python36 python -W ignore -c 'import runpy;a=\'airflow_report.pyz\';runpy.run_path(a);os.remove(a)'" telescope -f hosts.yaml
@@ -102,7 +102,7 @@ my-dag-name => my-*****ame
 
 ### Custom Obfuscation Function
 If a different obfuscation function is desired, a `--dag-obfuscation-function` can be passed,
-which needs to be a python function that evaluates to `(str) -> str`. E.g.
+which needs to be a Python function that evaluates to `(str) -> str`. E.g.
 ```shell
 --dag-obfuscation-fn="lambda x: x[-5:]"
 ```
@@ -114,10 +114,10 @@ fileloc="/a/b/c/d/filepath.py" -> "th.py"
 
 ## Optional Environmental Variables
 - `TELESCOPE_KUBERNETES_METHOD=kubectl` - to run with kubectl instead of the python SDK (often for compatibility reasons)
-- `TELESCOPE_REPORT_RELEASE_VERSION=x.y.z` - can be a separate telescope semver release number, to control which report gets run
-- `TELESCOPE_KUBERNETES_AIRGAPPED=true` - executes the airflow report in airgapped mode (i.e copies report binary from local to pod)
+- `TELESCOPE_REPORT_RELEASE_VERSION=x.y.z` - can be a separate Telescope semver release number, to control which report gets run
+- `TELESCOPE_KUBERNETES_AIRGAPPED=true` - executes the Airflow report in airgapped mode (i.e. copies report binary from local to pod)
 - `LOG_LEVEL=DEBUG` - can be any support Python logging level `[CRITICAL, FATAL, ERROR, WARN, WARNING, INFO, DEBUG, NOTSET]`
-- `TELESCOPE_SHOULD_VERIFY=false` - turn off helm chart collection - required to gather some data about Airflow in Kubernetes
+- `TELESCOPE_SHOULD_VERIFY=false` - turn off Helm chart collection - required to gather some data about Airflow in Kubernetes
 - `TELESCOPE_REPORT_PACKAGE_URL` - sets the URL that both the local CLI AND `TELESCOPE_AIRFLOW_REMOTE_CMD` will use (unless `TELESCOPE_AIRFLOW_REMOTE_CMD` is set directly)
 
 ## Compatibility Matrix
