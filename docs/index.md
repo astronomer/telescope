@@ -53,7 +53,7 @@ It will use Helm to analyze the installation, and connect to the Airflow schedul
 ```shell
 telescope --kubernetes --organization-name <My Organization>
 ```
-This will produce a file ending in `*.data.json` - which is an data payload that can be sent to Astronomer for
+This will produce a file ending in `*.data.json` - which is a data payload that can be sent to Astronomer for
 further processing and detailed analysis.
 
 #### SSH Assessment Mode
@@ -78,11 +78,11 @@ and run with:
 ```shell
 telescope -f hosts.yaml --organization-name <My Organization>
 ```
-This will produce a file ending in `*.data.json` - which is an data payload that can be sent to Astronomer for
+This will produce a file ending in `*.data.json` - which is a data payload that can be sent to Astronomer for
 further processing and detailed analysis.
 
 ## Security Notice
-This project, by default, executes a python script downloaded from the internet on each Airflow it connects to.
+This project, by default, executes a Python script downloaded from the internet on each Airflow it connects to.
 This is by design. Please fully understand this and take any steps required to protect your environment
 before running Telescope.
 Telescope `eval`'s any custom DAG obfuscation function passed to it.

@@ -1,22 +1,22 @@
 # Data Collected & Output
 ## Data Collected
-The following Data is collected:
+The following data is collected:
 
 When run using `kubernetes`
 
-- cluster info is attained from the Nodes - including allocated and max CPU and Memory, number of nodes, and kubelet version
-- Helm chart information for charts named like `astronomer` or `airflow` is fetched, sensitive values are redacted.
+- Cluster info is attained from the Nodes - including allocated and max CPU and Memory, number of nodes, and kubelet version
+- Helm chart information for charts named like `astronomer` or `airflow` is fetched, sensitive values are redacted
 
 ## `Airflow Report`
 This information is saved under the `airflow_report` key, under the `host_type` key and the host key. E.g. `kubernetes.mynamespace|myhost-1234-xyz.airflow_report` or `ssh.my_hostname.airflow_report`
 
-Using python `airflow_report.pyz` is downloaded and executed on the remote host (the host or container running the airflow scheduler). The performance impact of this report is negligible
+Using Python `airflow_report.pyz` is downloaded and executed on the remote host (the host or container running the airflow scheduler). The performance impact of this report is negligible
 - `airflow.version.version` output to determine Airflow's version
 - `airflow.providers_manager.ProvidersManager`'s output, to determine what providers and versions are installed
 - `socket.gethostname()` to determine the hostname
-- `pkg_resources` to determine installed python packages and versions
+- `pkg_resources` to determine installed Python packages and versions
 - `airflow.configuration.conf` to determine Airflow configuration settings and what is modified from defaults. Sensitive values are redacted
-- `os.environ` to determine what airflow settings, variables, and connections are set via ENV vars. Names only
+- `os.environ` to determine what Airflow settings, variables, and connections are set via ENV vars. Names only
 - the `pools` table is retrieved to list Airflow pools and sizes from the Airflow metadata db
 - the `dag` table is inspected from the Airflow metadata db
   - `dags` are read off disk to attain variable and connection names, utilizing the filepath from the `dags` table
@@ -36,8 +36,8 @@ The name of this file can vary depending on what options were passed to the tool
 | airflow version report        | Airflow Deployment version                                                                             |
 | configuration report          | Airflow runtime configuration (airflow.cfg)                                                            |
 | connections report            | List of all Airflow connections (IDs only)                                                             |
-| dags report                   | Lisst of DAGs, including code quality metrics                                                          |
-| env vars report               | List of airflow-related environment variables                                                          |
+| dags report                   | List of DAGs, including code quality metrics                                                           |
+| env vars report               | List of Airflow-related environment variables                                                          |
 | hostname report               | Airflow Hostname configuration                                                                         |
 | installed packages report     | List of all installed packages                                                                         |
 | pools report                  | List of Airflow pools and associated configuration                                                     |
@@ -124,7 +124,7 @@ List of DAGs, including code quality metrics
 
 ### Environment Variables Report
 
-List of airflow-related environment variables
+List of Airflow-related environment variables
 
 Example values:
 Note: Only the keys are fetched by Telescope for obvious security reasons.

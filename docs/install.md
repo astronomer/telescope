@@ -32,7 +32,7 @@ python -m venv venv
 source venv/bin/activate
 ```
 
-Install Telescope using Pip from Github
+Install Telescope using Pip from GitHub
 
 ```shell
 python -m pip install astronomer-telescope
