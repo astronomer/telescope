@@ -1,4 +1,6 @@
 name: Deploy
+# Multi-architecture build pipeline
+# Builds binaries for: Linux x86_64, Linux ARM64, Windows x86_64, macOS ARM64, macOS x86_64
 on:
   push:
     tags:
@@ -8,14 +10,30 @@ jobs:
   build:
     strategy:
       matrix:
-        python-version: ["3.9"]
-        os:
+        include:
           # --8<-- [start:oses]
-          - "ubuntu-20.04"
-          - "windows-latest"
-          - "macos-latest"
+          - os: ubuntu-20.04
+            python-version: "3.11"
+            arch: x86_64
+            runner: ubuntu-20.04
+          - os: ubuntu-24.04
+            python-version: "3.11"
+            arch: arm64
+            runner: ubuntu-24.04-arm
+          - os: windows-latest
+            python-version: "3.11"
+            arch: x86_64
+            runner: windows-latest
+          - os: macos-latest
+            python-version: "3.11"
+            arch: arm64
+            runner: macos-latest
+          - os: macos-13
+            python-version: "3.11"
+            arch: x86_64
+            runner: macos-13
           # --8<-- [end:oses]
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
     environment:
       name: pypi
       url: https://pypi.org/p/astronomer-telescope
@@ -30,15 +48,15 @@ jobs:
       - uses: extractions/setup-just@v1
       - run: just install
       - run: just build
-        if: matrix.os == 'ubuntu-20.04'
+        if: matrix.os == 'ubuntu-20.04' && matrix.arch == 'x86_64'
       - uses: pypa/gh-action-pypi-publish@release/v1
-        if: matrix.os == 'ubuntu-20.04'
+        if: matrix.os == 'ubuntu-20.04' && matrix.arch == 'x86_64'
         with:
           skip-existing: true
       - run: just package-report
-        if: matrix.os == 'ubuntu-20.04'
+        if: matrix.os == 'ubuntu-20.04' && matrix.arch == 'x86_64'
       - uses: actions/upload-artifact@v4
-        if: matrix.os == 'ubuntu-20.04'
+        if: matrix.os == 'ubuntu-20.04' && matrix.arch == 'x86_64'
         with:
           path: airflow_report.pyz
           name: airflow_report
@@ -48,7 +66,7 @@ jobs:
         with:
           path: |
             telescope-*
-          name: binary-${{ matrix.os }}
+          name: binary-${{ matrix.os }}-${{ matrix.arch }}
           retention-days: 5
 
   release:

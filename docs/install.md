@@ -24,7 +24,6 @@ chmod +x telescope-mingw64_nt-10.0-20348-x86_64.exe
 ```
 
 ## Recommended Installation Method 2) via PIP
-*Note: PIP installation requires Python >= 3.7*
 
 *optionally*, create a virtualenv called `venv` (or anything else ) in the current directory for easy cleanup
 ```shell
@@ -40,7 +39,6 @@ python -m pip install astronomer-telescope
 
 ## Requirements
 ### Local - pip installation
-- Python >=3.7
 - `pip`
 
 ### Local - binary installation

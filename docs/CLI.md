@@ -90,7 +90,7 @@ EOF
 or if you need to activate a `python` (such as with RedHat Linux) prior to running, and want to copy the telescope Manifest up to the host independently:
 ```shell
 scp airflow_report.pyz remote_user@remote_host:airflow_report.pyz
-TELESCOPE_AIRFLOW_REPORT_CMD="scl enable rh-python36 python -W ignore -c 'import runpy;a=\'airflow_report.pyz\';runpy.run_path(a);os.remove(a)'" telescope -f hosts.yaml
+TELESCOPE_AIRFLOW_REPORT_CMD="scl enable rh-python39 python -W ignore -c 'import runpy;a=\'airflow_report.pyz\';runpy.run_path(a);os.remove(a)'" telescope -f hosts.yaml
 ```
 
 ## DAG Obfuscation
