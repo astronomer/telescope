@@ -13,7 +13,7 @@ authors = [
     { name = "CETA Team", email = "ceta@astronomer.io" },
     { name = "Astronomer", email = "humans@astronomer.io" }
 ]
-requires-python = ">=3.6.2"
+requires-python = ">=3.9,<3.13"
 dependencies = [
 
   # for kubernetes mode
@@ -34,7 +34,6 @@ dependencies = [
   "lazyimport >= 0.0.4", # don't load kube/docker unless we need to
   "halo >= 0.0.31",  # loady-spinny
   "retrying >= 1.3.3",
-  "importlib_metadata; python_version < '3.8'",
   "rich >= 11.1.0",
 ]
 
@@ -94,7 +93,7 @@ dev = [
 
 [tool.black]
 # https://github.com/psf/black
-target-version = ["py38"]
+target-version = ["py39"]
 line-length = 120
 color = true
 exclude = '''
@@ -123,7 +122,7 @@ line-length = 120
 
 [tool.isort]
 # https://github.com/timothycrosley/isort/
-py_version = 38
+py_version = 39
 line_length = 120
 
 known_typing = ["typing", "types", "typing_extensions", "mypy", "mypy_extensions"]

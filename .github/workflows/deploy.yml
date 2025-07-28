@@ -13,23 +13,23 @@ jobs:
         include:
           # --8<-- [start:oses]
           - os: ubuntu-20.04
-            python-version: "3.9"
+            python-version: "3.11"
             arch: x86_64
             runner: ubuntu-20.04
           - os: ubuntu-24.04
-            python-version: "3.9"
+            python-version: "3.11"
             arch: arm64
             runner: ubuntu-24.04-arm
           - os: windows-latest
-            python-version: "3.9"
+            python-version: "3.11"
             arch: x86_64
             runner: windows-latest
           - os: macos-latest
-            python-version: "3.9"
+            python-version: "3.11"
             arch: arm64
             runner: macos-latest
           - os: macos-13
-            python-version: "3.9"
+            python-version: "3.11"
             arch: x86_64
             runner: macos-13
           # --8<-- [end:oses]
