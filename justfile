@@ -14,32 +14,45 @@ default:
 help:
     @just --list
 
-# Install project and python dependencies (incl. pre-commit) locally
-install EDITABLE='':
-    pip install {{EDITABLE}} '.[{{EXTRAS}}]'
+# Install project and python dependencies
+install:
+    uv sync --all-extras
 
-# Install pre-commit to local project
-install-precommit: install
-    pre-commit install
+# Initialize development environment (install deps + hooks)
+init: install
+    uv run prek install
 
-# Update the baseline for detect-secrets / pre-commit
+# Update the baseline for detect-secrets
 update-secrets:
-    detect-secrets scan  > .secrets.baseline # `pragma: allowlist secret`
+    uv run detect-secrets scan > .secrets.baseline # `pragma: allowlist secret`
 
 # Run pytests with config from pyproject.toml
 test:
-    pytest -c pyproject.toml
+    uv run pytest -c pyproject.toml
 
 # Test and emit a coverage report
 test-with-coverage:
-    pytest -c pyproject.toml --cov=./ --cov-report=xml
+    uv run pytest -c pyproject.toml --cov=./ --cov-report=xml
 
 test-cicd:
   act pull-request -W .github/workflows/checks.yml --container-architecture linux/amd64
 
-# Run ruff and black (normally done with pre-commit)
+# Run ruff linter
 lint:
-    ruff check .
+    uv run ruff check .
+
+# Format code with ruff
+format:
+    uv run ruff format .
+
+# Check code formatting without modifying
+format-check:
+    uv run ruff format --check .
+
+# Run security scans
+security:
+    uv run bandit -r . -c pyproject.toml
+    uv run detect-secrets scan
 
 # Render and serve documentation locally
 serve-docs:
@@ -72,27 +85,27 @@ deploy: deploy-tag
 
 # Build the project
 build: install clean
-    python -m build
+    uv run python -m build
     cp dist/{{SRC_DIR}}*.whl .
 
 # Upload to TestPyPi for testing (note: you can only use each version once)
 upload-testpypi: build install clean
-    python -m twine check dist/*
-    TWINE_USER=${TWINE_USER} TWINE_PASS=${TWINE_PASS} python -m twine upload --repository testpypi dist/*
+    uv run python -m twine check dist/*
+    TWINE_USER=${TWINE_USER} TWINE_PASS=${TWINE_PASS} uv run python -m twine upload --repository testpypi dist/*
 
 # Upload to PyPi - DO NOT USE THIS, GHA DOES THIS AUTOMATICALLY
 upload-pypi: build install clean
-    python -m twine check dist/*
-    TWINE_USER=${TWINE_USER} TWINE_PASS=${TWINE_PASS} python -m twine upload dist/*
+    uv run python -m twine check dist/*
+    TWINE_USER=${TWINE_USER} TWINE_PASS=${TWINE_PASS} uv run python -m twine upload dist/*
 
 # Package the `airflow_report.pyz`
 package-report: clean
   mkdir -p build
-  python -m pip install -r airflow_report/requirements.txt --target build
+  uv pip install -r airflow_report/requirements.txt --target build
   cp -r airflow_report build
   rm -rf build/*.dist-info/*
   rmdir build/*.dist-info
-  python -m zipapp \
+  uv run python -m zipapp \
     --compress \
     --main airflow_report.__main__:main \
     --python "/usr/bin/env python3" \
@@ -101,7 +114,7 @@ package-report: clean
 
 # Package the `telescope` binary
 package-pyinstaller: clean
-  python -m PyInstaller --onefile --noconfirm --clean --specpath dist --name astronomer-telescope \
+  uv run python -m PyInstaller --onefile --noconfirm --clean --specpath dist --name astronomer-telescope \
     --hidden-import astronomer_telescope.getters.kubernetes_client \
     --hidden-import astronomer_telescope.getters.docker_client \
     --recursive-copy-metadata astronomer-telescope \

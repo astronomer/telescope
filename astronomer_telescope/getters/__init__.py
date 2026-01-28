@@ -1,6 +1,5 @@
-from typing import List, Type, Union
-
 from abc import abstractmethod
+from typing import List, Type, Union
 
 
 class Getter:

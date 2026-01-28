@@ -1,8 +1,7 @@
-from typing import List, Union
-
 import logging
 import os
 import shlex
+from typing import List, Union
 
 try:
     from shlex import join

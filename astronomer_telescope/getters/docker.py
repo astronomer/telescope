@@ -1,6 +1,5 @@
-from typing import List, Union
-
 import logging
+from typing import List, Union
 
 from lazyimport import lazyimport
 

@@ -1,4 +1,5 @@
 """Set some variables for re-use across the project"""
+
 import os
 
 import astronomer_telescope

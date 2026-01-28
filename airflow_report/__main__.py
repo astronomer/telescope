@@ -13,11 +13,10 @@ logging.getLogger("google.cloud.bigquery.opentelemetry_tracing").setLevel(loggin
 try:
     from airflow.utils.session import provide_session
 except ImportError:
-    from typing import TypeVar
-
     import contextlib
     from functools import wraps
     from inspect import signature
+    from typing import TypeVar
 
     from airflow import settings
 
@@ -32,7 +31,7 @@ except ImportError:
             # func_params is an ordered dict -- this is the "recommended" way of getting the position
             session_args_idx = tuple(func_params).index("session")
         except ValueError:
-            raise ValueError("Function {} has no `session` argument".format(func.__qualname__)) from None
+            raise ValueError(f"Function {func.__qualname__} has no `session` argument") from None
 
         return session_args_idx
 
@@ -156,7 +155,7 @@ def configuration_report():
             running_configuration[section] = {}
 
         for option, (value, config_source) in options.items():
-            airflow_env_var_key = "AIRFLOW__{}__{}".format(section.upper(), option.upper())
+            airflow_env_var_key = f"AIRFLOW__{section.upper()}__{option.upper()}"
             if should_hide_value_for_key(airflow_env_var_key) or airflow_env_var_key in additional_hide_list:
                 running_configuration[section][option] = ("***", config_source)
             else:
@@ -224,7 +223,7 @@ def pools_report():
                 query = session.query(Pool.pool, Pool.slots)
 
                 pool_rows = query.all()  # type: Iterable[Tuple[str, int]]
-                for (pool_name, total_slots) in pool_rows:
+                for pool_name, total_slots in pool_rows:
                     if total_slots == -1:
                         total_slots = float("inf")  # type: ignore
                     pools[pool_name] = dict(total=total_slots, running=0, queued=0, open=0)
@@ -237,7 +236,7 @@ def pools_report():
                 ).all()
 
                 # calculate queued and running metrics
-                for (pool_name, state) in state_count_by_pool:
+                for pool_name, state in state_count_by_pool:
                     # Some databases return decimal.Decimal here.
                     count = 1
 
@@ -250,7 +249,7 @@ def pools_report():
                     elif state == "queued":
                         stats_dict["queued"] = count
                     else:
-                        raise AirflowException("Unexpected state. Expected values: {}.".format(EXECUTION_STATES))
+                        raise AirflowException(f"Unexpected state. Expected values: {EXECUTION_STATES}.")
 
                 # calculate open metric
                 for pool_name, stats_dict in pools.items():
@@ -355,7 +354,7 @@ def dag_varconn_usage(dag_path):
     conn_results = set()
     with open(dag_path) as f:
         dag_contents = f.read()
-        for (results, patterns) in [(conn_results, conn_patterns), (var_results, var_patterns)]:
+        for results, patterns in [(conn_results, conn_patterns), (var_results, var_patterns)]:
             for pattern in patterns:
                 search_results = pattern.findall(dag_contents)
                 if search_results:
@@ -408,12 +407,12 @@ def variables_report(session):
 def days_ago(dialect, days):
     # type: (str, int) -> str
     if dialect == "sqlite":
-        return "DATE('now', '-{} days')".format(days)
+        return f"DATE('now', '-{days} days')"
     elif dialect == "mysql":
-        return "DATE_SUB(NOW(), INTERVAL {} day)".format(days)
+        return f"DATE_SUB(NOW(), INTERVAL {days} day)"
     else:
         # postgresql
-        return "now() - interval '{} days'".format(days)
+        return f"now() - interval '{days} days'"
 
 
 # noinspection SqlResolve,PyUnresolvedReferences,SqlMissingColumnAliases
@@ -422,107 +421,107 @@ def usage_stats_report(session):
     # type: (Any) -> Any
     dialect = session.bind.dialect.name
     sql = text(
-        """
+        f"""
         SELECT
             dag_id,
             (
                 SELECT COUNT(1) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 1)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "1_days_success",
             (
                 SELECT COUNT(1) FROM task_instance AS sti
-                WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'failed' AND start_date > {days_ago(dialect, 1)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "1_days_failed",
             (
                 SELECT MIN(duration) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 1)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "min_duration_1_days_success",
             (
                 SELECT MAX(duration) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 1)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "max_duration_1_days_success",
             (
                 SELECT AVG(duration) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 1)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "avg_duration_1_days_success",
             (
                 SELECT COUNT(1) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 7)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "7_days_success",
             (
                 SELECT COUNT(1) FROM task_instance AS sti
-                WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'failed' AND start_date > {days_ago(dialect, 7)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "7_days_failed",
             (
                 SELECT MIN(duration) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 7)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "min_duration_7_days_success",
             (
                 SELECT MAX(duration) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 7)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "max_duration_7_days_success",
             (
                 SELECT AVG(duration) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 7)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "avg_duration_7_days_success",
             (
                 SELECT COUNT(1) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 30)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "30_days_success",
             (
                 SELECT COUNT(1) FROM task_instance AS sti
-                WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'failed' AND start_date > {days_ago(dialect, 30)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "30_days_failed",
             (
                 SELECT MIN(duration) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 30)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "min_duration_30_days_success",
             (
                 SELECT MAX(duration) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 30)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "max_duration_30_days_success",
             (
                 SELECT AVG(duration) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 30)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "avg_duration_30_days_success",
             (
                 SELECT COUNT(1) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 365)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "365_days_success",
             (
                 SELECT COUNT(1) FROM task_instance AS sti
-                WHERE state = 'failed' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'failed' AND start_date > {days_ago(dialect, 365)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "365_days_failed",
             (
                 SELECT MIN(duration) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 365)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "min_duration_365_days_success",
             (
                 SELECT MAX(duration) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 365)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "max_duration_365_days_success",
             (
                 SELECT AVG(duration) FROM task_instance AS sti
-                WHERE state = 'success' AND start_date > {} AND sti.dag_id = ti.dag_id
+                WHERE state = 'success' AND start_date > {days_ago(dialect, 365)} AND sti.dag_id = ti.dag_id
                 AND sti.operator != 'EmptyOperator' AND sti.operator != 'DummyOperator'
             ) AS "avg_duration_365_days_success",
             (
@@ -552,28 +551,7 @@ def usage_stats_report(session):
             ) AS "avg_duration_all_days_success"
         FROM task_instance as ti
         GROUP BY 1;
-    """.format(
-            days_ago(dialect, 1),
-            days_ago(dialect, 1),
-            days_ago(dialect, 1),
-            days_ago(dialect, 1),
-            days_ago(dialect, 1),
-            days_ago(dialect, 7),
-            days_ago(dialect, 7),
-            days_ago(dialect, 7),
-            days_ago(dialect, 7),
-            days_ago(dialect, 7),
-            days_ago(dialect, 30),
-            days_ago(dialect, 30),
-            days_ago(dialect, 30),
-            days_ago(dialect, 30),
-            days_ago(dialect, 30),
-            days_ago(dialect, 365),
-            days_ago(dialect, 365),
-            days_ago(dialect, 365),
-            days_ago(dialect, 365),
-            days_ago(dialect, 365),
-        )
+    """
     )
     return [dict(r) for r in session.execute(sql)]
 
@@ -584,47 +562,47 @@ def usage_stats_dag_rollup_report(session):
     # type: (Any) -> Any
     dialect = session.bind.dialect.name
     sql = text(
-        """
+        f"""
         SELECT
             dag_id,
             (
                 select count(1) from dag_run as sdr
-                where state = 'success' AND start_date > {}
+                where state = 'success' AND start_date > {days_ago(dialect, 1)}
                 and sdr.dag_id = dr.dag_id
             ) as "1_days_success",
             (
                 select count(1) from dag_run as sdr
-                where state = 'failed' AND start_date > {}
+                where state = 'failed' AND start_date > {days_ago(dialect, 1)}
                 and sdr.dag_id = dr.dag_id
             ) as "1_days_failed",
             (
                 select count(1) from dag_run as sdr
-                where state = 'success' AND start_date > {}
+                where state = 'success' AND start_date > {days_ago(dialect, 7)}
                 and sdr.dag_id = dr.dag_id
             ) as "7_days_success",
             (
                 select count(1) from dag_run as sdr
-                where state = 'failed' AND start_date > {}
+                where state = 'failed' AND start_date > {days_ago(dialect, 7)}
                 and sdr.dag_id = dr.dag_id
             ) as "7_days_failed",
             (
                 select count(1) from dag_run as sdr
-                where state = 'success' AND start_date > {}
+                where state = 'success' AND start_date > {days_ago(dialect, 30)}
                 and sdr.dag_id = dr.dag_id
             ) as "30_days_success",
             (
                 select count(1) from dag_run as sdr
-                where state = 'failed' AND start_date > {}
+                where state = 'failed' AND start_date > {days_ago(dialect, 30)}
                 and sdr.dag_id = dr.dag_id
             ) as "30_days_failed",
             (
                 select count(1) from dag_run as sdr
-                where state = 'success' AND start_date > {}
+                where state = 'success' AND start_date > {days_ago(dialect, 365)}
                 and sdr.dag_id = dr.dag_id
             ) as "365_days_success",
             (
                 select count(1) from dag_run as sdr
-                where state = 'failed' AND start_date > {}
+                where state = 'failed' AND start_date > {days_ago(dialect, 365)}
                 and sdr.dag_id = dr.dag_id
             ) as "365_days_failed",
             (
@@ -639,16 +617,7 @@ def usage_stats_dag_rollup_report(session):
             ) as "all_days_failed"
         FROM dag_run as dr
         GROUP BY 1;
-    """.format(
-            days_ago(dialect, 1),
-            days_ago(dialect, 1),
-            days_ago(dialect, 7),
-            days_ago(dialect, 7),
-            days_ago(dialect, 30),
-            days_ago(dialect, 30),
-            days_ago(dialect, 365),
-            days_ago(dialect, 365),
-        )
+    """
     )
     return [dict(r) for r in session.execute(sql)]
 
@@ -662,16 +631,14 @@ def user_report(session):
     dialect = session.bind.dialect.name
     if version >= "1.10.5":
         sql = text(
-            """
+            f"""
             SELECT
-                (SELECT COUNT(id) FROM ab_user WHERE last_login > {}) AS "1_days_active_users",
-                (SELECT COUNT(id) FROM ab_user WHERE last_login > {}) AS "7_days_active_users",
-                (SELECT COUNT(id) FROM ab_user WHERE last_login > {}) AS "30_days_active_users",
-                (SELECT COUNT(id) FROM ab_user WHERE last_login > {}) AS "365_days_active_users",
+                (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 1)}) AS "1_days_active_users",
+                (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 7)}) AS "7_days_active_users",
+                (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 30)}) AS "30_days_active_users",
+                (SELECT COUNT(id) FROM ab_user WHERE last_login > {days_ago(dialect, 365)}) AS "365_days_active_users",
                 (SELECT COUNT(id) FROM ab_user) AS "total_users";
-            """.format(
-                days_ago(dialect, 1), days_ago(dialect, 7), days_ago(dialect, 30), days_ago(dialect, 365)
-            )
+            """
         )
     else:
         sql = text("""SELECT COUNT(id) AS "total_users" FROM users;""")
@@ -702,7 +669,7 @@ def main():
         try:
             return {r.__name__: r()}
         except Exception as e:
-            logging.exception("Failed reporting {}".format(r.__name__))
+            logging.exception(f"Failed reporting {r.__name__}")
             return {r.__name__: str(e)}
 
     collected_reports = [try_reporter(report) for report in reports]

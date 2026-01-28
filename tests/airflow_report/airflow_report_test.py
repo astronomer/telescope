@@ -2,7 +2,6 @@ import tarfile
 from asyncio import FIRST_EXCEPTION, Future
 from concurrent import futures
 from concurrent.futures import ThreadPoolExecutor
-
 from io import BytesIO
 from time import sleep, time
 
@@ -119,15 +118,15 @@ def test_airflow_report(has_docker, docker_client, project_root):
 
             assert "airflow_version_report" in report  # '2.2.1'
             assert isinstance(report["airflow_version_report"], str), (
-                f'[{image}] airflow_version_report: {report["airflow_version_report"]}'
-                f' - {type(report["airflow_version_report"])} != str'
+                f"[{image}] airflow_version_report: {report['airflow_version_report']}"
+                f" - {type(report['airflow_version_report'])} != str"
             )
             assert "." in report["airflow_version_report"]
 
             assert "hostname_report" in report  # '0ad460b0b358' # pragma: allowlist secret
-            assert isinstance(
-                report["hostname_report"], str
-            ), f'[{image}] hostname_report: {report["hostname_report"]} - {type(report["hostname_report"])} != str'
+            assert isinstance(report["hostname_report"], str), (
+                f"[{image}] hostname_report: {report['hostname_report']} - {type(report['hostname_report'])} != str"
+            )
 
             assert "providers_report" in report
             assert type(report["providers_report"]) in [
@@ -137,36 +136,36 @@ def test_airflow_report(has_docker, docker_client, project_root):
 
             assert "installed_packages_report" in report
             assert isinstance(report["installed_packages_report"], dict), (
-                f'[{image}] installed_packages_report: {report["installed_packages_report"]}'
-                f' - {type(report["installed_packages_report"])} != dict'
+                f"[{image}] installed_packages_report: {report['installed_packages_report']}"
+                f" - {type(report['installed_packages_report'])} != dict"
             )
 
             assert "configuration_report" in report
             assert isinstance(report["configuration_report"], dict), (
-                f'[{image}] configuration_report: {report["configuration_report"]}'
-                f' - {type(report["configuration_report"])} != dict'
+                f"[{image}] configuration_report: {report['configuration_report']}"
+                f" - {type(report['configuration_report'])} != dict"
             )
 
             assert "pools_report" in report
             assert type(report["pools_report"]) in [
                 list,
                 dict,
-            ], f'[{image}] pools_report: {report["pools_report"]} - {type(report["pools_report"])} not in [list, dict]'
+            ], f"[{image}] pools_report: {report['pools_report']} - {type(report['pools_report'])} not in [list, dict]"
 
             assert "dags_report" in report
-            assert isinstance(
-                report["dags_report"], list
-            ), f'[{image}] dags_report: {report["dags_report"]} - {type(report["dags_report"])} != list'
+            assert isinstance(report["dags_report"], list), (
+                f"[{image}] dags_report: {report['dags_report']} - {type(report['dags_report'])} != list"
+            )
 
             assert "env_vars_report" in report
-            assert isinstance(
-                report["env_vars_report"], dict
-            ), f'[{image}] env_vars_report: {report["env_vars_report"]} - {type(report["env_vars_report"])} != dict'
+            assert isinstance(report["env_vars_report"], dict), (
+                f"[{image}] env_vars_report: {report['env_vars_report']} - {type(report['env_vars_report'])} != dict"
+            )
 
             assert "usage_stats_report" in report
             assert isinstance(report["usage_stats_report"], list), (
-                f'[{image}] usage_stats_report: {report["usage_stats_report"]}'
-                f' - {type(report["usage_stats_report"])} != list'
+                f"[{image}] usage_stats_report: {report['usage_stats_report']}"
+                f" - {type(report['usage_stats_report'])} != list"
             )
             # This won't succeed unless there are actual task runs in the database
             # assert len(report["usage_stats_report"]) and list(report["usage_stats_report"][0].keys()) in [
@@ -200,20 +199,20 @@ def test_airflow_report(has_docker, docker_client, project_root):
 
             assert "usage_stats_dag_rollup_report" in report
             assert isinstance(report["usage_stats_dag_rollup_report"], list), (
-                f'[{image}] usage_stats_dag_rollup_report: {report["usage_stats_dag_rollup_report"]}'
-                f' - {type(report["usage_stats_dag_rollup_report"])} != list'
+                f"[{image}] usage_stats_dag_rollup_report: {report['usage_stats_dag_rollup_report']}"
+                f" - {type(report['usage_stats_dag_rollup_report'])} != list"
             )
 
             assert "connections_report" in report
             assert isinstance(report["connections_report"], list), (
-                f'[{image}] connections_report: {report["connections_report"]}'
-                f' - {type(report["connections_report"])} != list'
+                f"[{image}] connections_report: {report['connections_report']}"
+                f" - {type(report['connections_report'])} != list"
             )
 
             assert "variables_report" in report
-            assert isinstance(
-                report["variables_report"], list
-            ), f'[{image}] variables_report: {report["variables_report"]} - {type(report["variables_report"])} != list'
+            assert isinstance(report["variables_report"], list), (
+                f"[{image}] variables_report: {report['variables_report']} - {type(report['variables_report'])} != list"
+            )
 
             assert "user_report" in report
             if isinstance(report["user_report"], dict):
@@ -227,8 +226,8 @@ def test_airflow_report(has_docker, docker_client, project_root):
                     ],
                     ["total_users"],
                 ], (
-                    f'[{image}] user_report: {report["user_report"]}'
-                    f' - {type(report["user_report"])} != dict or keys are different'
+                    f"[{image}] user_report: {report['user_report']}"
+                    f" - {type(report['user_report'])} != dict or keys are different"
                 )
 
         tests = [executor.submit(run_test_for_image, image) for image in AIRFLOW_IMAGES]

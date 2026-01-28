@@ -13,7 +13,7 @@ authors = [
     { name = "CETA Team", email = "ceta@astronomer.io" },
     { name = "Astronomer", email = "humans@astronomer.io" }
 ]
-requires-python = ">=3.6.2"
+requires-python = ">=3.7"
 dependencies = [
 
   # for kubernetes mode
@@ -70,12 +70,15 @@ dev = [
   "build",
   "twine",
 
-  # pre-commit
-  "pre-commit >= 2.14",
+  # lint
   "ruff",
-  "black",
-  "pylint",
-  "isort",
+
+  # hooks
+  "prek >= 0.1.0; python_version >= '3.8'",
+
+  # security
+  "bandit >= 1.7.0",
+  "detect-secrets >= 1.4.0",
 
   # docs
   "mkdocs",
@@ -92,23 +95,6 @@ dev = [
 ]
 
 
-[tool.black]
-# https://github.com/psf/black
-target-version = ["py38"]
-line-length = 120
-color = true
-exclude = '''
-/(
-    \.git
-    | \.venv
-    | build
-    | dist
-    | venv
-    | tests/
-    | airflow_report/__main__.py
-)/
-'''
-
 [tool.bandit]
 exclude_dirs = ["tests"]
 skips = [
@@ -117,22 +103,25 @@ skips = [
     "B608"  # SQL Injection in airflow_report.pyz
 ]
 
-
 [tool.ruff]
 line-length = 120
+target-version = "py37"
 
-[tool.isort]
-# https://github.com/timothycrosley/isort/
-py_version = 38
-line_length = 120
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+]
+ignore = []
 
-known_typing = ["typing", "types", "typing_extensions", "mypy", "mypy_extensions"]
-sections = ["FUTURE", "TYPING", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"]
-include_trailing_comma = true
-profile = "black"
-multi_line_output = 3
-indent = 4
-color_output = true
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
 
 [tool.pytest.ini_options]
 # https://docs.pytest.org/en/6.2.x/customize.html#pyproject-toml

@@ -1,5 +1,3 @@
-from typing import Any, Dict, List, Optional
-
 import json
 import logging
 import multiprocessing
@@ -7,6 +5,7 @@ import os
 import shutil
 from datetime import datetime
 from functools import partial
+from typing import Any, Dict, List, Optional
 from urllib.request import urlopen
 
 import click as click

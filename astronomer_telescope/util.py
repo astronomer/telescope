@@ -1,9 +1,8 @@
-from typing import Any, Dict, List, Union
-
 import base64
 import json
 import logging
 from json import JSONDecodeError
+from typing import Any, Dict, List, Union
 
 log = logging.getLogger(__name__)
 

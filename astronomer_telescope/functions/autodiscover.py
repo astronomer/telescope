@@ -1,7 +1,6 @@
-from typing import Dict, List
-
 import logging
 import os
+from typing import Dict, List
 
 from invoke import run
 from lazyimport import lazyimport

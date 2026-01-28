@@ -1,9 +1,8 @@
-from typing import Any, Callable, Dict, Optional, Union
-
 import logging
 import os
 from pathlib import Path
 from shlex import split
+from typing import Any, Callable, Dict, Optional, Union
 
 import yaml
 from halo import Halo
@@ -25,7 +24,7 @@ if os.getenv("TELESCOPE_AIRFLOW_REPORT_CMD"):
     AIRFLOW_REPORT_CMD = split(os.getenv("TELESCOPE_AIRFLOW_REPORT_CMD"))
 elif AIRGAPPED:
     AIRFLOW_REPORT_CMD = split(
-        'python -W ignore -c "' "import runpy,os;" f"a='{REPORT_PACKAGE}';" f'runpy.run_path(a);os.remove(a)"'
+        f"python -W ignore -c \"import runpy,os;a='{REPORT_PACKAGE}';runpy.run_path(a);os.remove(a)\""
     )
 else:
     AIRFLOW_REPORT_CMD = split(
@@ -87,7 +86,7 @@ def gather_getters(
 
     # or use passed-in flags and autodiscovery
     else:
-        for (host_type, getter, autodiscover, should) in [
+        for host_type, getter, autodiscover, should in [
             ("kubernetes", KubernetesGetter, kube_autodiscover, use_kubernetes),
             ("docker", LocalDockerGetter, docker_autodiscover, use_docker),
         ]:

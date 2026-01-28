@@ -1,9 +1,8 @@
-from typing import Optional
-
 import base64
 import gzip
 import json
 import logging
+from typing import Optional
 
 from lazyimport import lazyimport
 

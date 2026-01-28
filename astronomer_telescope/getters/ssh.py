@@ -1,6 +1,5 @@
-from typing import List, Union
-
 import shlex
+from typing import List, Union
 
 try:
     from shlex import join

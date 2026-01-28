@@ -39,7 +39,6 @@ with DAG(
     default_args=default_args,
     # catchup=False # enable if you don't want historical dag runs to run
 ) as dag:
-
     foo = Variable.get("easy_-var")
 
     t0 = DummyOperator(task_id="start", conn_id="easy_-conn")
